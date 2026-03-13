@@ -1,17 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 260 56" width="260" height="56" role="img" aria-label="fabrentals logo">
   <title>fabrentals</title>
 
-  <defs>
-    <style>
-      @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@900&display=swap');
-      .logo-wordmark-white {
-        font-family: 'Playfair Display', Georgia, serif;
-        font-weight: 900;
-        font-size: 28px;
-      }
-    </style>
-  </defs>
-
   <!-- Icon badge — semi-transparent white bg for dark surfaces -->
   <g transform="translate(0,14)">
     <rect x="0" y="0" width="28" height="28" rx="7" fill="white" fill-opacity="0.20"/>
@@ -33,8 +22,10 @@
   <text
     x="38"
     y="38"
-    class="logo-wordmark-white"
     fill="white"
+    font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif"
+    font-weight="900"
+    font-size="28px"
     letter-spacing="-0.5"
   >fab</text>
 
@@ -42,8 +33,10 @@
   <text
     x="93"
     y="38"
-    class="logo-wordmark-white"
     fill="#FFAA80"
+    font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif"
+    font-weight="900"
+    font-size="28px"
     letter-spacing="-0.5"
   >rentals</text>
 </svg>

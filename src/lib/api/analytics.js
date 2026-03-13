@@ -1,0 +1,292 @@
+import { db } from "../../config/supabase";
+
+// =============================================================================
+// lib/api/analytics.js
+//
+// Aggregation queries for dashboard charts and report pages.
+// These hit Supabase directly (not FastAPI) since they are read-only selects
+// that RLS can safely scope to the caller's tenant.
+//
+// For heavy cross-tenant analytics (super admin), FastAPI has dedicated
+// /analytics endpoints — those are called via fetch() with the JWT.
+// =============================================================================
+
+const FASTAPI_BASE = import.meta.env.VITE_API_BASE_URL;
+
+// ─────────────────────────────────────────────────────────────────────────────
+// getOccupancyStats
+// Returns room occupancy breakdown + occupancy rate for a tenant.
+// Used on owner overview and manager dashboard.
+//
+// @param {string} tenantId
+// @returns {{ total, occupied, available, maintenance, reserved, rate }}
+// ─────────────────────────────────────────────────────────────────────────────
+export async function getOccupancyStats(tenantId) {
+  const { data, error } = await db
+    .rooms()
+    .select("status")
+    .eq("tenant_id", tenantId);
+
+  if (error) return { data: null, error };
+
+  const counts = (data ?? []).reduce(
+    (acc, r) => {
+      acc.total++;
+      acc[r.status] = (acc[r.status] ?? 0) + 1;
+      return acc;
+    },
+    { total: 0, available: 0, occupied: 0, maintenance: 0, reserved: 0 }
+  );
+
+  const rate = counts.total > 0
+    ? Math.round((counts.occupied / counts.total) * 100)
+    : 0;
+
+  return { data: { ...counts, rate }, error: null };
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// getOccupancyByBuilding
+// Per-building occupancy — used in the owner occupancy report.
+//
+// @param {string} tenantId
+// ─────────────────────────────────────────────────────────────────────────────
+export async function getOccupancyByBuilding(tenantId) {
+  const { data, error } = await db
+    .rooms()
+    .select("status, buildings(id, name)")
+    .eq("tenant_id", tenantId);
+
+  if (error) return { data: null, error };
+
+  // Group by building
+  const byBuilding = {};
+  for (const row of data ?? []) {
+    const bId   = row.buildings?.id   ?? "unassigned";
+    const bName = row.buildings?.name ?? "Unassigned";
+    if (!byBuilding[bId]) {
+      byBuilding[bId] = { id: bId, name: bName, total: 0, occupied: 0, available: 0, maintenance: 0 };
+    }
+    byBuilding[bId].total++;
+    byBuilding[bId][row.status] = (byBuilding[bId][row.status] ?? 0) + 1;
+  }
+
+  const result = Object.values(byBuilding).map(b => ({
+    ...b,
+    rate: b.total > 0 ? Math.round((b.occupied / b.total) * 100) : 0,
+  }));
+
+  return { data: result, error: null };
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// getRevenueStats
+// Total collected vs billed for a date range.
+// "Collected" = confirmed payments; "Billed" = sum of all billing cycles.
+//
+// @param {string} tenantId
+// @param {object} [opts]
+// @param {string}   [opts.from]   ISO date (period_start >=)
+// @param {string}   [opts.to]     ISO date (period_end <=)
+// ─────────────────────────────────────────────────────────────────────────────
+export async function getRevenueStats(tenantId, opts = {}) {
+  const [cyclesRes, paymentsRes] = await Promise.all([
+    // Total billed
+    (async () => {
+      let q = db
+        .billingCycles()
+        .select("amount_due, late_fee, status")
+        .eq("tenant_id", tenantId)
+        .not("status", "in", '("cancelled","waived")');
+      if (opts.from) q = q.gte("period_start", opts.from);
+      if (opts.to)   q = q.lte("period_end",   opts.to);
+      return q;
+    })(),
+    // Total collected
+    (async () => {
+      let q = db
+        .payments()
+        .select("amount, payment_method")
+        .eq("tenant_id", tenantId)
+        .eq("payment_status", "confirmed");
+      if (opts.from) q = q.gte("paid_at", opts.from);
+      if (opts.to)   q = q.lte("paid_at", opts.to);
+      return q;
+    })(),
+  ]);
+
+  if (cyclesRes.error || paymentsRes.error) {
+    return { data: null, error: cyclesRes.error ?? paymentsRes.error };
+  }
+
+  const totalBilled = (cyclesRes.data ?? []).reduce(
+    (sum, c) => sum + Number(c.amount_due) + Number(c.late_fee ?? 0), 0
+  );
+  const totalCollected = (paymentsRes.data ?? []).reduce(
+    (sum, p) => sum + Number(p.amount), 0
+  );
+  const collectionRate = totalBilled > 0
+    ? Math.round((totalCollected / totalBilled) * 100)
+    : 0;
+
+  return {
+    data: { totalBilled, totalCollected, outstanding: totalBilled - totalCollected, collectionRate },
+    error: null,
+  };
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// getMonthlyRevenueSeries
+// Returns an array of { month, billed, collected } for the last N months.
+// Used in the owner financial summary line/bar chart.
+//
+// @param {string} tenantId
+// @param {number} [months]   Default 12
+// ─────────────────────────────────────────────────────────────────────────────
+export async function getMonthlyRevenueSeries(tenantId, months = 12) {
+  const from = new Date();
+  from.setMonth(from.getMonth() - months + 1);
+  from.setDate(1);
+  const fromISO = from.toISOString().slice(0, 10);
+
+  const [cyclesRes, paymentsRes] = await Promise.all([
+    db.billingCycles()
+      .select("period_start, amount_due, late_fee")
+      .eq("tenant_id", tenantId)
+      .gte("period_start", fromISO)
+      .not("status", "in", '("cancelled","waived")'),
+    db.payments()
+      .select("paid_at, amount")
+      .eq("tenant_id", tenantId)
+      .eq("payment_status", "confirmed")
+      .gte("paid_at", fromISO),
+  ]);
+
+  if (cyclesRes.error || paymentsRes.error) {
+    return { data: null, error: cyclesRes.error ?? paymentsRes.error };
+  }
+
+  // Build a month-keyed map
+  const monthMap = {};
+
+  const toMonthKey = (dateStr) => dateStr.slice(0, 7); // 'YYYY-MM'
+
+  for (const c of cyclesRes.data ?? []) {
+    const key = toMonthKey(c.period_start);
+    if (!monthMap[key]) monthMap[key] = { month: key, billed: 0, collected: 0 };
+    monthMap[key].billed += Number(c.amount_due) + Number(c.late_fee ?? 0);
+  }
+
+  for (const p of paymentsRes.data ?? []) {
+    const key = toMonthKey(p.paid_at.slice(0, 10));
+    if (!monthMap[key]) monthMap[key] = { month: key, billed: 0, collected: 0 };
+    monthMap[key].collected += Number(p.amount);
+  }
+
+  // Sort by month and return as array
+  const series = Object.values(monthMap).sort((a, b) => a.month.localeCompare(b.month));
+
+  return { data: series, error: null };
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// getPaymentMethodBreakdown
+// Pie/donut chart data: how much collected per payment method.
+//
+// @param {string} tenantId
+// @param {string} [from]   ISO date
+// @param {string} [to]     ISO date
+// ─────────────────────────────────────────────────────────────────────────────
+export async function getPaymentMethodBreakdown(tenantId, from, to) {
+  let query = db
+    .payments()
+    .select("payment_method, amount")
+    .eq("tenant_id", tenantId)
+    .eq("payment_status", "confirmed");
+
+  if (from) query = query.gte("paid_at", from);
+  if (to)   query = query.lte("paid_at", to);
+
+  const { data, error } = await query;
+  if (error) return { data: null, error };
+
+  const breakdown = (data ?? []).reduce((acc, p) => {
+    const method = p.payment_method;
+    acc[method] = (acc[method] ?? 0) + Number(p.amount);
+    return acc;
+  }, {});
+
+  const result = Object.entries(breakdown).map(([method, value]) => ({ method, value }));
+  return { data: result, error: null };
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// getWorkerCostsSummary
+// Total payroll costs by role and by month.
+// Used on the owner "Worker Costs" page.
+//
+// @param {string} tenantId
+// @param {number} [months]  Look back N months (default 6)
+// ─────────────────────────────────────────────────────────────────────────────
+export async function getWorkerCostsSummary(tenantId, months = 6) {
+  const from = new Date();
+  from.setMonth(from.getMonth() - months + 1);
+  const fromISO = from.toISOString().slice(0, 10);
+
+  const { data, error } = await db
+    .workerPayments()
+    .select("amount, period_start, workers(role)")
+    .eq("tenant_id", tenantId)
+    .eq("payment_status", "paid")
+    .gte("period_start", fromISO);
+
+  if (error) return { data: null, error };
+
+  const byRole    = {};
+  const byMonth   = {};
+  let   totalCost = 0;
+
+  for (const p of data ?? []) {
+    const role  = p.workers?.role ?? "other";
+    const month = p.period_start.slice(0, 7);
+    const amt   = Number(p.amount);
+
+    byRole[role]    = (byRole[role]  ?? 0) + amt;
+    byMonth[month]  = (byMonth[month] ?? 0) + amt;
+    totalCost      += amt;
+  }
+
+  const monthSeries = Object.entries(byMonth)
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([month, cost]) => ({ month, cost }));
+
+  return {
+    data: { totalCost, byRole, monthSeries },
+    error: null,
+  };
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// getPlatformAnalytics
+// Super-admin only — aggregated platform-wide stats via FastAPI.
+// (Cannot do cross-tenant aggregation from the client via RLS.)
+//
+// @param {string} accessToken   Supabase JWT
+// ─────────────────────────────────────────────────────────────────────────────
+export async function getPlatformAnalytics(accessToken) {
+  try {
+    const res = await fetch(`${FASTAPI_BASE}/analytics/platform`, {
+      headers: { Authorization: `Bearer ${accessToken}` },
+    });
+
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ detail: res.statusText }));
+      return { data: null, error: { message: err.detail } };
+    }
+
+    const data = await res.json();
+    return { data, error: null };
+  } catch (err) {
+    return { data: null, error: { message: err.message } };
+  }
+}
