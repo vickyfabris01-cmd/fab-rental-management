@@ -9,41 +9,27 @@ import {
 } from "react-router-dom";
 
 // ── Pages (built) ─────────────────────────────────────────────────────────────
-import PublicPage        from "./pages/public/PublicPage";
-import LoginPage         from "./pages/auth/LoginPage";
-import SignupPage        from "./pages/auth/SignupPage";
-import ClientDashboard   from "./pages/client/ClientDashboard";
-import ManagerDashboard  from "./pages/manager/ManagerDashboard";
-import OwnerDashboard    from "./pages/owner/OwnerDashboard";
+import PublicPage from "./pages/public/PublicPage";
+import BrowsePage from "./pages/public/BrowsePage";
+import PropertyDetailPage from "./pages/public/PropertyDetailPage";
+import LoginPage from "./pages/auth/LoginPage";
+import SignupPage from "./pages/auth/SignupPage";
+import AcceptInvitePage from "./pages/auth/AcceptInvitePage";
+import ResetPasswordPage from "./pages/auth/ResetPasswordPage";
+import ClientDashboard from "./pages/client/ClientDashboard";
+import ManagerDashboard from "./pages/manager/ManagerDashboard";
+import OwnerDashboard from "./pages/owner/OwnerDashboard";
 import SuperAdminDashboard from "./pages/admin/SuperAdminDashboard";
-import WorkerDashboard   from "./pages/worker/WorkerDashboard";
+import WorkerDashboard from "./pages/worker/WorkerDashboard";
 
-// ── Supabase client ───────────────────────────────────────────────────────────
-// Swap this import for your actual supabase.js path once configured
-// import { supabase } from "./config/supabase";
-//
-// For now we use a lightweight mock so the router works without a live backend.
-const supabase = {
-  auth: {
-    getSession: async () => ({ data: { session: null } }),
-    onAuthStateChange: (_event, _cb) => ({
-      data: { subscription: { unsubscribe: () => {} } },
-    }),
-  },
-  from: () => ({
-    select: () => ({ eq: () => ({ single: async () => ({ data: null, error: null }) }) }),
-  }),
-};
+// ── Config & assets ───────────────────────────────────────────────────────────
+import { supabase } from "./config/supabase";
+import { ROLE_HOME as ROLE_HOME_MAP } from "./config/constants";
+import LogoSrc from "./assets/logo.svg";
+import LogoIconSrc from "./assets/logo-icon.svg";
 
-// ── Role → home route map ─────────────────────────────────────────────────────
-const ROLE_HOME = {
-  client:      "/dashboard",
-  manager:     "/manage",
-  owner:       "/owner",
-  super_admin: "/admin",
-  worker:      "/worker",
-  visitor:     "/browse",
-};
+// ── Role → home route map (sourced from constants.js) ────────────────────────
+const ROLE_HOME = ROLE_HOME_MAP;
 
 // ── Auth context (very thin — replace with a real context/store later) ────────
 // In production use your Zustand authStore here.
@@ -109,7 +95,9 @@ function AppLoader() {
 
     async function bootstrap() {
       // 1. Get current session
-      const { data: { session } } = await supabase.auth.getSession();
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
       _session = session;
 
       // 2. If logged in, fetch the user's profile (role + tenant_id)
@@ -129,31 +117,31 @@ function AppLoader() {
     bootstrap();
 
     // 3. Listen for auth changes (sign-in / sign-out from any tab)
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        _session = session;
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange(async (event, session) => {
+      _session = session;
 
-        if (event === "SIGNED_IN" && session?.user) {
-          const { data: profile } = await supabase
-            .from("profiles")
-            .select("id, role, tenant_id, full_name, avatar_url")
-            .eq("id", session.user.id)
-            .single();
+      if (event === "SIGNED_IN" && session?.user) {
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("id, role, tenant_id, full_name, avatar_url")
+          .eq("id", session.user.id)
+          .single();
 
-          _profile = profile;
+        _profile = profile;
 
-          // Redirect to the role's home unless already there
-          const home = ROLE_HOME[profile?.role] || "/";
-          const intendedFrom = location.state?.from?.pathname;
-          navigate(intendedFrom || home, { replace: true });
-        }
-
-        if (event === "SIGNED_OUT") {
-          _profile = null;
-          navigate("/login", { replace: true });
-        }
+        // Redirect to the role's home unless already there
+        const home = ROLE_HOME[profile?.role] || "/";
+        const intendedFrom = location.state?.from?.pathname;
+        navigate(intendedFrom || home, { replace: true });
       }
-    );
+
+      if (event === "SIGNED_OUT") {
+        _profile = null;
+        navigate("/login", { replace: true });
+      }
+    });
 
     return () => {
       mounted = false;
@@ -171,34 +159,21 @@ function AppLoader() {
       >
         <style>{`@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@900&family=DM+Sans:wght@400;600&display=swap');`}</style>
         <div className="flex items-center gap-3 mb-2">
+          <img
+            src={LogoSrc}
+            alt="fabrentals"
+            style={{ height: 36, width: "auto" }}
+          />
           <div
-            className="w-10 h-10 rounded-xl flex items-center justify-center"
-            style={{ background: "#C5612C" }}
-          >
-            <svg viewBox="0 0 24 24" fill="white" className="w-6 h-6">
-              <path d="M3 9.5L12 3l9 6.5V20a1 1 0 01-1 1H4a1 1 0 01-1-1V9.5z" />
-            </svg>
-          </div>
-          <span
+            className="w-8 h-8 rounded-full border-4"
             style={{
-              fontFamily: "'Playfair Display', serif",
-              fontWeight: 900,
-              fontSize: 22,
-              color: "#1A1412",
+              borderColor: "rgba(197,97,44,0.2)",
+              borderTopColor: "#C5612C",
+              animation: "spin 0.8s linear infinite",
             }}
-          >
-            fabrentals
-          </span>
+          />
+          <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
         </div>
-        <div
-          className="w-8 h-8 rounded-full border-4"
-          style={{
-            borderColor: "rgba(197,97,44,0.2)",
-            borderTopColor: "#C5612C",
-            animation: "spin 0.8s linear infinite",
-          }}
-        />
-        <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
       </div>
     );
   }
@@ -213,14 +188,17 @@ function AppRoutes() {
   return (
     <Routes>
       {/* ── Public ─────────────────────────────────────────────────────────── */}
-      <Route path="/"       element={<PublicPage />} />
-      <Route path="/login"  element={<LoginPage />} />
+      <Route path="/" element={<PublicPage />} />
+      <Route path="/login" element={<LoginPage />} />
       <Route path="/signup" element={<SignupPage />} />
 
-      {/* ── Auth redirects (stubs — add pages when built) ─────────────────── */}
-      <Route path="/invite/:token"   element={<ComingSoon title="Accept Invitation" />} />
-      <Route path="/reset-password"  element={<ComingSoon title="Reset Password" />} />
-      <Route path="/browse"          element={<ComingSoon title="Browse Properties" />} />
+      {/* ── Auth (no session required) ────────────────────────────────────── */}
+      <Route path="/invite/:token" element={<AcceptInvitePage />} />
+      <Route path="/reset-password" element={<ResetPasswordPage />} />
+
+      {/* ── Public browse + detail (no auth required) ─────────────────────── */}
+      <Route path="/browse" element={<BrowsePage />} />
+      <Route path="/property/:slug" element={<PropertyDetailPage />} />
 
       {/* ── After sign-in: figure out where to send the user ─────────────── */}
       <Route
@@ -244,14 +222,86 @@ function AppRoutes() {
         }
       />
       {/* Subroutes — add pages as they are built */}
-      <Route path="/dashboard/room"            element={<RequireAuth><RequireRole roles={["client"]}><ComingSoon title="My Room" /></RequireRole></RequireAuth>} />
-      <Route path="/dashboard/billing"         element={<RequireAuth><RequireRole roles={["client"]}><ComingSoon title="Billing & Invoices" /></RequireRole></RequireAuth>} />
-      <Route path="/dashboard/payments"        element={<RequireAuth><RequireRole roles={["client"]}><ComingSoon title="Payments" /></RequireRole></RequireAuth>} />
-      <Route path="/dashboard/transfer-request"element={<RequireAuth><RequireRole roles={["client"]}><ComingSoon title="Room Transfer" /></RequireRole></RequireAuth>} />
-      <Route path="/dashboard/complaints"      element={<RequireAuth><RequireRole roles={["client"]}><ComingSoon title="Complaints" /></RequireRole></RequireAuth>} />
-      <Route path="/dashboard/complaints/:id"  element={<RequireAuth><RequireRole roles={["client"]}><ComingSoon title="Complaint Detail" /></RequireRole></RequireAuth>} />
-      <Route path="/dashboard/notifications"   element={<RequireAuth><RequireRole roles={["client"]}><ComingSoon title="Notifications" /></RequireRole></RequireAuth>} />
-      <Route path="/dashboard/profile"         element={<RequireAuth><RequireRole roles={["client"]}><ComingSoon title="My Profile" /></RequireRole></RequireAuth>} />
+      <Route
+        path="/dashboard/room"
+        element={
+          <RequireAuth>
+            <RequireRole roles={["client"]}>
+              <ComingSoon title="My Room" />
+            </RequireRole>
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/dashboard/billing"
+        element={
+          <RequireAuth>
+            <RequireRole roles={["client"]}>
+              <ComingSoon title="Billing & Invoices" />
+            </RequireRole>
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/dashboard/payments"
+        element={
+          <RequireAuth>
+            <RequireRole roles={["client"]}>
+              <ComingSoon title="Payments" />
+            </RequireRole>
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/dashboard/transfer-request"
+        element={
+          <RequireAuth>
+            <RequireRole roles={["client"]}>
+              <ComingSoon title="Room Transfer" />
+            </RequireRole>
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/dashboard/complaints"
+        element={
+          <RequireAuth>
+            <RequireRole roles={["client"]}>
+              <ComingSoon title="Complaints" />
+            </RequireRole>
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/dashboard/complaints/:id"
+        element={
+          <RequireAuth>
+            <RequireRole roles={["client"]}>
+              <ComingSoon title="Complaint Detail" />
+            </RequireRole>
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/dashboard/notifications"
+        element={
+          <RequireAuth>
+            <RequireRole roles={["client"]}>
+              <ComingSoon title="Notifications" />
+            </RequireRole>
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/dashboard/profile"
+        element={
+          <RequireAuth>
+            <RequireRole roles={["client"]}>
+              <ComingSoon title="My Profile" />
+            </RequireRole>
+          </RequireAuth>
+        }
+      />
 
       {/* ── Manager ──────────────────────────────────────────────────────── */}
       <Route
@@ -264,21 +314,156 @@ function AppRoutes() {
           </RequireAuth>
         }
       />
-      <Route path="/manage/properties"              element={<RequireAuth><RequireRole roles={["manager"]}><ComingSoon title="Rooms & Buildings" /></RequireRole></RequireAuth>} />
-      <Route path="/manage/residents"               element={<RequireAuth><RequireRole roles={["manager"]}><ComingSoon title="All Residents" /></RequireRole></RequireAuth>} />
-      <Route path="/manage/residents/:id"           element={<RequireAuth><RequireRole roles={["manager"]}><ComingSoon title="Resident Detail" /></RequireRole></RequireAuth>} />
-      <Route path="/manage/residents/requests"      element={<RequireAuth><RequireRole roles={["manager"]}><ComingSoon title="Rental Requests" /></RequireRole></RequireAuth>} />
-      <Route path="/manage/residents/tenancies"     element={<RequireAuth><RequireRole roles={["manager"]}><ComingSoon title="Tenancies" /></RequireRole></RequireAuth>} />
-      <Route path="/manage/billing/cycles"          element={<RequireAuth><RequireRole roles={["manager"]}><ComingSoon title="Billing Cycles" /></RequireRole></RequireAuth>} />
-      <Route path="/manage/billing/payments"        element={<RequireAuth><RequireRole roles={["manager"]}><ComingSoon title="Payments" /></RequireRole></RequireAuth>} />
-      <Route path="/manage/billing/invoices"        element={<RequireAuth><RequireRole roles={["manager"]}><ComingSoon title="Invoices" /></RequireRole></RequireAuth>} />
-      <Route path="/manage/workforce/workers"       element={<RequireAuth><RequireRole roles={["manager"]}><ComingSoon title="Workers" /></RequireRole></RequireAuth>} />
-      <Route path="/manage/workforce/salaries"      element={<RequireAuth><RequireRole roles={["manager"]}><ComingSoon title="Salaries" /></RequireRole></RequireAuth>} />
-      <Route path="/manage/workforce/attendance"    element={<RequireAuth><RequireRole roles={["manager"]}><ComingSoon title="Attendance" /></RequireRole></RequireAuth>} />
-      <Route path="/manage/complaints"              element={<RequireAuth><RequireRole roles={["manager"]}><ComingSoon title="Complaints" /></RequireRole></RequireAuth>} />
-      <Route path="/manage/announcements"           element={<RequireAuth><RequireRole roles={["manager"]}><ComingSoon title="Announcements" /></RequireRole></RequireAuth>} />
-      <Route path="/manage/settings"                element={<RequireAuth><RequireRole roles={["manager"]}><ComingSoon title="Settings" /></RequireRole></RequireAuth>} />
-      <Route path="/manage/profile"                 element={<RequireAuth><RequireRole roles={["manager"]}><ComingSoon title="My Profile" /></RequireRole></RequireAuth>} />
+      <Route
+        path="/manage/properties"
+        element={
+          <RequireAuth>
+            <RequireRole roles={["manager"]}>
+              <ComingSoon title="Rooms & Buildings" />
+            </RequireRole>
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/manage/residents"
+        element={
+          <RequireAuth>
+            <RequireRole roles={["manager"]}>
+              <ComingSoon title="All Residents" />
+            </RequireRole>
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/manage/residents/:id"
+        element={
+          <RequireAuth>
+            <RequireRole roles={["manager"]}>
+              <ComingSoon title="Resident Detail" />
+            </RequireRole>
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/manage/residents/requests"
+        element={
+          <RequireAuth>
+            <RequireRole roles={["manager"]}>
+              <ComingSoon title="Rental Requests" />
+            </RequireRole>
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/manage/residents/tenancies"
+        element={
+          <RequireAuth>
+            <RequireRole roles={["manager"]}>
+              <ComingSoon title="Tenancies" />
+            </RequireRole>
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/manage/billing/cycles"
+        element={
+          <RequireAuth>
+            <RequireRole roles={["manager"]}>
+              <ComingSoon title="Billing Cycles" />
+            </RequireRole>
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/manage/billing/payments"
+        element={
+          <RequireAuth>
+            <RequireRole roles={["manager"]}>
+              <ComingSoon title="Payments" />
+            </RequireRole>
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/manage/billing/invoices"
+        element={
+          <RequireAuth>
+            <RequireRole roles={["manager"]}>
+              <ComingSoon title="Invoices" />
+            </RequireRole>
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/manage/workforce/workers"
+        element={
+          <RequireAuth>
+            <RequireRole roles={["manager"]}>
+              <ComingSoon title="Workers" />
+            </RequireRole>
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/manage/workforce/salaries"
+        element={
+          <RequireAuth>
+            <RequireRole roles={["manager"]}>
+              <ComingSoon title="Salaries" />
+            </RequireRole>
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/manage/workforce/attendance"
+        element={
+          <RequireAuth>
+            <RequireRole roles={["manager"]}>
+              <ComingSoon title="Attendance" />
+            </RequireRole>
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/manage/complaints"
+        element={
+          <RequireAuth>
+            <RequireRole roles={["manager"]}>
+              <ComingSoon title="Complaints" />
+            </RequireRole>
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/manage/announcements"
+        element={
+          <RequireAuth>
+            <RequireRole roles={["manager"]}>
+              <ComingSoon title="Announcements" />
+            </RequireRole>
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/manage/settings"
+        element={
+          <RequireAuth>
+            <RequireRole roles={["manager"]}>
+              <ComingSoon title="Settings" />
+            </RequireRole>
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/manage/profile"
+        element={
+          <RequireAuth>
+            <RequireRole roles={["manager"]}>
+              <ComingSoon title="My Profile" />
+            </RequireRole>
+          </RequireAuth>
+        }
+      />
 
       {/* ── Owner ─────────────────────────────────────────────────────────── */}
       <Route
@@ -291,11 +476,56 @@ function AppRoutes() {
           </RequireAuth>
         }
       />
-      <Route path="/owner/occupancy"   element={<RequireAuth><RequireRole roles={["owner"]}><ComingSoon title="Occupancy Report" /></RequireRole></RequireAuth>} />
-      <Route path="/owner/financials"  element={<RequireAuth><RequireRole roles={["owner"]}><ComingSoon title="Financial Summary" /></RequireRole></RequireAuth>} />
-      <Route path="/owner/billing"     element={<RequireAuth><RequireRole roles={["owner"]}><ComingSoon title="Billing" /></RequireRole></RequireAuth>} />
-      <Route path="/owner/workforce"   element={<RequireAuth><RequireRole roles={["owner"]}><ComingSoon title="Worker Costs" /></RequireRole></RequireAuth>} />
-      <Route path="/owner/analytics"   element={<RequireAuth><RequireRole roles={["owner"]}><ComingSoon title="Analytics" /></RequireRole></RequireAuth>} />
+      <Route
+        path="/owner/occupancy"
+        element={
+          <RequireAuth>
+            <RequireRole roles={["owner"]}>
+              <ComingSoon title="Occupancy Report" />
+            </RequireRole>
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/owner/financials"
+        element={
+          <RequireAuth>
+            <RequireRole roles={["owner"]}>
+              <ComingSoon title="Financial Summary" />
+            </RequireRole>
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/owner/billing"
+        element={
+          <RequireAuth>
+            <RequireRole roles={["owner"]}>
+              <ComingSoon title="Billing" />
+            </RequireRole>
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/owner/workforce"
+        element={
+          <RequireAuth>
+            <RequireRole roles={["owner"]}>
+              <ComingSoon title="Worker Costs" />
+            </RequireRole>
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/owner/analytics"
+        element={
+          <RequireAuth>
+            <RequireRole roles={["owner"]}>
+              <ComingSoon title="Analytics" />
+            </RequireRole>
+          </RequireAuth>
+        }
+      />
 
       {/* ── Super Admin ───────────────────────────────────────────────────── */}
       <Route
@@ -308,13 +538,76 @@ function AppRoutes() {
           </RequireAuth>
         }
       />
-      <Route path="/admin/tenants"        element={<RequireAuth><RequireRole roles={["super_admin"]}><ComingSoon title="Tenants" /></RequireRole></RequireAuth>} />
-      <Route path="/admin/tenants/:id"    element={<RequireAuth><RequireRole roles={["super_admin"]}><ComingSoon title="Tenant Detail" /></RequireRole></RequireAuth>} />
-      <Route path="/admin/users"          element={<RequireAuth><RequireRole roles={["super_admin"]}><ComingSoon title="All Users" /></RequireRole></RequireAuth>} />
-      <Route path="/admin/revenue"        element={<RequireAuth><RequireRole roles={["super_admin"]}><ComingSoon title="Platform Revenue" /></RequireRole></RequireAuth>} />
-      <Route path="/admin/analytics"      element={<RequireAuth><RequireRole roles={["super_admin"]}><ComingSoon title="Analytics" /></RequireRole></RequireAuth>} />
-      <Route path="/admin/settings"       element={<RequireAuth><RequireRole roles={["super_admin"]}><ComingSoon title="Settings" /></RequireRole></RequireAuth>} />
-      <Route path="/admin/audit"          element={<RequireAuth><RequireRole roles={["super_admin"]}><ComingSoon title="Audit Log" /></RequireRole></RequireAuth>} />
+      <Route
+        path="/admin/tenants"
+        element={
+          <RequireAuth>
+            <RequireRole roles={["super_admin"]}>
+              <ComingSoon title="Tenants" />
+            </RequireRole>
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/admin/tenants/:id"
+        element={
+          <RequireAuth>
+            <RequireRole roles={["super_admin"]}>
+              <ComingSoon title="Tenant Detail" />
+            </RequireRole>
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/admin/users"
+        element={
+          <RequireAuth>
+            <RequireRole roles={["super_admin"]}>
+              <ComingSoon title="All Users" />
+            </RequireRole>
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/admin/revenue"
+        element={
+          <RequireAuth>
+            <RequireRole roles={["super_admin"]}>
+              <ComingSoon title="Platform Revenue" />
+            </RequireRole>
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/admin/analytics"
+        element={
+          <RequireAuth>
+            <RequireRole roles={["super_admin"]}>
+              <ComingSoon title="Analytics" />
+            </RequireRole>
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/admin/settings"
+        element={
+          <RequireAuth>
+            <RequireRole roles={["super_admin"]}>
+              <ComingSoon title="Settings" />
+            </RequireRole>
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/admin/audit"
+        element={
+          <RequireAuth>
+            <RequireRole roles={["super_admin"]}>
+              <ComingSoon title="Audit Log" />
+            </RequireRole>
+          </RequireAuth>
+        }
+      />
 
       {/* ── Worker ───────────────────────────────────────────────────────── */}
       <Route
@@ -327,9 +620,36 @@ function AppRoutes() {
           </RequireAuth>
         }
       />
-      <Route path="/worker/payments"   element={<RequireAuth><RequireRole roles={["worker"]}><ComingSoon title="Pay History" /></RequireRole></RequireAuth>} />
-      <Route path="/worker/attendance" element={<RequireAuth><RequireRole roles={["worker"]}><ComingSoon title="Attendance" /></RequireRole></RequireAuth>} />
-      <Route path="/worker/profile"    element={<RequireAuth><RequireRole roles={["worker"]}><ComingSoon title="My Profile" /></RequireRole></RequireAuth>} />
+      <Route
+        path="/worker/payments"
+        element={
+          <RequireAuth>
+            <RequireRole roles={["worker"]}>
+              <ComingSoon title="Pay History" />
+            </RequireRole>
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/worker/attendance"
+        element={
+          <RequireAuth>
+            <RequireRole roles={["worker"]}>
+              <ComingSoon title="Attendance" />
+            </RequireRole>
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/worker/profile"
+        element={
+          <RequireAuth>
+            <RequireRole roles={["worker"]}>
+              <ComingSoon title="My Profile" />
+            </RequireRole>
+          </RequireAuth>
+        }
+      />
 
       {/* ── Catch-all 404 ────────────────────────────────────────────────── */}
       <Route path="*" element={<NotFound />} />
@@ -351,18 +671,7 @@ function ComingSoon({ title }) {
         className="w-14 h-14 rounded-2xl flex items-center justify-center mb-2"
         style={{ background: "rgba(197,97,44,0.1)" }}
       >
-        <svg
-          width={28}
-          height={28}
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="#C5612C"
-          strokeWidth={1.8}
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        >
-          <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
-        </svg>
+        <img src={LogoIconSrc} alt="" style={{ width: 32, height: 32 }} />
       </div>
       <h1
         style={{
@@ -374,7 +683,9 @@ function ComingSoon({ title }) {
       >
         {title}
       </h1>
-      <p style={{ color: "#8B7355", fontSize: 14 }}>This page is coming soon.</p>
+      <p style={{ color: "#8B7355", fontSize: 14 }}>
+        This page is coming soon.
+      </p>
       <a
         href="/"
         style={{
@@ -404,9 +715,30 @@ function NotFound() {
       style={{ background: "#FAF7F2", fontFamily: "'DM Sans', sans-serif" }}
     >
       <style>{`@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@900&family=DM+Sans:wght@400;600&display=swap');`}</style>
-      <p style={{ fontSize: 72, fontFamily: "'Playfair Display', serif", fontWeight: 900, color: "#E8DDD4", lineHeight: 1 }}>404</p>
-      <h2 style={{ fontFamily: "'Playfair Display', serif", fontWeight: 700, fontSize: 22, color: "#1A1412" }}>Page not found</h2>
-      <p style={{ color: "#8B7355", fontSize: 14 }}>The page you're looking for doesn't exist.</p>
+      <p
+        style={{
+          fontSize: 72,
+          fontFamily: "'Playfair Display', serif",
+          fontWeight: 900,
+          color: "#E8DDD4",
+          lineHeight: 1,
+        }}
+      >
+        404
+      </p>
+      <h2
+        style={{
+          fontFamily: "'Playfair Display', serif",
+          fontWeight: 700,
+          fontSize: 22,
+          color: "#1A1412",
+        }}
+      >
+        Page not found
+      </h2>
+      <p style={{ color: "#8B7355", fontSize: 14 }}>
+        The page you're looking for doesn't exist.
+      </p>
       <a
         href="/"
         style={{
