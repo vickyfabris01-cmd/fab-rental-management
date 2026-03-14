@@ -30,7 +30,7 @@ export function required(value, fieldName = "This field") {
 
   return empty
     ? { valid: false, message: `${fieldName} is required` }
-    : { valid: true,  message: null };
+    : { valid: true, message: null };
 }
 
 /**
@@ -41,7 +41,10 @@ export function required(value, fieldName = "This field") {
  */
 export function minLength(value, min, fieldName = "This field") {
   if (!value || value.length < min) {
-    return { valid: false, message: `${fieldName} must be at least ${min} characters` };
+    return {
+      valid: false,
+      message: `${fieldName} must be at least ${min} characters`,
+    };
   }
   return { valid: true, message: null };
 }
@@ -54,7 +57,10 @@ export function minLength(value, min, fieldName = "This field") {
  */
 export function maxLength(value, max, fieldName = "This field") {
   if (value && value.length > max) {
-    return { valid: false, message: `${fieldName} must be at most ${max} characters` };
+    return {
+      valid: false,
+      message: `${fieldName} must be at most ${max} characters`,
+    };
   }
   return { valid: true, message: null };
 }
@@ -106,16 +112,19 @@ export function validateKEPhone(phone) {
 
   // Allow 07xx, 254 7xx, +2547xx, 01x, 2541x formats
   const patterns = [
-    /^0[17]\d{8}$/,          // 07xxxxxxxx or 01xxxxxxxx
-    /^254[17]\d{8}$/,        // 2547xxxxxxxx
-    /^\+254[17]\d{8}$/,      // +2547xxxxxxxx
-    /^[17]\d{8}$/,           // 7xxxxxxxx (9 digits, no prefix)
+    /^0[17]\d{8}$/, // 07xxxxxxxx or 01xxxxxxxx
+    /^254[17]\d{8}$/, // 2547xxxxxxxx
+    /^\+254[17]\d{8}$/, // +2547xxxxxxxx
+    /^[17]\d{8}$/, // 7xxxxxxxx (9 digits, no prefix)
   ];
 
-  const valid = patterns.some(p => p.test(digits));
+  const valid = patterns.some((p) => p.test(digits));
   return valid
-    ? { valid: true,  message: null }
-    : { valid: false, message: "Enter a valid Kenya phone number (e.g. 0712 345 678)" };
+    ? { valid: true, message: null }
+    : {
+        valid: false,
+        message: "Enter a valid Kenya phone number (e.g. 0712 345 678)",
+      };
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -142,33 +151,54 @@ export function validateKEPhone(phone) {
  */
 export function validatePassword(password) {
   if (!password) {
-    return { valid: false, message: "Password is required", strength: 0, checks: allFalse() };
+    return {
+      valid: false,
+      message: "Password is required",
+      strength: 0,
+      checks: allFalse(),
+    };
   }
 
   const checks = {
-    length:    password.length >= 8,
+    length: password.length >= 8,
     uppercase: /[A-Z]/.test(password),
     lowercase: /[a-z]/.test(password),
-    number:    /\d/.test(password),
-    special:   /[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]/.test(password),
+    number: /\d/.test(password),
+    special: /[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]/.test(password),
   };
 
-  const passed  = Object.values(checks).filter(Boolean).length;
-  const strength = Math.min(4, passed);  // 0–4
+  const passed = Object.values(checks).filter(Boolean).length;
+  const strength = Math.min(4, passed); // 0–4
 
   if (!checks.length) {
-    return { valid: false, message: "Password must be at least 8 characters", strength, checks };
+    return {
+      valid: false,
+      message: "Password must be at least 8 characters",
+      strength,
+      checks,
+    };
   }
 
   if (strength < 2) {
-    return { valid: false, message: "Password is too weak — add numbers or uppercase letters", strength, checks };
+    return {
+      valid: false,
+      message: "Password is too weak — add numbers or uppercase letters",
+      strength,
+      checks,
+    };
   }
 
   return { valid: true, message: null, strength, checks };
 }
 
 function allFalse() {
-  return { length: false, uppercase: false, lowercase: false, number: false, special: false };
+  return {
+    length: false,
+    uppercase: false,
+    lowercase: false,
+    number: false,
+    special: false,
+  };
 }
 
 /**
@@ -176,8 +206,10 @@ function allFalse() {
  * Checks that the confirmation field matches the original.
  */
 export function validatePasswordMatch(password, confirm) {
-  if (!confirm) return { valid: false, message: "Please confirm your password" };
-  if (password !== confirm) return { valid: false, message: "Passwords do not match" };
+  if (!confirm)
+    return { valid: false, message: "Please confirm your password" };
+  if (password !== confirm)
+    return { valid: false, message: "Passwords do not match" };
   return { valid: true, message: null };
 }
 
@@ -199,9 +231,12 @@ export function validateAmount(value, opts = {}) {
   const { min = 1, max, fieldName = "Amount" } = opts;
   const num = Number(value);
 
-  if (!value && value !== 0) return { valid: false, message: `${fieldName} is required` };
-  if (isNaN(num))             return { valid: false, message: `${fieldName} must be a number` };
-  if (num < min)              return { valid: false, message: `${fieldName} must be at least ${min}` };
+  if (!value && value !== 0)
+    return { valid: false, message: `${fieldName} is required` };
+  if (isNaN(num))
+    return { valid: false, message: `${fieldName} must be a number` };
+  if (num < min)
+    return { valid: false, message: `${fieldName} must be at least ${min}` };
   if (max !== undefined && num > max) {
     return { valid: false, message: `${fieldName} cannot exceed ${max}` };
   }
@@ -230,17 +265,24 @@ export function validateDate(value, opts = {}) {
   if (!value) return { valid: false, message: `${fieldName} is required` };
 
   const date = new Date(value);
-  if (isNaN(date.getTime())) return { valid: false, message: `${fieldName} is not a valid date` };
+  if (isNaN(date.getTime()))
+    return { valid: false, message: `${fieldName} is not a valid date` };
 
   if (futureOnly) {
     const today = new Date().toISOString().slice(0, 10);
     if (value < today) {
-      return { valid: false, message: `${fieldName} must be today or a future date` };
+      return {
+        valid: false,
+        message: `${fieldName} must be today or a future date`,
+      };
     }
   }
 
   if (minDate && value < minDate) {
-    return { valid: false, message: `${fieldName} cannot be before ${minDate}` };
+    return {
+      valid: false,
+      message: `${fieldName} cannot be before ${minDate}`,
+    };
   }
 
   if (maxDate && value > maxDate) {
@@ -255,7 +297,7 @@ export function validateDate(value, opts = {}) {
 // ─────────────────────────────────────────────────────────────────────────────
 
 const IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp", "image/gif"];
-const DOC_TYPES   = ["application/pdf", "image/jpeg", "image/png"];
+const DOC_TYPES = ["application/pdf", "image/jpeg", "image/png"];
 
 /**
  * validateImageFile
@@ -319,7 +361,10 @@ export function validateFullName(name) {
   }
   const parts = name.trim().split(/\s+/);
   if (parts.length < 2) {
-    return { valid: false, message: "Please enter your full name (first and last)" };
+    return {
+      valid: false,
+      message: "Please enter your full name (first and last)",
+    };
   }
   if (name.trim().length < 4) {
     return { valid: false, message: "Name is too short" };
@@ -339,8 +384,10 @@ export function validateSlug(slug) {
       message: "Slug must be lowercase letters, numbers, and hyphens only",
     };
   }
-  if (slug.length < 3)  return { valid: false, message: "Slug must be at least 3 characters" };
-  if (slug.length > 60) return { valid: false, message: "Slug must be at most 60 characters" };
+  if (slug.length < 3)
+    return { valid: false, message: "Slug must be at least 3 characters" };
+  if (slug.length > 60)
+    return { valid: false, message: "Slug must be at most 60 characters" };
   return { valid: true, message: null };
 }
 
@@ -402,10 +449,16 @@ export function validateRoomForm(values) {
     errors.roomNumber = "Room number is required";
   }
 
-  const priceRes = validateAmount(values.monthlyPrice, { fieldName: "Monthly price" });
+  const priceRes = validateAmount(values.monthlyPrice, {
+    fieldName: "Monthly price",
+  });
   if (!priceRes.valid) errors.monthlyPrice = priceRes.message;
 
-  const capRes = validateAmount(values.capacity, { min: 1, max: 50, fieldName: "Capacity" });
+  const capRes = validateAmount(values.capacity, {
+    min: 1,
+    max: 50,
+    fieldName: "Capacity",
+  });
   if (!capRes.valid) errors.capacity = capRes.message;
 
   return { isValid: Object.keys(errors).length === 0, errors };
@@ -460,23 +513,36 @@ export function validateComplaintForm(values) {
 // ─────────────────────────────────────────────────────────────────────────────
 export const emailRules = {
   required: "Email address is required",
-  validate: (v) => validateEmail(v).message ?? true,
+  validate: (v) => {
+    const msg = validateEmail(v).message;
+    return msg ? msg : true;
+  },
 };
 
 export const passwordRules = {
   required: "Password is required",
-  validate: (v) => validatePassword(v).message ?? true,
+  validate: (v) => {
+    const msg = validatePassword(v).message;
+    return msg ? msg : true;
+  },
 };
 
 export const phoneRules = {
-  validate: (v) => !v || validateKEPhone(v).message ?? true,
+  validate: (v) => {
+    if (!v) return true;
+    const msg = validateKEPhone(v).message;
+    return msg ? msg : true;
+  },
 };
 
 export const requiredRule = (fieldName) => ({
-  required: `${fieldName ?? "This field"} is required`,
+  required: `${fieldName != null ? fieldName : "This field"} is required`,
 });
 
 export const amountRules = (opts = {}) => ({
   required: "Amount is required",
-  validate: (v) => validateAmount(v, opts).message ?? true,
+  validate: (v) => {
+    const msg = validateAmount(v, opts).message;
+    return msg ? msg : true;
+  },
 });

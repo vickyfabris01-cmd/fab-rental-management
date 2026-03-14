@@ -1,488 +1,829 @@
 import { useState, useEffect } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, Link } from "react-router-dom";
 
-// ── Mock invite data (replace with real Supabase lookup) ─────────────────────
-const MOCK_INVITES = {
-  "abc123token": {
-    valid: true,
-    expired: false,
-    managerName: "",
-    tenantName: "Sunrise Hostel",
-    invitedBy: "Robert Njenga",
-    role: "manager",
-    email: "newmanager@example.com",
-  },
-  "expiredtoken": {
-    valid: true,
-    expired: true,
-    tenantName: "Greenfield Apartments",
-    invitedBy: "Alice Wambui",
-    role: "manager",
-    email: "another@example.com",
-  },
-};
+// ── Layout ────────────────────────────────────────────────────────────────────
+import AuthLayout from "../../layouts/AuthLayout.jsx";
 
-// ── Icons ─────────────────────────────────────────────────────────────────────
-const Ic = ({ d, s = 18, c = "" }) => (
-  <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke="currentColor"
-    strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" className={c}>
-    <path d={d} />
-  </svg>
-);
-const EyeIcon     = () => <Ic d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8zM12 12a3 3 0 100-6 3 3 0 000 6z" s={16}/>;
-const EyeOffIcon  = () => <Ic d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19m-6.72-1.07a3 3 0 11-4.24-4.24M1 1l22 22" s={16}/>;
-const CheckIcon   = () => <Ic d="M5 13l4 4L19 7" s={16}/>;
-const ShieldIcon  = () => <Ic d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />;
-const BuildingIcon= () => <Ic d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z" />;
-const AlertIcon   = () => <Ic d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0zM12 9v4M12 17h.01" />;
+// ── Components ────────────────────────────────────────────────────────────────
+import Input from "../../components/ui/Input.jsx";
+import PasswordInput from "../../components/ui/PasswordInput.jsx";
+import Button from "../../components/ui/Button.jsx";
+import { Alert } from "../../components/ui/Alert.jsx";
+import { Spinner } from "../../components/ui/Spinner.jsx";
 
-// ── Password strength ────────────────────────────────────────────────────────
-function getStrength(pw) {
-  if (!pw) return { score: 0, label: "", color: "" };
-  let score = 0;
-  if (pw.length >= 8)          score++;
-  if (/[A-Z]/.test(pw))        score++;
-  if (/[0-9]/.test(pw))        score++;
-  if (/[^A-Za-z0-9]/.test(pw)) score++;
-  const map = [
-    { label: "",         color: "" },
-    { label: "Weak",     color: "#EF4444" },
-    { label: "Fair",     color: "#F59E0B" },
-    { label: "Good",     color: "#3B82F6" },
-    { label: "Strong",   color: "#10B981" },
-  ];
-  return { score, ...map[score] };
+// ── Store / hooks ─────────────────────────────────────────────────────────────
+import { useToast } from "../../hooks/useNotifications.js";
+
+// ── API ───────────────────────────────────────────────────────────────────────
+import { fetchInviteByToken } from "../../lib/api/profile.js";
+import { acceptInvite } from "../../lib/api/auth.js";
+
+// ── Validators ────────────────────────────────────────────────────────────────
+import {
+  validatePassword,
+  validatePasswordMatch,
+  validateFullName,
+} from "../../lib/validators.js";
+
+// ── Config ────────────────────────────────────────────────────────────────────
+import { ROLE_HOME } from "../../config/constants.js";
+
+// =============================================================================
+// AcceptInvitePage  /invite/:token
+//
+// Three-state flow:
+//   loading      — validating token against Supabase
+//   invalid      — token not found or malformed
+//   expired      — token found but past expiry
+//   valid step 1 — review invite details + accept/decline
+//   valid step 2 — set full name + password
+//   success      — account created, redirect prompt
+// =============================================================================
+
+const MANAGER_PERMISSIONS = [
+  "Manage all rooms, buildings, and floors",
+  "Approve or reject rental requests",
+  "Record payments and generate invoices",
+  "Move residents in and out",
+  "Manage workforce and payroll",
+  "Handle complaints and announcements",
+];
+
+function LeftContent({ tenantName }) {
+  return (
+    <>
+      <p
+        style={{
+          fontSize: 11,
+          fontWeight: 700,
+          color: "rgba(255,255,255,0.45)",
+          letterSpacing: "0.12em",
+          textTransform: "uppercase",
+          marginBottom: 24,
+        }}
+      >
+        fabrentals
+      </p>
+      <h2
+        style={{
+          fontFamily: "'Playfair Display',serif",
+          fontWeight: 900,
+          fontSize: "clamp(28px,3.5vw,44px)",
+          color: "#fff",
+          lineHeight: 1.15,
+          marginBottom: 16,
+        }}
+      >
+        You've been invited to join
+      </h2>
+      {tenantName && (
+        <div
+          style={{
+            display: "inline-flex",
+            alignItems: "center",
+            gap: 8,
+            background: "rgba(197,97,44,0.20)",
+            border: "1px solid rgba(197,97,44,0.40)",
+            borderRadius: 999,
+            padding: "8px 18px",
+            marginBottom: 28,
+          }}
+        >
+          <svg
+            width="15"
+            height="15"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="#C5612C"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <path d="M3 9.5L12 3l9 6.5V20a1 1 0 01-1 1H4a1 1 0 01-1-1V9.5z M9 21V12h6v9" />
+          </svg>
+          <span style={{ fontSize: 14, fontWeight: 700, color: "#fff" }}>
+            {tenantName}
+          </span>
+        </div>
+      )}
+      <p
+        style={{
+          fontSize: 14,
+          color: "rgba(255,255,255,0.55)",
+          fontWeight: 300,
+          lineHeight: 1.7,
+          marginBottom: 36,
+          maxWidth: 340,
+        }}
+      >
+        Accept this invitation to start managing properties on fabrentals as a
+        Property Manager.
+      </p>
+      {/* Orbital graphic */}
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          marginTop: 16,
+        }}
+      >
+        <div
+          style={{
+            position: "relative",
+            width: 160,
+            height: 160,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+        >
+          {[1, 2, 3].map((i) => (
+            <div
+              key={i}
+              style={{
+                position: "absolute",
+                width: i * 52,
+                height: i * 52,
+                borderRadius: "50%",
+                border: "1px solid rgba(255,255,255,0.10)",
+              }}
+            />
+          ))}
+          <div
+            style={{
+              width: 64,
+              height: 64,
+              borderRadius: 18,
+              background: "#C5612C",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              boxShadow: "0 0 32px rgba(197,97,44,0.45)",
+              position: "relative",
+              zIndex: 1,
+            }}
+          >
+            <svg
+              width="30"
+              height="30"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="white"
+              strokeWidth="1.5"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75M9 11a4 4 0 100-8 4 4 0 000 8z" />
+            </svg>
+          </div>
+        </div>
+      </div>
+    </>
+  );
 }
 
-// ── Main ─────────────────────────────────────────────────────────────────────
 export default function AcceptInvitePage() {
   const { token } = useParams();
-  const navigate  = useNavigate();
+  const navigate = useNavigate();
+  const toast = useToast();
 
-  // Simulate token lookup
-  const invite = MOCK_INVITES[token] || null;
-  const tokenState = !invite ? "invalid" : invite.expired ? "expired" : "valid";
+  const [tokenState, setTokenState] = useState("loading"); // loading | invalid | expired | valid
+  const [invite, setInvite] = useState(null);
+  const [step, setStep] = useState(1); // 1=review, 2=set password, 3=success
 
-  const [step, setStep]               = useState(1); // 1=review, 2=set password, 3=success
-  const [form, setForm]               = useState({ fullName: "", password: "", confirm: "" });
-  const [showPw, setShowPw]           = useState(false);
-  const [showConfirm, setShowConfirm] = useState(false);
-  const [errors, setErrors]           = useState({});
-  const [loading, setLoading]         = useState(false);
+  const [form, setForm] = useState({ fullName: "", password: "", confirm: "" });
+  const [errors, setErrors] = useState({});
+  const [apiError, setApiError] = useState(null);
+  const [loading, setLoading] = useState(false);
 
-  const strength = getStrength(form.password);
-
-  const update = (k, v) => {
-    setForm(p => ({ ...p, [k]: v }));
-    setErrors(e => ({ ...e, [k]: "" }));
+  const set = (k, v) => {
+    setForm((p) => ({ ...p, [k]: v }));
+    setErrors((e) => ({ ...e, [k]: null }));
   };
 
-  const validateStep2 = () => {
+  // Validate token on mount
+  useEffect(() => {
+    if (!token) {
+      setTokenState("invalid");
+      return;
+    }
+    fetchInviteByToken(token)
+      .then(({ data, error }) => {
+        if (error || !data) {
+          setTokenState("invalid");
+          return;
+        }
+        if (data.accepted_at) {
+          setTokenState("accepted");
+          return;
+        }
+        if (new Date(data.expires_at) < new Date()) {
+          setTokenState("expired");
+          return;
+        }
+        setInvite(data);
+        setTokenState("valid");
+      })
+      .catch(() => setTokenState("invalid"));
+  }, [token]);
+
+  const validate = () => {
     const e = {};
-    if (!form.fullName.trim())        e.fullName = "Your full name is required";
-    if (!form.password)               e.password = "Password is required";
-    else if (form.password.length < 8) e.password = "Minimum 8 characters";
-    else if (strength.score < 2)      e.password = "Please choose a stronger password";
-    if (form.confirm !== form.password) e.confirm = "Passwords do not match";
+    const nameV = validateFullName(form.fullName);
+    if (!nameV.valid) e.fullName = nameV.message;
+    const pwV = validatePassword(form.password);
+    if (!pwV.valid) e.password = "Password must be at least 8 characters";
+    if (pwV.strength < 2) e.password = "Please choose a stronger password";
+    const matchV = validatePasswordMatch(form.password, form.confirm);
+    if (!matchV.valid) e.confirm = matchV.message;
     setErrors(e);
     return Object.keys(e).length === 0;
   };
 
   const handleAccept = async () => {
-    if (!validateStep2()) return;
+    if (!validate()) return;
+    setApiError(null);
     setLoading(true);
-    await new Promise(r => setTimeout(r, 1800));
-    setLoading(false);
-    setStep(3);
+    try {
+      const { data, error } = await acceptInvite({
+        token,
+        email: invite.email,
+        fullName: form.fullName.trim(),
+        password: form.password,
+      });
+      if (error) throw new Error(error.message);
+      setStep(3);
+    } catch (e) {
+      setApiError(e.message ?? "Something went wrong. Please try again.");
+    } finally {
+      setLoading(false);
+    }
   };
 
-  // ── Decorative left panel ─────────────────────────────────────────────────
-  const LeftPanel = () => (
-    <div className="hidden lg:flex lg:w-[45%] flex-col justify-between p-12 relative overflow-hidden"
-      style={{ background: "linear-gradient(160deg, #1A1412 0%, #2D1E16 50%, #3D2415 100%)" }}>
-      {/* Grid pattern */}
-      <div className="absolute inset-0 opacity-10">
-        <svg className="w-full h-full">
-          <defs>
-            <pattern id="grid" x="0" y="0" width="40" height="40" patternUnits="userSpaceOnUse">
-              <path d="M40 0L0 0 0 40" fill="none" stroke="white" strokeWidth="0.5"/>
-            </pattern>
-          </defs>
-          <rect width="100%" height="100%" fill="url(#grid)"/>
-        </svg>
-      </div>
-
-      {/* Logo */}
-      <div className="relative flex items-center gap-3">
-        <div className="w-9 h-9 rounded-xl bg-[#C5612C] flex items-center justify-center">
-          <svg viewBox="0 0 24 24" fill="white" className="w-5 h-5">
-            <path d="M3 9.5L12 3l9 6.5V20a1 1 0 01-1 1H4a1 1 0 01-1-1V9.5z"/>
-            <path d="M9 21V12h6v9" fill="white" opacity="0.6"/>
-          </svg>
+  // ── Loading ──────────────────────────────────────────────────────────────
+  if (tokenState === "loading") {
+    return (
+      <AuthLayout
+        heading={"Validating\nyour invite…"}
+        subheading="Just a moment."
+        showBackLink={false}
+      >
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: "60px 0",
+            gap: 16,
+          }}
+        >
+          <Spinner size="lg" />
+          <p style={{ fontSize: 14, color: "#8B7355" }}>
+            Checking your invitation…
+          </p>
         </div>
-        <span className="font-display text-xl font-bold text-white">
-          fab<span className="text-[#C5612C]">rentals</span>
-        </span>
-      </div>
+      </AuthLayout>
+    );
+  }
 
-      {/* Centre graphic */}
-      <div className="relative flex-1 flex flex-col items-center justify-center py-12">
-        {/* Orbital rings */}
-        <div className="relative w-56 h-56 flex items-center justify-center">
-          {[1,2,3].map(i => (
-            <div key={i} className="absolute rounded-full border border-white/10"
-              style={{ width: `${i*70}px`, height: `${i*70}px` }} />
-          ))}
-          {/* Centre icon */}
-          <div className="w-20 h-20 rounded-2xl bg-[#C5612C] flex items-center justify-center shadow-2xl"
-            style={{ boxShadow: "0 0 40px rgba(197,97,44,0.4)" }}>
-            <svg viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth={1.5} className="w-10 h-10">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/>
+  // ── Invalid token ────────────────────────────────────────────────────────
+  if (tokenState === "invalid") {
+    return (
+      <AuthLayout
+        heading={"Invalid\nInvite Link"}
+        subheading="This link is invalid or has already been used."
+      >
+        <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+          <div
+            style={{
+              width: 64,
+              height: 64,
+              borderRadius: 20,
+              background: "#FEF2F2",
+              border: "2px solid #FECACA",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              margin: "0 auto",
+            }}
+          >
+            <svg
+              width="28"
+              height="28"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="#DC2626"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <circle cx="12" cy="12" r="10" />
+              <line x1="15" y1="9" x2="9" y2="15" />
+              <line x1="9" y1="9" x2="15" y2="15" />
             </svg>
           </div>
-          {/* Orbit dots */}
-          {[0, 90, 180, 270].map((deg, i) => (
-            <div key={i} className="absolute w-3 h-3 rounded-full bg-[#C5612C]/60"
-              style={{
-                transform: `rotate(${deg}deg) translateX(90px)`,
-                animation: `orbit${i} ${6+i}s linear infinite`,
-              }} />
-          ))}
-        </div>
-
-        <div className="text-center mt-8">
-          <p className="font-display font-black text-white text-3xl leading-tight">
-            You've been<br/>invited to join
+          <h2
+            style={{
+              fontFamily: "'Playfair Display',serif",
+              fontWeight: 900,
+              fontSize: 26,
+              color: "#1A1412",
+              textAlign: "center",
+              margin: 0,
+            }}
+          >
+            Link not found
+          </h2>
+          <p
+            style={{
+              fontSize: 14,
+              color: "#5C4A3A",
+              textAlign: "center",
+              lineHeight: 1.65,
+              margin: 0,
+            }}
+          >
+            This invite link is invalid or has already been used. Contact the
+            person who invited you to request a new one.
           </p>
-          {invite && tokenState === "valid" && (
-            <div className="mt-4 inline-flex items-center gap-2 bg-white/10 border border-white/20 rounded-full px-4 py-2">
-              <BuildingIcon />
-              <span className="text-white font-semibold text-sm">{invite.tenantName}</span>
-            </div>
-          )}
-          <p className="text-white/50 text-sm mt-3 leading-relaxed">
-            Accept this invitation to start<br/>managing properties on fabrentals
-          </p>
+          <Button
+            variant="primary"
+            fullWidth
+            onClick={() => navigate("/login")}
+          >
+            Go to Sign In
+          </Button>
         </div>
-      </div>
+      </AuthLayout>
+    );
+  }
 
-      {/* Bottom quote */}
-      <div className="relative border-t border-white/10 pt-6">
-        <p className="text-white/60 text-sm italic leading-relaxed">
-          "The best managers use the best tools. Welcome to a platform built for Kenya's rental market."
-        </p>
-      </div>
+  // ── Expired token ────────────────────────────────────────────────────────
+  if (tokenState === "expired") {
+    return (
+      <AuthLayout
+        heading={"Invite\nExpired"}
+        subheading="This invitation link has expired."
+      >
+        <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+          <div
+            style={{
+              width: 64,
+              height: 64,
+              borderRadius: 20,
+              background: "#FFFBEB",
+              border: "2px solid #FDE68A",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              margin: "0 auto",
+            }}
+          >
+            <svg
+              width="28"
+              height="28"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="#D97706"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <circle cx="12" cy="12" r="10" />
+              <line x1="12" y1="8" x2="12" y2="12" />
+              <line x1="12" y1="16" x2="12.01" y2="16" />
+            </svg>
+          </div>
+          <h2
+            style={{
+              fontFamily: "'Playfair Display',serif",
+              fontWeight: 900,
+              fontSize: 26,
+              color: "#1A1412",
+              textAlign: "center",
+              margin: 0,
+            }}
+          >
+            Invite expired
+          </h2>
+          <Alert
+            type="warning"
+            message="Invite links are valid for 48 hours. Please ask the property owner to send you a new invitation."
+          />
+          <Button variant="secondary" fullWidth onClick={() => navigate("/")}>
+            Back to Home
+          </Button>
+        </div>
+      </AuthLayout>
+    );
+  }
 
-      <style>{`
-        @keyframes orbit0 { from{transform:rotate(0deg) translateX(90px)}   to{transform:rotate(360deg) translateX(90px)} }
-        @keyframes orbit1 { from{transform:rotate(90deg) translateX(90px)}  to{transform:rotate(450deg) translateX(90px)} }
-        @keyframes orbit2 { from{transform:rotate(180deg) translateX(90px)} to{transform:rotate(540deg) translateX(90px)} }
-        @keyframes orbit3 { from{transform:rotate(270deg) translateX(90px)} to{transform:rotate(630deg) translateX(90px)} }
-      `}</style>
-    </div>
-  );
+  // ── Already accepted ─────────────────────────────────────────────────────
+  if (tokenState === "accepted") {
+    return (
+      <AuthLayout
+        heading={"Already\nAccepted"}
+        subheading="This invitation has already been used."
+      >
+        <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+          <Alert
+            type="info"
+            message="This invite has already been accepted. Sign in with the account you created."
+          />
+          <Button
+            variant="primary"
+            fullWidth
+            onClick={() => navigate("/login")}
+          >
+            Sign In
+          </Button>
+        </div>
+      </AuthLayout>
+    );
+  }
 
+  // ── Valid token ───────────────────────────────────────────────────────────
   return (
-    <div className="min-h-screen flex" style={{ fontFamily: "'DM Sans', sans-serif", background: "#FAF7F2" }}>
+    <AuthLayout
+      heading={"You've been\ninvited."}
+      subheading={`Join ${invite?.tenants?.name ?? "a property"} as a manager.`}
+      leftContent={<LeftContent tenantName={invite?.tenants?.name} />}
+      leftBg="linear-gradient(160deg,#1A1412 0%,#2D1E16 50%,#3D2415 100%)"
+    >
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Sans:wght@300;400;500;600&display=swap');
-        .font-display { font-family: 'Playfair Display', serif; }
-        .input-field {
-          width: 100%; padding: 14px 16px;
-          border: 1.5px solid #E8DDD4; border-radius: 12px;
-          font-size: 14px; color: #1A1412; background: white; outline: none;
-          transition: border-color 0.2s, box-shadow 0.2s;
-          font-family: 'DM Sans', sans-serif;
-        }
-        .input-field:focus { border-color: #C5612C; box-shadow: 0 0 0 3px rgba(197,97,44,0.1); }
-        .input-field.error { border-color: #EF4444; box-shadow: 0 0 0 3px rgba(239,68,68,0.08); }
-        @keyframes fadeUp { from{opacity:0;transform:translateY(20px)} to{opacity:1;transform:translateY(0)} }
-        .fade-up { animation: fadeUp 0.5s ease forwards; }
-        .s1{animation-delay:.05s;opacity:0} .s2{animation-delay:.12s;opacity:0}
-        .s3{animation-delay:.19s;opacity:0} .s4{animation-delay:.26s;opacity:0}
-        .s5{animation-delay:.33s;opacity:0}
+        @keyframes slideIn{from{opacity:0;transform:translateX(16px)}to{opacity:1;transform:translateX(0)}}
+        .slide-in{animation:slideIn 0.3s ease both}
       `}</style>
 
-      <LeftPanel />
-
-      {/* ── Right: Form ── */}
-      <div className="flex-1 flex flex-col justify-center px-6 sm:px-12 lg:px-16 py-12 overflow-y-auto">
-        <div className="w-full max-w-md mx-auto">
-
-          {/* Mobile logo */}
-          <div className="lg:hidden flex items-center gap-2 mb-8">
-            <div className="w-8 h-8 rounded-lg bg-[#C5612C] flex items-center justify-center">
-              <svg viewBox="0 0 24 24" fill="white" className="w-5 h-5">
-                <path d="M3 9.5L12 3l9 6.5V20a1 1 0 01-1 1H4a1 1 0 01-1-1V9.5z"/>
-              </svg>
-            </div>
-            <span className="font-display text-xl font-bold text-[#1A1412]">
-              fab<span className="text-[#C5612C]">rentals</span>
-            </span>
+      {/* ── Step 1: Review invitation ── */}
+      {step === 1 && (
+        <div
+          className="slide-in"
+          style={{ display: "flex", flexDirection: "column", gap: 20 }}
+        >
+          <div>
+            <p
+              style={{
+                fontSize: 11,
+                fontWeight: 700,
+                color: "#C5612C",
+                textTransform: "uppercase",
+                letterSpacing: "0.1em",
+                marginBottom: 8,
+              }}
+            >
+              Invitation
+            </p>
+            <h1
+              style={{
+                fontFamily: "'Playfair Display',serif",
+                fontWeight: 900,
+                fontSize: 28,
+                color: "#1A1412",
+                marginBottom: 6,
+              }}
+            >
+              Join {invite?.tenants?.name}
+            </h1>
+            <p
+              style={{
+                fontSize: 14,
+                color: "#8B7355",
+                lineHeight: 1.6,
+                margin: 0,
+              }}
+            >
+              {invite?.invited_by_profile?.full_name ?? "Someone"} has invited
+              you to manage{" "}
+              <strong style={{ color: "#1A1412" }}>
+                {invite?.tenants?.name}
+              </strong>{" "}
+              as a Property Manager.
+            </p>
           </div>
 
-          {/* ── Invalid token ── */}
-          {tokenState === "invalid" && (
-            <div className="fade-up text-center">
-              <div className="w-16 h-16 rounded-2xl bg-red-50 flex items-center justify-center mx-auto mb-5 text-red-500">
-                <AlertIcon />
+          {/* Invite details */}
+          <div
+            style={{
+              background: "#FAF7F2",
+              border: "1px solid #EDE4D8",
+              borderRadius: 14,
+              padding: "16px 18px",
+              display: "flex",
+              flexDirection: "column",
+              gap: 10,
+            }}
+          >
+            {[
+              ["Invited email", invite?.email],
+              ["Property", invite?.tenants?.name],
+              [
+                "Invited by",
+                invite?.invited_by_profile?.full_name ?? "Property Owner",
+              ],
+              ["Role", "Property Manager"],
+            ].map(([k, v]) => (
+              <div
+                key={k}
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                }}
+              >
+                <span style={{ fontSize: 12, color: "#8B7355" }}>{k}</span>
+                <span
+                  style={{ fontSize: 13, fontWeight: 600, color: "#1A1412" }}
+                >
+                  {v ?? "—"}
+                </span>
               </div>
-              <h1 className="font-display font-black text-[#1A1412] text-3xl mb-2">Invalid Link</h1>
-              <p className="text-[#8B7355] text-sm leading-relaxed mb-6">
-                This invitation link is invalid or has already been used. Please ask the property owner to send a new invite.
-              </p>
-              <button onClick={() => navigate("/login")}
-                className="w-full bg-[#1A1412] text-white font-semibold py-4 rounded-full hover:bg-[#2D1E16] transition-colors">
-                Go to Sign In
-              </button>
+            ))}
+          </div>
+
+          {/* Permissions */}
+          <div>
+            <p
+              style={{
+                fontSize: 12,
+                fontWeight: 700,
+                color: "#1A1412",
+                marginBottom: 10,
+              }}
+            >
+              As a manager you can:
+            </p>
+            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+              {MANAGER_PERMISSIONS.map((p, i) => (
+                <div
+                  key={i}
+                  style={{ display: "flex", alignItems: "flex-start", gap: 8 }}
+                >
+                  <svg
+                    width="14"
+                    height="14"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="#10B981"
+                    strokeWidth="2.5"
+                    strokeLinecap="round"
+                    style={{ flexShrink: 0, marginTop: 2 }}
+                  >
+                    <polyline points="20 6 9 17 4 12" />
+                  </svg>
+                  <span style={{ fontSize: 13, color: "#5C4A3A" }}>{p}</span>
+                </div>
+              ))}
             </div>
-          )}
+          </div>
 
-          {/* ── Expired token ── */}
-          {tokenState === "expired" && (
-            <div className="fade-up text-center">
-              <div className="w-16 h-16 rounded-2xl bg-amber-50 flex items-center justify-center mx-auto mb-5 text-amber-500">
-                <AlertIcon />
-              </div>
-              <h1 className="font-display font-black text-[#1A1412] text-3xl mb-2">Link Expired</h1>
-              <p className="text-[#8B7355] text-sm leading-relaxed mb-2">
-                This invitation link expired after 48 hours.
-              </p>
-              <p className="text-[#8B7355] text-sm mb-6">
-                It was sent by <span className="font-medium text-[#1A1412]">{invite.invitedBy}</span> for{" "}
-                <span className="font-medium text-[#1A1412]">{invite.tenantName}</span>.
-              </p>
-              <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 mb-6 text-left">
-                <p className="text-sm text-amber-800 font-medium mb-1">What to do next</p>
-                <p className="text-xs text-amber-700">Contact the property owner and ask them to re-send your manager invitation from their fabrentals dashboard.</p>
-              </div>
-              <button onClick={() => navigate("/login")}
-                className="w-full bg-[#1A1412] text-white font-semibold py-4 rounded-full hover:bg-[#2D1E16] transition-colors">
-                Go to Sign In
-              </button>
-            </div>
-          )}
+          <div style={{ display: "flex", gap: 10 }}>
+            <Button variant="secondary" onClick={() => navigate("/")}>
+              Decline
+            </Button>
+            <Button variant="primary" fullWidth onClick={() => setStep(2)}>
+              Accept & Set Up Account →
+            </Button>
+          </div>
 
-          {/* ── Valid token: Step 1 — Review invite ── */}
-          {tokenState === "valid" && step === 1 && (
-            <div>
-              <div className="fade-up s1 mb-7">
-                <p className="text-xs font-semibold uppercase tracking-widest text-[#C5612C] mb-2">Manager Invitation</p>
-                <h1 className="font-display font-black text-[#1A1412] text-4xl leading-tight">
-                  You're invited!
-                </h1>
-                <p className="text-[#8B7355] text-sm mt-2">
-                  Review the details below, then set up your account to get started.
-                </p>
-              </div>
-
-              {/* Invite card */}
-              <div className="fade-up s2 bg-white rounded-2xl border border-[#E8DDD4] p-5 mb-6"
-                style={{ boxShadow: "0 4px 16px rgba(0,0,0,0.06)" }}>
-                <div className="flex items-start gap-4">
-                  <div className="w-12 h-12 rounded-xl bg-[#C5612C] flex items-center justify-center flex-shrink-0">
-                    <BuildingIcon />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="font-display font-bold text-[#1A1412] text-lg leading-none">{invite.tenantName}</p>
-                    <p className="text-xs text-[#8B7355] mt-1">Invited by <span className="font-medium text-[#5C4A3A]">{invite.invitedBy}</span></p>
-                  </div>
-                  <span className="bg-[#C5612C]/10 text-[#C5612C] text-xs font-bold px-2.5 py-1 rounded-full border border-[#C5612C]/20 flex-shrink-0 capitalize">
-                    {invite.role}
-                  </span>
-                </div>
-
-                <div className="mt-4 pt-4 border-t border-[#F5EDE0] space-y-2">
-                  {[
-                    { label: "Your role",    value: "Property Manager" },
-                    { label: "Sign-in email",value: invite.email },
-                    { label: "Property",     value: invite.tenantName },
-                  ].map(r => (
-                    <div key={r.label} className="flex justify-between text-sm">
-                      <span className="text-[#8B7355]">{r.label}</span>
-                      <span className="font-medium text-[#1A1412] text-right truncate ml-4">{r.value}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* What you'll be able to do */}
-              <div className="fade-up s3 mb-6">
-                <p className="text-xs font-semibold uppercase tracking-wider text-[#8B7355] mb-3">As a manager you can</p>
-                <div className="grid grid-cols-2 gap-2">
-                  {[
-                    "Manage rooms & buildings",
-                    "Approve rental requests",
-                    "Record & track payments",
-                    "Handle resident complaints",
-                    "Manage workers & salaries",
-                    "Send announcements",
-                  ].map(item => (
-                    <div key={item} className="flex items-start gap-2 bg-white rounded-xl border border-[#E8DDD4] p-3">
-                      <div className="w-4 h-4 rounded-full bg-emerald-100 flex items-center justify-center flex-shrink-0 mt-0.5 text-emerald-600">
-                        <CheckIcon />
-                      </div>
-                      <p className="text-xs text-[#5C4A3A] leading-snug">{item}</p>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              <div className="fade-up s4 flex gap-3">
-                <button onClick={() => navigate("/")}
-                  className="flex-1 border border-[#E8DDD4] rounded-full py-3.5 text-sm font-medium text-[#5C4A3A] hover:border-[#C5612C] transition-colors">
-                  Decline
-                </button>
-                <button onClick={() => setStep(2)}
-                  className="flex-[2] bg-[#C5612C] text-white font-semibold py-3.5 rounded-full hover:bg-[#A84E22] transition-colors shadow-sm">
-                  Accept & Set Up Account →
-                </button>
-              </div>
-
-              <p className="fade-up s5 text-xs text-center text-[#8B7355] mt-4">
-                By accepting, you agree to fabrentals'{" "}
-                <a href="#" className="text-[#C5612C] hover:underline">Terms of Service</a>
-              </p>
-            </div>
-          )}
-
-          {/* ── Valid token: Step 2 — Set password ── */}
-          {tokenState === "valid" && step === 2 && (
-            <div>
-              <button onClick={() => setStep(1)} className="fade-up flex items-center gap-1.5 text-sm text-[#8B7355] hover:text-[#C5612C] mb-6 transition-colors">
-                <svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M19 12H5M12 19l-7-7 7-7"/>
-                </svg>
-                Back
-              </button>
-
-              <div className="fade-up s1 mb-7">
-                <p className="text-xs font-semibold uppercase tracking-widest text-[#C5612C] mb-2">Almost there</p>
-                <h1 className="font-display font-black text-[#1A1412] text-4xl leading-tight">Set your password</h1>
-                <p className="text-[#8B7355] text-sm mt-2">
-                  You'll sign in as <span className="font-medium text-[#1A1412]">{invite.email}</span>
-                </p>
-              </div>
-
-              <div className="space-y-4">
-                {/* Full name */}
-                <div className="fade-up s2">
-                  <label className="block text-xs font-semibold uppercase tracking-wider text-[#1A1412] mb-1.5">Full Name</label>
-                  <input
-                    className={`input-field ${errors.fullName ? "error" : ""}`}
-                    placeholder="e.g. Michael Kamau"
-                    value={form.fullName}
-                    onChange={e => update("fullName", e.target.value)}
-                  />
-                  {errors.fullName && <p className="text-xs text-red-500 mt-1">{errors.fullName}</p>}
-                </div>
-
-                {/* Password */}
-                <div className="fade-up s3">
-                  <label className="block text-xs font-semibold uppercase tracking-wider text-[#1A1412] mb-1.5">Password</label>
-                  <div className="relative">
-                    <input
-                      type={showPw ? "text" : "password"}
-                      className={`input-field pr-11 ${errors.password ? "error" : ""}`}
-                      placeholder="Create a strong password"
-                      value={form.password}
-                      onChange={e => update("password", e.target.value)}
-                    />
-                    <button type="button" onClick={() => setShowPw(v => !v)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-[#8B7355] hover:text-[#1A1412] transition-colors p-1">
-                      {showPw ? <EyeOffIcon /> : <EyeIcon />}
-                    </button>
-                  </div>
-                  {/* Strength bar */}
-                  {form.password && (
-                    <div className="mt-2">
-                      <div className="flex gap-1 mb-1">
-                        {[1,2,3,4].map(i => (
-                          <div key={i} className="flex-1 h-1 rounded-full transition-all duration-300"
-                            style={{ background: i <= strength.score ? strength.color : "#E8DDD4" }} />
-                        ))}
-                      </div>
-                      <p className="text-xs font-medium" style={{ color: strength.color }}>{strength.label}</p>
-                    </div>
-                  )}
-                  {errors.password && <p className="text-xs text-red-500 mt-1">{errors.password}</p>}
-                </div>
-
-                {/* Confirm */}
-                <div className="fade-up s4">
-                  <label className="block text-xs font-semibold uppercase tracking-wider text-[#1A1412] mb-1.5">Confirm Password</label>
-                  <div className="relative">
-                    <input
-                      type={showConfirm ? "text" : "password"}
-                      className={`input-field pr-11 ${errors.confirm ? "error" : ""}`}
-                      placeholder="Repeat your password"
-                      value={form.confirm}
-                      onChange={e => update("confirm", e.target.value)}
-                    />
-                    <button type="button" onClick={() => setShowConfirm(v => !v)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-[#8B7355] hover:text-[#1A1412] transition-colors p-1">
-                      {showConfirm ? <EyeOffIcon /> : <EyeIcon />}
-                    </button>
-                    {form.confirm && form.confirm === form.password && (
-                      <span className="absolute right-10 top-1/2 -translate-y-1/2 text-emerald-500">
-                        <CheckIcon />
-                      </span>
-                    )}
-                  </div>
-                  {errors.confirm && <p className="text-xs text-red-500 mt-1">{errors.confirm}</p>}
-                </div>
-
-                <button onClick={handleAccept} disabled={loading}
-                  className="fade-up s5 w-full bg-[#C5612C] text-white font-semibold py-4 rounded-full hover:bg-[#A84E22] transition-colors shadow-sm disabled:opacity-70 flex items-center justify-center gap-2">
-                  {loading ? (
-                    <>
-                      <div className="w-4 h-4 rounded-full border-2 border-white/30 border-t-white animate-spin" />
-                      Creating your account…
-                    </>
-                  ) : (
-                    "Create Account & Join →"
-                  )}
-                </button>
-              </div>
-            </div>
-          )}
-
-          {/* ── Step 3 — Success ── */}
-          {tokenState === "valid" && step === 3 && (
-            <div className="fade-up text-center">
-              <div className="w-20 h-20 bg-emerald-100 rounded-2xl flex items-center justify-center mx-auto mb-5">
-                <svg className="w-10 h-10 text-emerald-600" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7"/>
-                </svg>
-              </div>
-              <h1 className="font-display font-black text-[#1A1412] text-3xl mb-2">Welcome aboard!</h1>
-              <p className="text-[#8B7355] text-sm mb-1">
-                Your manager account for
-              </p>
-              <p className="font-semibold text-[#1A1412] mb-5">{invite?.tenantName}</p>
-
-              <div className="bg-white rounded-2xl border border-[#E8DDD4] p-4 mb-6 text-left space-y-2">
-                {[
-                  { label: "Name",     value: form.fullName },
-                  { label: "Email",    value: invite?.email },
-                  { label: "Role",     value: "Property Manager" },
-                  { label: "Property", value: invite?.tenantName },
-                ].map(r => (
-                  <div key={r.label} className="flex justify-between text-sm">
-                    <span className="text-[#8B7355]">{r.label}</span>
-                    <span className="font-medium text-[#1A1412]">{r.value}</span>
-                  </div>
-                ))}
-              </div>
-
-              <button onClick={() => navigate("/manage")}
-                className="w-full bg-[#C5612C] text-white font-semibold py-4 rounded-full hover:bg-[#A84E22] transition-colors shadow-sm">
-                Go to Manager Dashboard →
-              </button>
-            </div>
-          )}
+          <p
+            style={{
+              fontSize: 11,
+              color: "#8B7355",
+              textAlign: "center",
+              margin: 0,
+            }}
+          >
+            By accepting you agree to fabrentals'{" "}
+            <a
+              href="#"
+              style={{
+                color: "#C5612C",
+                textDecoration: "none",
+                fontWeight: 600,
+              }}
+            >
+              Terms of Service
+            </a>
+          </p>
         </div>
-      </div>
-    </div>
+      )}
+
+      {/* ── Step 2: Set password ── */}
+      {step === 2 && (
+        <div
+          className="slide-in"
+          style={{ display: "flex", flexDirection: "column", gap: 18 }}
+        >
+          <button
+            onClick={() => setStep(1)}
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 6,
+              fontSize: 13,
+              color: "#8B7355",
+              background: "none",
+              border: "none",
+              cursor: "pointer",
+              padding: 0,
+              marginBottom: 4,
+              transition: "color 0.15s",
+            }}
+            onMouseOver={(e) => (e.currentTarget.style.color = "#C5612C")}
+            onMouseOut={(e) => (e.currentTarget.style.color = "#8B7355")}
+          >
+            <svg
+              width="15"
+              height="15"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+            >
+              <path d="M19 12H5M12 19l-7-7 7-7" />
+            </svg>
+            Back
+          </button>
+
+          <div>
+            <p
+              style={{
+                fontSize: 11,
+                fontWeight: 700,
+                color: "#C5612C",
+                textTransform: "uppercase",
+                letterSpacing: "0.1em",
+                marginBottom: 6,
+              }}
+            >
+              Almost there
+            </p>
+            <h1
+              style={{
+                fontFamily: "'Playfair Display',serif",
+                fontWeight: 900,
+                fontSize: 28,
+                color: "#1A1412",
+                marginBottom: 6,
+              }}
+            >
+              Set up your account
+            </h1>
+            <p style={{ fontSize: 14, color: "#8B7355", margin: 0 }}>
+              You'll sign in as{" "}
+              <strong style={{ color: "#1A1412" }}>{invite?.email}</strong>
+            </p>
+          </div>
+
+          {apiError && <Alert type="error" message={apiError} />}
+
+          <Input
+            label="Full Name"
+            required
+            placeholder="e.g. Michael Kamau"
+            value={form.fullName}
+            onChange={(e) => set("fullName", e.target.value)}
+            error={errors.fullName}
+          />
+
+          <PasswordInput
+            label="Password"
+            required
+            showStrength
+            value={form.password}
+            onChange={(e) => set("password", e.target.value)}
+            error={errors.password}
+          />
+
+          <PasswordInput
+            label="Confirm Password"
+            required
+            value={form.confirm}
+            onChange={(e) => set("confirm", e.target.value)}
+            error={errors.confirm}
+          />
+
+          <Button
+            variant="primary"
+            fullWidth
+            loading={loading}
+            onClick={handleAccept}
+          >
+            Create Account & Join →
+          </Button>
+        </div>
+      )}
+
+      {/* ── Step 3: Success ── */}
+      {step === 3 && (
+        <div
+          className="slide-in"
+          style={{
+            textAlign: "center",
+            display: "flex",
+            flexDirection: "column",
+            gap: 20,
+          }}
+        >
+          <div
+            style={{
+              width: 72,
+              height: 72,
+              borderRadius: 20,
+              background: "#ECFDF5",
+              border: "2px solid #10B981",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              margin: "0 auto",
+            }}
+          >
+            <svg
+              width="32"
+              height="32"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="#10B981"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <path d="M22 11.08V12a10 10 0 11-5.93-9.14" />
+              <polyline points="22 4 12 14.01 9 11.01" />
+            </svg>
+          </div>
+
+          <div>
+            <h1
+              style={{
+                fontFamily: "'Playfair Display',serif",
+                fontWeight: 900,
+                fontSize: 28,
+                color: "#1A1412",
+                marginBottom: 8,
+              }}
+            >
+              Welcome aboard!
+            </h1>
+            <p
+              style={{
+                fontSize: 14,
+                color: "#5C4A3A",
+                lineHeight: 1.65,
+                margin: 0,
+              }}
+            >
+              Your manager account for <strong>{invite?.tenants?.name}</strong>{" "}
+              is ready.
+            </p>
+          </div>
+
+          {/* Summary */}
+          <div
+            style={{
+              background: "#FAF7F2",
+              border: "1px solid #EDE4D8",
+              borderRadius: 14,
+              padding: "16px 18px",
+              display: "flex",
+              flexDirection: "column",
+              gap: 10,
+              textAlign: "left",
+            }}
+          >
+            {[
+              ["Name", form.fullName],
+              ["Email", invite?.email],
+              ["Role", "Property Manager"],
+              ["Property", invite?.tenants?.name],
+            ].map(([k, v]) => (
+              <div
+                key={k}
+                style={{ display: "flex", justifyContent: "space-between" }}
+              >
+                <span style={{ fontSize: 12, color: "#8B7355" }}>{k}</span>
+                <span
+                  style={{ fontSize: 13, fontWeight: 600, color: "#1A1412" }}
+                >
+                  {v ?? "—"}
+                </span>
+              </div>
+            ))}
+          </div>
+
+          <Button
+            variant="primary"
+            fullWidth
+            onClick={() => navigate("/manage", { replace: true })}
+          >
+            Go to Manager Dashboard →
+          </Button>
+        </div>
+      )}
+    </AuthLayout>
   );
 }
