@@ -1,6 +1,13 @@
 import {
-  BarChart, Bar, XAxis, YAxis, CartesianGrid,
-  Tooltip, Legend, ResponsiveContainer, ReferenceLine,
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  ResponsiveContainer,
+  ReferenceLine,
 } from "recharts";
 
 // =============================================================================
@@ -26,24 +33,45 @@ import {
 function DarkTooltip({ active, payload, label, currency = "KES" }) {
   if (!active || !payload?.length) return null;
   return (
-    <div style={{
-      background:   "#1A1412",
-      border:       "1px solid rgba(255,255,255,0.10)",
-      borderRadius: 12,
-      padding:      "10px 14px",
-      fontSize:     12,
-      fontFamily:   "'DM Sans', system-ui, sans-serif",
-      boxShadow:    "0 8px 24px rgba(0,0,0,0.30)",
-      minWidth:     160,
-    }}>
-      <p style={{ color: "rgba(255,255,255,0.55)", marginBottom: 6, fontWeight: 600 }}>{label}</p>
-      {payload.map(p => (
-        <p key={p.name} style={{ color: p.color, margin: "3px 0", fontWeight: 600 }}>
+    <div
+      style={{
+        background: "#1A1412",
+        border: "1px solid rgba(255,255,255,0.10)",
+        borderRadius: 12,
+        padding: "10px 14px",
+        fontSize: 12,
+        fontFamily: "'DM Sans', system-ui, sans-serif",
+        boxShadow: "0 8px 24px rgba(0,0,0,0.30)",
+        minWidth: 160,
+      }}
+    >
+      <p
+        style={{
+          color: "rgba(255,255,255,0.55)",
+          marginBottom: 6,
+          fontWeight: 600,
+        }}
+      >
+        {label}
+      </p>
+      {payload.map((p) => (
+        <p
+          key={p.name}
+          style={{ color: p.color, margin: "3px 0", fontWeight: 600 }}
+        >
           {p.name}: {currency} {Number(p.value).toLocaleString("en-KE")}
         </p>
       ))}
       {payload.length === 2 && (
-        <p style={{ color: "rgba(255,255,255,0.35)", marginTop: 6, borderTop: "1px solid rgba(255,255,255,0.08)", paddingTop: 6, fontSize: 11 }}>
+        <p
+          style={{
+            color: "rgba(255,255,255,0.35)",
+            marginTop: 6,
+            borderTop: "1px solid rgba(255,255,255,0.08)",
+            paddingTop: 6,
+            fontSize: 11,
+          }}
+        >
           Collection rate:{" "}
           <span style={{ color: "#10B981", fontWeight: 700 }}>
             {Math.round((payload[1]?.value / payload[0]?.value) * 100) || 0}%
@@ -57,16 +85,16 @@ function DarkTooltip({ active, payload, label, currency = "KES" }) {
 // ── Format big KES numbers on the Y axis ─────────────────────────────────────
 function formatYAxis(val) {
   if (val >= 1_000_000) return `${(val / 1_000_000).toFixed(1)}M`;
-  if (val >= 1_000)     return `${(val / 1_000).toFixed(0)}k`;
+  if (val >= 1_000) return `${(val / 1_000).toFixed(0)}k`;
   return val;
 }
 
 export default function RevenueChart({
-  data        = [],
-  height      = 280,
-  currency    = "KES",
-  showLegend  = true,
-  showGrid    = true,
+  data = [],
+  height = 280,
+  currency = "KES",
+  showLegend = true,
+  showGrid = true,
 }) {
   return (
     <div style={{ width: "100%", height }}>
@@ -87,7 +115,11 @@ export default function RevenueChart({
 
           <XAxis
             dataKey="month"
-            tick={{ fontSize: 11, fill: "#8B7355", fontFamily: "'DM Sans', system-ui" }}
+            tick={{
+              fontSize: 11,
+              fill: "#8B7355",
+              fontFamily: "'DM Sans', system-ui",
+            }}
             axisLine={false}
             tickLine={false}
             dy={6}
@@ -95,7 +127,11 @@ export default function RevenueChart({
 
           <YAxis
             tickFormatter={formatYAxis}
-            tick={{ fontSize: 11, fill: "#8B7355", fontFamily: "'DM Sans', system-ui" }}
+            tick={{
+              fontSize: 11,
+              fill: "#8B7355",
+              fontFamily: "'DM Sans', system-ui",
+            }}
             axisLine={false}
             tickLine={false}
             width={44}
@@ -108,7 +144,12 @@ export default function RevenueChart({
 
           {showLegend && (
             <Legend
-              wrapperStyle={{ fontSize: 12, color: "#5C4A3A", fontFamily: "'DM Sans', system-ui", paddingTop: 10 }}
+              wrapperStyle={{
+                fontSize: 12,
+                color: "#5C4A3A",
+                fontFamily: "'DM Sans', system-ui",
+                paddingTop: 10,
+              }}
               iconType="circle"
               iconSize={8}
             />
@@ -136,3 +177,5 @@ export default function RevenueChart({
     </div>
   );
 }
+
+export { RevenueChart };

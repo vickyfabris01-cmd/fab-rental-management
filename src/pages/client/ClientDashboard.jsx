@@ -1,444 +1,472 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useNavigate, Link }   from "react-router-dom";
 
-// ─── Fake Data ────────────────────────────────────────────────────────────────
-const profile = { name: "Jane Wanjiku", room: "204", building: "Block A", floor: "2nd Floor", moveIn: "Jan 15, 2025", billingType: "Monthly" };
-const currentCycle = { period: "March 2025", amountDue: 8500, amountPaid: 0, dueDate: "Mar 15, 2025", status: "unpaid", lateFee: 0 };
-const billingCycles = [
-  { id:1, period:"Mar 2025", due:8500, paid:0, dueDate:"Mar 15",  status:"unpaid" },
-  { id:2, period:"Feb 2025", due:8500, paid:8500, dueDate:"Feb 15", status:"paid" },
-  { id:3, period:"Jan 2025", due:8500, paid:8500, dueDate:"Jan 15", status:"paid" },
-];
-const recentPayments = [
-  { id:1, date:"Feb 12, 2025", amount:8500, method:"M-Pesa", ref:"QKT12XBABY", status:"confirmed" },
-  { id:2, date:"Jan 10, 2025", amount:8500, method:"M-Pesa", ref:"PJR09WZNBX", status:"confirmed" },
-];
-const complaints = [
-  { id:1, title:"Water pressure very low in bathroom", category:"Maintenance", priority:"high",   status:"in_progress", created:"Mar 2, 2025" },
-  { id:2, title:"Noisy neighbours after 10pm",          category:"Noise",       priority:"normal", status:"open",        created:"Feb 28, 2025" },
-];
-const notifications = [
-  { id:1, type:"billing", title:"Rent due in 3 days",            body:"Your March rent of KES 8,500 is due on Mar 15.",  time:"2h ago",  unread:true },
-  { id:2, type:"complaint", title:"Complaint update",             body:"Your water pressure complaint is being handled.", time:"1d ago",  unread:true },
-  { id:3, type:"system", title:"Welcome to fabrentals!",         body:"Your account is now active. Explore your dashboard.", time:"5d ago", unread:false },
-];
+// ── Layout ────────────────────────────────────────────────────────────────────
+import DashboardLayout         from "../../layouts/DashboardLayout.jsx";
 
-// ─── Icons ───────────────────────────────────────────────────────────────────
-const Icon = ({ d, size = 20, className = "" }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" className={className}>
+// ── Components ────────────────────────────────────────────────────────────────
+import PageHeader              from "../../components/layout/PageHeader.jsx";
+import StatsCard               from "../../components/data/StatsCard.jsx";
+import Badge                   from "../../components/ui/Badge.jsx";
+import Avatar                  from "../../components/ui/Avatar.jsx";
+import Button                  from "../../components/ui/Button.jsx";
+import { Spinner }             from "../../components/ui/Spinner.jsx";
+import { NotificationItem }    from "../../components/data/domain-cards.jsx";
+import MPesaPayModal           from "../../components/modals/MPesaPayModal.jsx";
+import NewComplaintModal       from "../../components/modals/NewComplaintModal.jsx";
+
+// ── Store / hooks ─────────────────────────────────────────────────────────────
+import useAuthStore            from "../../store/authStore.js";
+import useNotificationStore    from "../../store/notificationStore.js";
+
+// ── API ───────────────────────────────────────────────────────────────────────
+import { getMyTenancy }                    from "../../lib/api/tenancies.js";
+import { getMyBillingCycles, getCurrentCycle } from "../../lib/api/billing.js";
+import { getMyPayments }                   from "../../lib/api/payments.js";
+import { getMyComplaints }                 from "../../lib/api/complaints.js";
+
+// ── Utils ─────────────────────────────────────────────────────────────────────
+import { formatCurrency, formatDate, formatRelativeTime, formatBillingPeriod } from "../../lib/formatters.js";
+
+// =============================================================================
+// ClientDashboard   /dashboard
+//
+// Sections:
+//   1. Greeting + room summary hero
+//   2. Four KPI stat cards
+//   3. Current billing cycle card  +  Recent payments
+//   4. My complaints                +  Recent notifications
+// =============================================================================
+
+// ── Shared inline icon helper ─────────────────────────────────────────────────
+const Ic = ({ d, size = 18 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none"
+    stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
     <path d={d} />
   </svg>
 );
-const HomeIcon     = () => <Icon d="M3 9.5L12 3l9 6.5V20a1 1 0 01-1 1H4a1 1 0 01-1-1V9.5z" />;
-const WalletIcon   = () => <Icon d="M2 7h20v13a1 1 0 01-1 1H3a1 1 0 01-1-1V7zm0 0l2-4h16l2 4M12 12v4" />;
-const CalIcon      = () => <Icon d="M8 2v3M16 2v3M3 9h18M5 4h14a1 1 0 011 1v14a1 1 0 01-1 1H5a1 1 0 01-1-1V5a1 1 0 011-1z" />;
-const ChatIcon     = () => <Icon d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z" />;
-const BellIcon     = () => <Icon d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9M13.73 21a2 2 0 01-3.46 0" />;
-const MenuIcon     = () => <Icon d="M4 6h16M4 12h16M4 18h16" />;
-const XIcon        = () => <Icon d="M18 6L6 18M6 6l12 12" />;
-const ChevronRight = () => <Icon d="M9 18l6-6-6-6" size={16} />;
-const ReceiptIcon  = () => <Icon d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 012-2h2a2 2 0 012 2M9 5h6" />;
-const TransferIcon = () => <Icon d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />;
-const UserIcon     = () => <Icon d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2M12 11a4 4 0 100-8 4 4 0 000 8z" />;
-const LogoutIcon   = () => <Icon d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />;
-const PhoneIcon    = () => <Icon d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.09 8.81a19.79 19.79 0 01-3.07-8.67A2 2 0 012 0h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L6.09 7.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 14.92v2z" size={16}/>;
 
-// ─── Status Badge ─────────────────────────────────────────────────────────────
-const StatusBadge = ({ status }) => {
-  const map = {
-    paid:        "bg-emerald-50 text-emerald-700 border border-emerald-200",
-    unpaid:      "bg-amber-50 text-amber-700 border border-amber-200",
-    overdue:     "bg-red-50 text-red-700 border border-red-200",
-    partial:     "bg-blue-50 text-blue-700 border border-blue-200",
-    confirmed:   "bg-emerald-50 text-emerald-700 border border-emerald-200",
-    failed:      "bg-red-50 text-red-700 border border-red-200",
-    pending:     "bg-amber-50 text-amber-700 border border-amber-200",
-    open:        "bg-amber-50 text-amber-700 border border-amber-200",
-    in_progress: "bg-blue-50 text-blue-700 border border-blue-200",
-    resolved:    "bg-emerald-50 text-emerald-700 border border-emerald-200",
-  };
-  const label = { in_progress: "In Progress" }[status] || status.charAt(0).toUpperCase() + status.slice(1);
-  return <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${map[status] || "bg-stone-100 text-stone-600"}`}>{label}</span>;
-};
-
-// ─── M-Pesa Modal ─────────────────────────────────────────────────────────────
-const MPesaModal = ({ onClose, cycle }) => {
-  const [phone, setPhone] = useState("0712 345 678");
-  const [step, setStep] = useState(1); // 1=form, 2=waiting, 3=success
-
-  const handlePay = () => {
-    setStep(2);
-    setTimeout(() => setStep(3), 3000);
-  };
-
+// ── Section card shell ────────────────────────────────────────────────────────
+function Card({ children, style: extra = {} }) {
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{background:"rgba(26,20,18,0.7)", backdropFilter:"blur(4px)"}}>
-      <div className="bg-white rounded-3xl shadow-2xl w-full max-w-sm overflow-hidden">
-        {/* Header */}
-        <div className="p-6 pb-0 flex items-start justify-between">
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-widest text-[#C5612C] mb-1">Pay via M-Pesa</p>
-            <h3 className="font-display text-2xl font-black text-[#1A1412]">
-              KES {cycle.amountDue.toLocaleString()}
-            </h3>
-            <p className="text-sm text-[#8B7355] mt-0.5">{cycle.period} — due {cycle.dueDate}</p>
-          </div>
-          <button onClick={onClose} className="text-[#8B7355] hover:text-[#1A1412] mt-1">
-            <XIcon />
-          </button>
-        </div>
-
-        <div className="p-6">
-          {step === 1 && (
-            <div className="space-y-4">
-              <div className="bg-[#FAF7F2] rounded-2xl p-4 border border-[#E8DDD4]">
-                <p className="text-xs text-[#8B7355] mb-1">M-Pesa phone number</p>
-                <div className="flex items-center gap-2">
-                  <span className="text-sm font-semibold text-[#1A1412]">🇰🇪 +254</span>
-                  <input value={phone} onChange={e=>setPhone(e.target.value)}
-                    className="flex-1 bg-transparent text-sm font-medium text-[#1A1412] outline-none border-b border-[#E8DDD4] pb-0.5 focus:border-[#C5612C]" />
-                </div>
-              </div>
-              <div className="bg-[#FAF7F2] rounded-2xl p-4 border border-[#E8DDD4] space-y-2 text-sm">
-                <div className="flex justify-between"><span className="text-[#8B7355]">Rent</span><span className="font-medium text-[#1A1412]">KES 8,500</span></div>
-                <div className="flex justify-between"><span className="text-[#8B7355]">Late fee</span><span className="font-medium text-[#1A1412]">KES 0</span></div>
-                <div className="border-t border-[#E8DDD4] pt-2 flex justify-between font-bold"><span className="text-[#1A1412]">Total</span><span className="text-[#C5612C]">KES 8,500</span></div>
-              </div>
-              <button onClick={handlePay} className="w-full bg-[#C5612C] text-white font-semibold py-4 rounded-full hover:bg-[#A84E22] transition-colors flex items-center justify-center gap-2">
-                <PhoneIcon /> Send STK Push
-              </button>
-              <p className="text-xs text-center text-[#8B7355]">You'll receive a prompt on your phone to confirm</p>
-            </div>
-          )}
-          {step === 2 && (
-            <div className="py-8 text-center space-y-4">
-              <div className="w-16 h-16 mx-auto rounded-full border-4 border-[#C5612C]/20 border-t-[#C5612C] animate-spin" />
-              <p className="font-semibold text-[#1A1412]">Waiting for confirmation…</p>
-              <p className="text-sm text-[#8B7355]">Check your phone and enter your M-Pesa PIN</p>
-            </div>
-          )}
-          {step === 3 && (
-            <div className="py-8 text-center space-y-4">
-              <div className="w-16 h-16 mx-auto rounded-full bg-emerald-100 flex items-center justify-center">
-                <svg className="w-8 h-8 text-emerald-600" fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7"/></svg>
-              </div>
-              <div>
-                <p className="font-display text-xl font-bold text-[#1A1412]">Payment Received!</p>
-                <p className="text-sm text-[#8B7355] mt-1">KES 8,500 confirmed via M-Pesa</p>
-              </div>
-              <button onClick={onClose} className="w-full bg-[#1A1412] text-white font-semibold py-3 rounded-full hover:bg-[#2D1E16] transition-colors">Done</button>
-            </div>
-          )}
-        </div>
-      </div>
+    <div style={{
+      background: "#fff", borderRadius: 20,
+      border: "1px solid #EDE4D8",
+      boxShadow: "0 2px 8px rgba(0,0,0,0.04)",
+      overflow: "hidden",
+      ...extra,
+    }}>
+      {children}
     </div>
   );
-};
+}
 
-// ─── Main Dashboard ───────────────────────────────────────────────────────────
+function CardHeader({ title, linkTo, linkLabel = "View all" }) {
+  return (
+    <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"18px 20px 0" }}>
+      <h3 style={{ fontFamily:"'Playfair Display',serif", fontWeight:700, fontSize:17, color:"#1A1412", margin:0 }}>
+        {title}
+      </h3>
+      {linkTo && (
+        <Link to={linkTo} style={{ fontSize:12, color:"#C5612C", fontWeight:600, textDecoration:"none", display:"flex", alignItems:"center", gap:3 }}>
+          {linkLabel}
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M9 18l6-6-6-6"/></svg>
+        </Link>
+      )}
+    </div>
+  );
+}
+
+// ── Billing cycle row ─────────────────────────────────────────────────────────
+function CycleRow({ cycle, onPay }) {
+  const total   = Number(cycle.amount_due) + Number(cycle.late_fee ?? 0);
+  const isPaid  = ["paid","waived","cancelled"].includes(cycle.status);
+  const isOverdue = !isPaid && cycle.due_date < new Date().toISOString().slice(0,10);
+  return (
+    <div style={{ display:"flex", alignItems:"center", gap:12, padding:"11px 20px", borderBottom:"1px solid #F5EDE0" }}
+      onMouseOver={e => e.currentTarget.style.background = "#FFFAF6"}
+      onMouseOut={e  => e.currentTarget.style.background = "transparent"}
+    >
+      <div style={{ flex:1, minWidth:0 }}>
+        <p style={{ fontSize:13, fontWeight:600, color:"#1A1412", margin:0 }}>
+          {formatBillingPeriod(cycle.period_start, cycle.period_end, cycle.billing_type)}
+        </p>
+        <p style={{ fontSize:11, color: isOverdue ? "#DC2626" : "#8B7355", margin:"2px 0 0" }}>
+          Due {formatDate(cycle.due_date)}{isOverdue ? " — OVERDUE" : ""}
+        </p>
+      </div>
+      <span style={{ fontSize:13, fontWeight:700, color:"#1A1412", flexShrink:0 }}>
+        {formatCurrency(total)}
+      </span>
+      <Badge variant={cycle.status} size="sm" style={{ flexShrink:0 }} />
+      {!isPaid && (
+        <button onClick={() => onPay(cycle)}
+          style={{ background:"#C5612C", color:"#fff", border:"none", borderRadius:999, padding:"5px 12px", fontSize:11, fontWeight:700, cursor:"pointer", flexShrink:0, transition:"background 0.15s" }}
+          onMouseOver={e => e.currentTarget.style.background = "#A84E22"}
+          onMouseOut={e  => e.currentTarget.style.background = "#C5612C"}
+        >
+          Pay
+        </button>
+      )}
+    </div>
+  );
+}
+
+// ── Recent payment row ────────────────────────────────────────────────────────
+function PaymentRow({ payment }) {
+  const ok = payment.payment_status === "confirmed";
+  return (
+    <div style={{ display:"flex", alignItems:"center", gap:12, padding:"12px 20px", borderBottom:"1px solid #F5EDE0" }}>
+      <div style={{ width:36, height:36, borderRadius:10, flexShrink:0, display:"flex", alignItems:"center", justifyContent:"center", background: ok ? "#ECFDF5" : "#FEF2F2" }}>
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke={ok ? "#059669" : "#DC2626"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          {ok
+            ? <><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></>
+            : <><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></>
+          }
+        </svg>
+      </div>
+      <div style={{ flex:1, minWidth:0 }}>
+        <p style={{ fontSize:13, fontWeight:600, color:"#1A1412", margin:0 }}>
+          {payment.payment_method === "mpesa" ? "M-Pesa" : payment.payment_method}
+          {payment.mpesa_receipt && (
+            <span style={{ fontSize:10, color:"#8B7355", fontWeight:400, marginLeft:8, fontFamily:"'DM Mono','Courier New',monospace" }}>
+              {payment.mpesa_receipt}
+            </span>
+          )}
+        </p>
+        <p style={{ fontSize:11, color:"#8B7355", margin:"2px 0 0" }}>
+          {formatRelativeTime(payment.created_at)}
+        </p>
+      </div>
+      <p style={{ fontSize:14, fontWeight:700, color:"#1A1412", margin:0, flexShrink:0, fontFamily:"'Playfair Display',serif" }}>
+        {formatCurrency(payment.amount)}
+      </p>
+      <Badge variant={payment.payment_status} size="sm" style={{ flexShrink:0 }} />
+    </div>
+  );
+}
+
+// ── Complaint row ─────────────────────────────────────────────────────────────
+function ComplaintRow({ complaint, onClick }) {
+  const isUrgent = ["high","urgent"].includes(complaint.priority);
+  return (
+    <div onClick={onClick} style={{ display:"flex", alignItems:"flex-start", gap:12, padding:"12px 20px", borderBottom:"1px solid #F5EDE0", cursor:"pointer", transition:"background 0.12s" }}
+      onMouseOver={e => e.currentTarget.style.background = "#FFFAF6"}
+      onMouseOut={e  => e.currentTarget.style.background = "transparent"}
+    >
+      <div style={{ width:8, height:8, borderRadius:"50%", flexShrink:0, marginTop:5,
+        background: complaint.status === "resolved" ? "#10B981" : complaint.status === "in_progress" ? "#3B82F6" : "#F59E0B" }} />
+      <div style={{ flex:1, minWidth:0 }}>
+        <p style={{ fontSize:13, fontWeight:600, color:"#1A1412", margin:"0 0 3px", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>
+          {complaint.title}
+        </p>
+        <div style={{ display:"flex", alignItems:"center", gap:6, flexWrap:"wrap" }}>
+          <span style={{ fontSize:11, color:"#8B7355", background:"#F5EDE0", borderRadius:999, padding:"2px 8px" }}>
+            {complaint.category}
+          </span>
+          {isUrgent && (
+            <span style={{ fontSize:11, fontWeight:700, color:"#DC2626", background:"#FEF2F2", borderRadius:999, padding:"2px 8px" }}>
+              {complaint.priority}
+            </span>
+          )}
+          <span style={{ fontSize:11, color:"#8B7355", marginLeft:"auto" }}>
+            {formatRelativeTime(complaint.created_at)}
+          </span>
+        </div>
+      </div>
+      <Badge variant={complaint.status} size="sm" style={{ flexShrink:0 }} />
+    </div>
+  );
+}
+
+// =============================================================================
+// Main dashboard
+// =============================================================================
 export default function ClientDashboard() {
-  const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [activePage, setActivePage] = useState("dashboard");
-  const [payModalOpen, setPayModalOpen] = useState(false);
+  const navigate      = useNavigate();
+  const profile       = useAuthStore(s => s.profile);
+  const notifications = useNotificationStore(s => s.notifications);
+  const unreadCount   = useNotificationStore(s => s.unreadCount);
+  const markAllRead   = useNotificationStore(s => s.markAllRead);
 
-  const navItems = [
-    { id:"dashboard",    label:"Dashboard",          icon:<HomeIcon /> },
-    { id:"room",         label:"My Room",             icon:<HomeIcon /> },
-    { id:"billing",      label:"Billing & Invoices",  icon:<ReceiptIcon /> },
-    { id:"payments",     label:"Payments",            icon:<WalletIcon /> },
-    { id:"transfer",     label:"Room Transfer",       icon:<TransferIcon /> },
-    { id:"complaints",   label:"Complaints",          icon:<ChatIcon />, badge:complaints.filter(c=>c.status!=="resolved").length },
-    { id:"notifications",label:"Notifications",       icon:<BellIcon />, badge:notifications.filter(n=>n.unread).length },
-  ];
+  const [tenancy,      setTenancy]      = useState(null);
+  const [currentCycle, setCurrentCycle] = useState(null);
+  const [cycles,       setCycles]       = useState([]);
+  const [payments,     setPayments]     = useState([]);
+  const [complaints,   setComplaints]   = useState([]);
+  const [loading,      setLoading]      = useState(true);
+  const [payingCycle,  setPayingCycle]  = useState(null);
+  const [newComplaint, setNewComplaint] = useState(false);
 
-  const paidPct = Math.round((currentCycle.amountPaid / currentCycle.amountDue) * 100);
-  const hour = new Date().getHours();
-  const greeting = hour < 12 ? "Good morning" : hour < 17 ? "Good afternoon" : "Good evening";
+  useEffect(() => {
+    if (!profile?.id) return;
+    Promise.all([
+      getMyTenancy(profile.id),
+      getCurrentCycle(profile.id),
+      getMyBillingCycles(profile.id, { limit: 3 }),
+      getMyPayments(profile.id, { limit: 3 }),
+      getMyComplaints(profile.id, { limit: 3 }),
+    ]).then(([{ data: t }, { data: cc }, { data: cy }, { data: py }, { data: co }]) => {
+      setTenancy(t);
+      setCurrentCycle(cc);
+      setCycles(cy ?? []);
+      setPayments(py ?? []);
+      setComplaints(co ?? []);
+    }).finally(() => setLoading(false));
+  }, [profile?.id]);
+
+  const firstName    = profile?.full_name?.split(" ")[0] ?? "there";
+  const room         = tenancy?.rooms;
+  const building     = room?.buildings;
+  const isPaid       = ["paid","waived","cancelled"].includes(currentCycle?.status);
+  const totalOwed    = cycles
+    .filter(c => !["paid","waived","cancelled"].includes(c.status))
+    .reduce((s,c) => s + Number(c.amount_due) + Number(c.late_fee ?? 0), 0);
+  const paidPct = currentCycle
+    ? Math.round(((Number(currentCycle.amount_due) - Math.max(0, Number(currentCycle.amount_due) - (Number(currentCycle.amount_paid ?? 0)))) / Number(currentCycle.amount_due)) * 100)
+    : 0;
+
+  if (loading) return (
+    <DashboardLayout pageTitle="Dashboard">
+      <div style={{ display:"flex", justifyContent:"center", padding:80 }}><Spinner size="lg" /></div>
+    </DashboardLayout>
+  );
 
   return (
-    <div className="flex h-screen bg-[#FAF7F2] overflow-hidden" style={{fontFamily:"'DM Sans', sans-serif"}}>
+    <DashboardLayout pageTitle="Dashboard">
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Sans:wght@300;400;500;600&display=swap');
-        .font-display { font-family: 'Playfair Display', serif; }
-        .nav-item { transition: all 0.18s ease; }
-        .nav-item:hover { background: rgba(197,97,44,0.08); }
-        .nav-item.active { background: rgba(197,97,44,0.12); }
-        .card-lift { transition: transform 0.25s cubic-bezier(.22,.68,0,1.2), box-shadow 0.25s ease; }
-        .card-lift:hover { transform: translateY(-3px); box-shadow: 0 12px 32px rgba(0,0,0,0.10); }
-        ::-webkit-scrollbar { width: 4px; }
-        ::-webkit-scrollbar-track { background: transparent; }
-        ::-webkit-scrollbar-thumb { background: #E8DDD4; border-radius: 2px; }
-        @keyframes fadeSlide { from{opacity:0;transform:translateY(12px)} to{opacity:1;transform:translateY(0)} }
-        .fade-slide { animation: fadeSlide 0.4s ease forwards; }
-        .stagger-1 { animation-delay: 0.05s; opacity: 0; }
-        .stagger-2 { animation-delay: 0.10s; opacity: 0; }
-        .stagger-3 { animation-delay: 0.15s; opacity: 0; }
-        .stagger-4 { animation-delay: 0.20s; opacity: 0; }
-        .stagger-5 { animation-delay: 0.25s; opacity: 0; }
+        @keyframes fadeUp { from{opacity:0;transform:translateY(14px)} to{opacity:1;transform:translateY(0)} }
+        .fu1{animation:fadeUp 0.4s 0.05s ease both}
+        .fu2{animation:fadeUp 0.4s 0.12s ease both}
+        .fu3{animation:fadeUp 0.4s 0.20s ease both}
+        .fu4{animation:fadeUp 0.4s 0.28s ease both}
+        .fu5{animation:fadeUp 0.4s 0.36s ease both}
+        @media(max-width:900px){.dash-two-col{grid-template-columns:1fr!important}}
       `}</style>
 
-      {/* ── Sidebar ── */}
-      <aside className={`fixed lg:static inset-y-0 left-0 z-40 flex flex-col w-64 bg-[#1A1412] transition-transform duration-300 ${sidebarOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"}`}>
-        {/* Logo */}
-        <div className="flex items-center gap-3 px-6 py-5 border-b border-white/10">
-          <div className="w-8 h-8 rounded-lg bg-[#C5612C] flex items-center justify-center flex-shrink-0">
-            <svg viewBox="0 0 24 24" fill="white" className="w-5 h-5"><path d="M3 9.5L12 3l9 6.5V20a1 1 0 01-1 1H4a1 1 0 01-1-1V9.5z"/><path d="M9 21V12h6v9" fill="white" opacity="0.5"/></svg>
-          </div>
+      {/* ── 1. Greeting hero ── */}
+      <div className="fu1" style={{ background:"linear-gradient(120deg,#1A1412 0%,#2D1E16 60%,#3D2318 100%)", borderRadius:20, padding:"28px 32px", marginBottom:24, display:"flex", justifyContent:"space-between", alignItems:"center", flexWrap:"wrap", gap:16 }}>
+        <div>
+          <p style={{ fontSize:11, fontWeight:700, color:"rgba(255,255,255,0.45)", letterSpacing:"0.1em", textTransform:"uppercase", marginBottom:8 }}>
+            {new Date().toLocaleDateString("en-KE", { weekday:"long", day:"numeric", month:"long" })}
+          </p>
+          <h1 style={{ fontFamily:"'Playfair Display',serif", fontWeight:900, fontSize:"clamp(22px,3vw,30px)", color:"#fff", margin:"0 0 6px" }}>
+            Good {new Date().getHours() < 12 ? "morning" : new Date().getHours() < 17 ? "afternoon" : "evening"}, {firstName}! 👋
+          </h1>
+          <p style={{ fontSize:14, color:"rgba(255,255,255,0.55)", margin:0 }}>
+            {tenancy
+              ? `Room ${room?.room_number} · ${building?.name ?? ""}`
+              : "You don't have an active room yet. Browse available properties."}
+          </p>
+        </div>
+        <div style={{ display:"flex", alignItems:"center", gap:12, flexShrink:0 }}>
+          <Avatar name={profile?.full_name} src={profile?.avatar_url} size={52} border />
           <div>
-            <p className="font-display font-bold text-white text-base leading-none">fabrentals</p>
-            <p className="text-xs text-white/40 mt-0.5">Sunrise Hostel</p>
+            <p style={{ fontSize:13, fontWeight:700, color:"#fff", margin:0 }}>{profile?.full_name}</p>
+            <Badge variant={profile?.role} size="sm" style={{ marginTop:4 }} />
           </div>
         </div>
-
-        {/* Nav */}
-        <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-0.5">
-          {navItems.map(item => (
-            <button key={item.id} onClick={() => { setActivePage(item.id); setSidebarOpen(false); }}
-              className={`nav-item w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left ${activePage===item.id ? "active text-white" : "text-white/50 hover:text-white/80"}`}>
-              <span className={`flex-shrink-0 ${activePage===item.id ? "text-[#C5612C]" : ""}`}>{item.icon}</span>
-              <span className="text-sm font-medium flex-1">{item.label}</span>
-              {item.badge > 0 && <span className="bg-[#C5612C] text-white text-xs font-bold w-5 h-5 rounded-full flex items-center justify-center">{item.badge}</span>}
-            </button>
-          ))}
-        </nav>
-
-        {/* User */}
-        <div className="px-3 py-4 border-t border-white/10 space-y-0.5">
-          <button onClick={() => setActivePage("profile")}
-            className="nav-item w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-white/50 hover:text-white/80">
-            <span className="flex-shrink-0"><UserIcon /></span>
-            <span className="text-sm font-medium">My Profile</span>
-          </button>
-          <button className="nav-item w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-white/50 hover:text-red-400">
-            <span className="flex-shrink-0"><LogoutIcon /></span>
-            <span className="text-sm font-medium">Sign Out</span>
-          </button>
-        </div>
-      </aside>
-
-      {/* Sidebar overlay (mobile) */}
-      {sidebarOpen && <div className="fixed inset-0 z-30 bg-black/50 lg:hidden" onClick={() => setSidebarOpen(false)} />}
-
-      {/* ── Main ── */}
-      <div className="flex-1 flex flex-col overflow-hidden">
-        {/* Topbar */}
-        <header className="flex items-center justify-between px-6 py-4 bg-white border-b border-[#E8DDD4] flex-shrink-0">
-          <div className="flex items-center gap-3">
-            <button onClick={() => setSidebarOpen(true)} className="lg:hidden text-[#8B7355] hover:text-[#1A1412]"><MenuIcon /></button>
-            <div>
-              <p className="text-xs text-[#8B7355]">Resident Portal</p>
-              <h1 className="font-display font-bold text-[#1A1412] text-lg leading-tight">
-                {navItems.find(n=>n.id===activePage)?.label || "Dashboard"}
-              </h1>
-            </div>
-          </div>
-          <div className="flex items-center gap-3">
-            <button onClick={() => setActivePage("notifications")} className="relative text-[#8B7355] hover:text-[#C5612C] transition-colors p-2">
-              <BellIcon />
-              {notifications.filter(n=>n.unread).length > 0 && (
-                <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-[#C5612C] rounded-full" />
-              )}
-            </button>
-            <div className="flex items-center gap-2 pl-3 border-l border-[#E8DDD4]">
-              <div className="w-8 h-8 rounded-full bg-[#C5612C]/15 flex items-center justify-center text-sm font-bold text-[#C5612C]">
-                {profile.name.split(" ").map(n=>n[0]).join("")}
-              </div>
-              <div className="hidden sm:block">
-                <p className="text-xs font-semibold text-[#1A1412] leading-none">{profile.name}</p>
-                <p className="text-xs text-[#8B7355]">Room {profile.room}</p>
-              </div>
-            </div>
-          </div>
-        </header>
-
-        {/* Page Content */}
-        <main className="flex-1 overflow-y-auto px-6 py-6 space-y-6">
-
-          {/* ── Welcome Banner ── */}
-          <div className="fade-slide stagger-1 relative rounded-3xl overflow-hidden p-6 md:p-8"
-            style={{background:"linear-gradient(135deg, #1A1412 0%, #3D2415 100%)"}}>
-            <div className="absolute inset-0 opacity-10">
-              <svg className="w-full h-full"><defs><pattern id="pd" width="24" height="24" patternUnits="userSpaceOnUse"><circle cx="2" cy="2" r="1.5" fill="white"/></pattern></defs><rect width="100%" height="100%" fill="url(#pd)"/></svg>
-            </div>
-            <div className="relative flex flex-col md:flex-row md:items-center justify-between gap-4">
-              <div>
-                <p className="text-white/50 text-sm">{greeting} 👋</p>
-                <h2 className="font-display text-2xl md:text-3xl font-black text-white mt-1">{profile.name}</h2>
-                <div className="flex flex-wrap gap-4 mt-3">
-                  <div className="flex items-center gap-1.5 text-white/60 text-xs">
-                    <HomeIcon /><span className="text-white/80">Room {profile.room}, {profile.building}</span>
-                  </div>
-                  <div className="flex items-center gap-1.5 text-white/60 text-xs">
-                    <CalIcon /><span className="text-white/80">Since {profile.moveIn}</span>
-                  </div>
-                </div>
-              </div>
-              <div className="flex items-center gap-2">
-                <div className="bg-white/10 border border-white/20 rounded-2xl px-4 py-2 text-center">
-                  <p className="text-white/50 text-xs">Billing Type</p>
-                  <p className="text-white font-semibold text-sm">{profile.billingType}</p>
-                </div>
-                <div className="bg-emerald-500/20 border border-emerald-500/30 rounded-2xl px-4 py-2 text-center">
-                  <p className="text-emerald-300/70 text-xs">Status</p>
-                  <p className="text-emerald-300 font-semibold text-sm">Active</p>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* ── Stats Row ── */}
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-            {[
-              { label:"Current Balance", value:`KES ${currentCycle.amountDue.toLocaleString()}`, sub:"March rent due", color:"#EF4444", bg:"#FEF2F2", icon:<WalletIcon /> },
-              { label:"Due Date",        value:currentCycle.dueDate,       sub:"3 days remaining",      color:"#F59E0B", bg:"#FFFBEB", icon:<CalIcon /> },
-              { label:"Tenancy",         value:"Active",                   sub:`${profile.building}, Fl. ${profile.floor.split(" ")[0]}`, color:"#10B981", bg:"#ECFDF5", icon:<HomeIcon /> },
-              { label:"Open Complaints", value:complaints.filter(c=>c.status!=="resolved").length, sub:"1 in progress",  color:"#3B82F6", bg:"#EFF6FF", icon:<ChatIcon /> },
-            ].map((s, i) => (
-              <div key={s.label} className={`fade-slide stagger-${i+2} card-lift bg-white rounded-2xl p-5 border border-[#E8DDD4]`}>
-                <div className="flex items-start justify-between mb-3">
-                  <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0" style={{background:s.bg, color:s.color}}>{s.icon}</div>
-                  <span className="w-2 h-2 rounded-full mt-1" style={{background:s.color}} />
-                </div>
-                <p className="font-display font-bold text-[#1A1412] text-xl leading-none">{s.value}</p>
-                <p className="text-xs text-[#8B7355] mt-1">{s.label}</p>
-                <p className="text-xs text-[#C5612C] font-medium mt-0.5">{s.sub}</p>
-              </div>
-            ))}
-          </div>
-
-          {/* ── Billing Snapshot + Recent Payments ── */}
-          <div className="grid lg:grid-cols-3 gap-5">
-            {/* Billing Snapshot */}
-            <div className="fade-slide stagger-2 lg:col-span-2 bg-white rounded-2xl border border-[#E8DDD4] p-6">
-              <div className="flex items-center justify-between mb-5">
-                <div>
-                  <p className="text-xs font-semibold uppercase tracking-widest text-[#C5612C] mb-1">Current Billing Cycle</p>
-                  <h3 className="font-display font-bold text-[#1A1412] text-xl">{currentCycle.period}</h3>
-                </div>
-                <StatusBadge status={currentCycle.status} />
-              </div>
-              {/* Progress */}
-              <div className="mb-5">
-                <div className="flex justify-between text-sm mb-2">
-                  <span className="text-[#8B7355]">Amount paid</span>
-                  <span className="font-semibold text-[#1A1412]">KES {currentCycle.amountPaid.toLocaleString()} <span className="text-[#8B7355] font-normal">/ {currentCycle.amountDue.toLocaleString()}</span></span>
-                </div>
-                <div className="h-3 bg-[#F5EDE0] rounded-full overflow-hidden">
-                  <div className="h-full rounded-full transition-all duration-700" style={{width:`${paidPct}%`, background: paidPct===100 ? "#10B981" : paidPct > 0 ? "#3B82F6" : "#E8DDD4"}} />
-                </div>
-                <p className="text-xs text-[#8B7355] mt-1.5">{paidPct}% paid — KES {(currentCycle.amountDue - currentCycle.amountPaid).toLocaleString()} remaining</p>
-              </div>
-              {/* Billing table */}
-              <div className="space-y-2 mb-5">
-                {billingCycles.map(c => (
-                  <div key={c.id} className="flex items-center justify-between py-2.5 px-3 rounded-xl hover:bg-[#FAF7F2] transition-colors">
-                    <div>
-                      <p className="text-sm font-medium text-[#1A1412]">{c.period}</p>
-                      <p className="text-xs text-[#8B7355]">Due {c.dueDate}</p>
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <span className="text-sm font-semibold text-[#1A1412]">KES {c.due.toLocaleString()}</span>
-                      <StatusBadge status={c.status} />
-                    </div>
-                  </div>
-                ))}
-              </div>
-              <button onClick={() => setPayModalOpen(true)}
-                className="w-full bg-[#C5612C] text-white font-semibold py-3.5 rounded-full hover:bg-[#A84E22] transition-colors flex items-center justify-center gap-2">
-                <PhoneIcon /> Pay March Rent via M-Pesa
-              </button>
-            </div>
-
-            {/* Recent Payments */}
-            <div className="fade-slide stagger-3 bg-white rounded-2xl border border-[#E8DDD4] p-6 flex flex-col">
-              <div className="flex items-center justify-between mb-5">
-                <h3 className="font-display font-bold text-[#1A1412] text-lg">Recent Payments</h3>
-                <button onClick={() => setActivePage("payments")} className="text-xs text-[#C5612C] font-medium hover:underline flex items-center gap-1">All <ChevronRight /></button>
-              </div>
-              <div className="flex-1 space-y-3">
-                {recentPayments.map(p => (
-                  <div key={p.id} className="flex items-start gap-3 py-3 border-b border-[#F5EDE0] last:border-0">
-                    <div className="w-9 h-9 rounded-xl bg-emerald-50 flex items-center justify-center flex-shrink-0 text-emerald-600">
-                      <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"/></svg>
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center justify-between">
-                        <p className="text-sm font-semibold text-[#1A1412]">KES {p.amount.toLocaleString()}</p>
-                        <StatusBadge status={p.status} />
-                      </div>
-                      <p className="text-xs text-[#8B7355] mt-0.5">{p.date} · {p.method}</p>
-                      <p className="text-xs text-[#8B7355] font-mono">{p.ref}</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-              <div className="mt-4 pt-4 border-t border-[#F5EDE0]">
-                <div className="flex justify-between text-sm">
-                  <span className="text-[#8B7355]">Total paid (2025)</span>
-                  <span className="font-bold text-[#10B981]">KES 17,000</span>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* ── Complaints + Notifications ── */}
-          <div className="grid lg:grid-cols-2 gap-5">
-            {/* Complaints */}
-            <div className="fade-slide stagger-4 bg-white rounded-2xl border border-[#E8DDD4] p-6">
-              <div className="flex items-center justify-between mb-5">
-                <h3 className="font-display font-bold text-[#1A1412] text-lg">My Complaints</h3>
-                <button onClick={() => setActivePage("complaints")} className="text-xs text-[#C5612C] font-medium hover:underline flex items-center gap-1">View all <ChevronRight /></button>
-              </div>
-              <div className="space-y-3">
-                {complaints.map(c => (
-                  <div key={c.id} className="p-4 rounded-xl border border-[#E8DDD4] hover:border-[#C5612C]/30 hover:bg-[#FAF7F2] cursor-pointer transition-all">
-                    <div className="flex items-start justify-between gap-2 mb-2">
-                      <p className="text-sm font-medium text-[#1A1412] leading-snug flex-1">{c.title}</p>
-                      <StatusBadge status={c.status} />
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs bg-[#F5EDE0] text-[#5C4A3A] px-2 py-0.5 rounded-full">{c.category}</span>
-                      <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${c.priority==="high" ? "bg-red-50 text-red-600" : "bg-stone-100 text-stone-500"}`}>{c.priority}</span>
-                      <span className="text-xs text-[#8B7355] ml-auto">{c.created}</span>
-                    </div>
-                  </div>
-                ))}
-                <button className="w-full border border-dashed border-[#E8DDD4] rounded-xl py-3 text-sm text-[#8B7355] hover:border-[#C5612C] hover:text-[#C5612C] transition-colors font-medium">
-                  + New Complaint
-                </button>
-              </div>
-            </div>
-
-            {/* Notifications */}
-            <div className="fade-slide stagger-5 bg-white rounded-2xl border border-[#E8DDD4] p-6">
-              <div className="flex items-center justify-between mb-5">
-                <h3 className="font-display font-bold text-[#1A1412] text-lg">Notifications</h3>
-                <button className="text-xs text-[#C5612C] font-medium hover:underline">Mark all read</button>
-              </div>
-              <div className="space-y-2">
-                {notifications.map(n => (
-                  <div key={n.id} className={`flex gap-3 p-3 rounded-xl cursor-pointer transition-colors ${n.unread ? "bg-[#FFF5EF] border border-[#C5612C]/15" : "hover:bg-[#FAF7F2]"}`}>
-                    <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 text-sm ${n.type==="billing" ? "bg-amber-100 text-amber-600" : n.type==="complaint" ? "bg-blue-100 text-blue-600" : "bg-stone-100 text-stone-500"}`}>
-                      {n.type==="billing" ? "💰" : n.type==="complaint" ? "💬" : "ℹ️"}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center justify-between gap-2">
-                        <p className={`text-sm leading-snug ${n.unread ? "font-semibold text-[#1A1412]" : "font-medium text-[#5C4A3A]"}`}>{n.title}</p>
-                        <span className="text-xs text-[#8B7355] flex-shrink-0">{n.time}</span>
-                      </div>
-                      <p className="text-xs text-[#8B7355] mt-0.5 leading-relaxed">{n.body}</p>
-                    </div>
-                    {n.unread && <span className="w-2 h-2 rounded-full bg-[#C5612C] flex-shrink-0 mt-1.5" />}
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-
-          <div className="h-4" />
-        </main>
       </div>
 
-      {payModalOpen && <MPesaModal onClose={() => setPayModalOpen(false)} cycle={currentCycle} />}
-    </div>
+      {/* ── 2. KPI stats row ── */}
+      <div className="fu2" style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(200px,1fr))", gap:16, marginBottom:24 }}>
+        <StatsCard
+          label="Current Rent"
+          value={currentCycle ? formatCurrency(Number(currentCycle.amount_due) + Number(currentCycle.late_fee ?? 0)) : "—"}
+          sublabel={currentCycle ? `Due ${formatDate(currentCycle.due_date)}` : "No active cycle"}
+          color={!currentCycle ? "neutral" : isPaid ? "success" : currentCycle.status === "overdue" ? "error" : "warning"}
+          icon={<Ic d="M2 7h20v13a1 1 0 01-1 1H3a1 1 0 01-1-1V7zm0 0l2-4h16l2 4" />}
+          onClick={() => navigate("/dashboard/billing")}
+        />
+        <StatsCard
+          label="Outstanding Balance"
+          value={totalOwed > 0 ? formatCurrency(totalOwed) : "Nil"}
+          sublabel={totalOwed > 0 ? `${cycles.filter(c=>!["paid","waived","cancelled"].includes(c.status)).length} unpaid cycle(s)` : "All clear!"}
+          color={totalOwed > 0 ? "error" : "success"}
+          icon={<Ic d="M12 2v20M17 5H9.5a3.5 3.5 0 100 7h5a3.5 3.5 0 110 7H6" />}
+          onClick={() => navigate("/dashboard/billing")}
+        />
+        <StatsCard
+          label="Active Complaints"
+          value={complaints.filter(c => !["resolved","closed"].includes(c.status)).length}
+          sublabel={complaints.length > 0 ? `${complaints.length} total submitted` : "No complaints"}
+          color={complaints.filter(c=>!["resolved","closed"].includes(c.status)).length > 0 ? "warning" : "neutral"}
+          icon={<Ic d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z" />}
+          onClick={() => navigate("/dashboard/complaints")}
+        />
+        <StatsCard
+          label="Notifications"
+          value={unreadCount > 0 ? `${unreadCount} unread` : "All read"}
+          sublabel="Tap to view all"
+          color={unreadCount > 0 ? "brand" : "neutral"}
+          icon={<Ic d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9M13.73 21a2 2 0 01-3.46 0" />}
+          onClick={() => navigate("/dashboard/notifications")}
+        />
+      </div>
+
+      {/* ── 3. Billing + Payments row ── */}
+      <div className="fu3 dash-two-col" style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:20, marginBottom:20 }}>
+
+        {/* Billing */}
+        <Card>
+          <CardHeader title="Billing Cycles" linkTo="/dashboard/billing" />
+
+          {/* Current cycle progress bar */}
+          {currentCycle && (
+            <div style={{ padding:"16px 20px 12px", borderBottom:"1px solid #F5EDE0" }}>
+              <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:8 }}>
+                <p style={{ fontSize:13, fontWeight:600, color:"#1A1412", margin:0 }}>
+                  {formatBillingPeriod(currentCycle.period_start, currentCycle.period_end, currentCycle.billing_type)}
+                </p>
+                <Badge variant={currentCycle.status} size="sm" />
+              </div>
+              {/* Progress track */}
+              <div style={{ height:8, borderRadius:999, background:"#F5EDE0", overflow:"hidden", marginBottom:6 }}>
+                <div style={{ height:"100%", borderRadius:999, width:`${isPaid ? 100 : paidPct}%`, background: isPaid ? "#10B981" : paidPct > 0 ? "#3B82F6" : "#E8DDD4", transition:"width 0.8s ease" }} />
+              </div>
+              <div style={{ display:"flex", justifyContent:"space-between" }}>
+                <p style={{ fontSize:11, color:"#8B7355", margin:0 }}>
+                  {isPaid ? "Fully paid" : `${formatCurrency(Number(currentCycle.amount_due) - paidPct * Number(currentCycle.amount_due) / 100)} remaining`}
+                </p>
+                <p style={{ fontSize:11, fontWeight:700, color:"#C5612C", margin:0 }}>
+                  {formatCurrency(Number(currentCycle.amount_due) + Number(currentCycle.late_fee ?? 0))}
+                </p>
+              </div>
+            </div>
+          )}
+
+          {/* Recent 3 cycles */}
+          <div>
+            {cycles.length === 0 ? (
+              <p style={{ fontSize:13, color:"#8B7355", textAlign:"center", padding:"24px 20px" }}>No billing history yet.</p>
+            ) : (
+              cycles.map(c => <CycleRow key={c.id} cycle={c} onPay={setPayingCycle} />)
+            )}
+          </div>
+
+          {/* Pay CTA */}
+          {currentCycle && !isPaid && (
+            <div style={{ padding:"14px 20px" }}>
+              <Button variant="primary" fullWidth onClick={() => setPayingCycle(currentCycle)}>
+                Pay via M-Pesa
+              </Button>
+            </div>
+          )}
+        </Card>
+
+        {/* Recent Payments */}
+        <Card>
+          <CardHeader title="Recent Payments" linkTo="/dashboard/payments" />
+          <div style={{ paddingTop:12 }}>
+            {payments.length === 0 ? (
+              <p style={{ fontSize:13, color:"#8B7355", textAlign:"center", padding:"24px 20px" }}>No payments yet.</p>
+            ) : (
+              payments.map(p => <PaymentRow key={p.id} payment={p} />)
+            )}
+          </div>
+          {/* Year total */}
+          {payments.length > 0 && (
+            <div style={{ padding:"12px 20px", background:"#FAF7F2", borderTop:"1px solid #EDE4D8", display:"flex", justifyContent:"space-between", alignItems:"center" }}>
+              <span style={{ fontSize:13, color:"#8B7355" }}>Total paid this year</span>
+              <span style={{ fontSize:14, fontWeight:700, color:"#10B981", fontFamily:"'Playfair Display',serif" }}>
+                {formatCurrency(payments.filter(p=>p.payment_status==="confirmed").reduce((s,p)=>s+Number(p.amount),0))}
+              </span>
+            </div>
+          )}
+        </Card>
+      </div>
+
+      {/* ── 4. Complaints + Notifications row ── */}
+      <div className="fu4 dash-two-col" style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:20 }}>
+
+        {/* Complaints */}
+        <Card>
+          <CardHeader title="My Complaints" linkTo="/dashboard/complaints" />
+          <div style={{ paddingTop:12 }}>
+            {complaints.length === 0 ? (
+              <p style={{ fontSize:13, color:"#8B7355", textAlign:"center", padding:"20px 20px 0" }}>
+                No complaints submitted yet.
+              </p>
+            ) : (
+              complaints.map(c => (
+                <ComplaintRow key={c.id} complaint={c}
+                  onClick={() => navigate(`/dashboard/complaints/${c.id}`)}
+                />
+              ))
+            )}
+          </div>
+          <div style={{ padding:"14px 20px", borderTop:"1px solid #EDE4D8" }}>
+            <button onClick={() => setNewComplaint(true)}
+              style={{ width:"100%", border:"1.5px dashed #E8DDD4", background:"transparent", borderRadius:12, padding:"11px", fontSize:13, fontWeight:600, color:"#8B7355", cursor:"pointer", transition:"all 0.15s" }}
+              onMouseOver={e => { e.currentTarget.style.borderColor="#C5612C"; e.currentTarget.style.color="#C5612C"; }}
+              onMouseOut={e  => { e.currentTarget.style.borderColor="#E8DDD4"; e.currentTarget.style.color="#8B7355"; }}
+            >
+              + New Complaint
+            </button>
+          </div>
+        </Card>
+
+        {/* Notifications */}
+        <Card>
+          <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"18px 20px 12px" }}>
+            <h3 style={{ fontFamily:"'Playfair Display',serif", fontWeight:700, fontSize:17, color:"#1A1412", margin:0 }}>
+              Notifications
+              {unreadCount > 0 && (
+                <span style={{ marginLeft:8, fontSize:11, fontWeight:700, background:"#C5612C", color:"#fff", borderRadius:999, padding:"2px 7px" }}>
+                  {unreadCount}
+                </span>
+              )}
+            </h3>
+            <div style={{ display:"flex", gap:10, alignItems:"center" }}>
+              {unreadCount > 0 && (
+                <button onClick={() => profile?.id && markAllRead(profile.id)}
+                  style={{ fontSize:12, color:"#C5612C", fontWeight:600, background:"none", border:"none", cursor:"pointer", padding:0 }}>
+                  Mark all read
+                </button>
+              )}
+              <Link to="/dashboard/notifications" style={{ fontSize:12, color:"#C5612C", fontWeight:600, textDecoration:"none", display:"flex", alignItems:"center", gap:3 }}>
+                All
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M9 18l6-6-6-6"/></svg>
+              </Link>
+            </div>
+          </div>
+
+          <div>
+            {notifications.length === 0 ? (
+              <p style={{ fontSize:13, color:"#8B7355", textAlign:"center", padding:"24px 20px" }}>No notifications yet.</p>
+            ) : (
+              notifications.slice(0, 4).map((n, i, arr) => (
+                <div key={n.id} style={{ borderBottom: i < Math.min(arr.length,4)-1 ? "1px solid #F5EDE0" : "none" }}>
+                  <NotificationItem notification={n} onRead={useNotificationStore.getState().markRead} />
+                </div>
+              ))
+            )}
+          </div>
+        </Card>
+      </div>
+
+      {/* ── Modals ── */}
+      <MPesaPayModal
+        isOpen={!!payingCycle}
+        onClose={() => setPayingCycle(null)}
+        cycle={payingCycle}
+        onSuccess={() => {
+          setPayingCycle(null);
+          // Refresh cycles
+          getMyBillingCycles(profile.id, { limit:3 }).then(({ data }) => setCycles(data ?? []));
+          getCurrentCycle(profile.id).then(({ data }) => setCurrentCycle(data));
+        }}
+      />
+
+      <NewComplaintModal
+        isOpen={newComplaint}
+        onClose={() => setNewComplaint(false)}
+        tenancyId={tenancy?.id ?? null}
+        onSuccess={() => {
+          setNewComplaint(false);
+          getMyComplaints(profile.id, { limit:3 }).then(({ data }) => setComplaints(data ?? []));
+        }}
+      />
+    </DashboardLayout>
   );
 }

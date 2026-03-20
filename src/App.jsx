@@ -83,6 +83,64 @@ function RoleRedirect() {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// PreviewHome — a no-login entrypoint for quick app preview
+function PreviewHome() {
+  return (
+    <div
+      className="min-h-screen p-8"
+      style={{ fontFamily: "'DM Sans', sans-serif", background: "#FAF7F2" }}
+    >
+      <h1 className="text-3xl font-bold mb-4">Preview Mode</h1>
+      <p className="mb-6 text-[#8B7355]">
+        Browse core UI demos without logging in.
+      </p>
+      <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-4">
+        <a
+          href="/preview/client"
+          className="p-4 rounded-xl border hover:border-[#C5612C] hover:text-[#C5612C] text-[#1A1412] bg-white"
+        >
+          Resident Dashboard
+        </a>
+        <a
+          href="/preview/manager"
+          className="p-4 rounded-xl border hover:border-[#C5612C] hover:text-[#C5612C] text-[#1A1412] bg-white"
+        >
+          Manager Dashboard
+        </a>
+        <a
+          href="/preview/owner"
+          className="p-4 rounded-xl border hover:border-[#C5612C] hover:text-[#C5612C] text-[#1A1412] bg-white"
+        >
+          Owner Dashboard
+        </a>
+        <a
+          href="/preview/admin"
+          className="p-4 rounded-xl border hover:border-[#C5612C] hover:text-[#C5612C] text-[#1A1412] bg-white"
+        >
+          Super Admin Dashboard
+        </a>
+        <a
+          href="/preview/worker"
+          className="p-4 rounded-xl border hover:border-[#C5612C] hover:text-[#C5612C] text-[#1A1412] bg-white"
+        >
+          Worker Dashboard
+        </a>
+        <a
+          href="/browse"
+          className="p-4 rounded-xl border hover:border-[#C5612C] hover:text-[#C5612C] text-[#1A1412] bg-white"
+        >
+          Public Browse Page
+        </a>
+      </div>
+      <p className="text-sm mt-6 text-[#8B7355]">
+        Tip: switch pages using the links above or enter URLs directly (e.g.,
+        /preview/client).
+      </p>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // AppLoader  — waits for session + profile before rendering routes
 // ─────────────────────────────────────────────────────────────────────────────
 function AppLoader() {
@@ -189,6 +247,12 @@ function AppRoutes() {
     <Routes>
       {/* ── Public ─────────────────────────────────────────────────────────── */}
       <Route path="/" element={<PublicPage />} />
+      <Route path="/preview" element={<PreviewHome />} />
+      <Route path="/preview/client" element={<ClientDashboard />} />
+      <Route path="/preview/manager" element={<ManagerDashboard />} />
+      <Route path="/preview/owner" element={<OwnerDashboard />} />
+      <Route path="/preview/admin" element={<SuperAdminDashboard />} />
+      <Route path="/preview/worker" element={<WorkerDashboard />} />
       <Route path="/login" element={<LoginPage />} />
       <Route path="/signup" element={<SignupPage />} />
 

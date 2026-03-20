@@ -13,6 +13,8 @@ export default function Button({
   variant = "primary",
   size = "md",
   className = "",
+  fullWidth = false,
+  loading = false,
   ...props
 }) {
   const sizeStyle =
@@ -22,12 +24,16 @@ export default function Button({
         ? "px-5 py-3 text-base"
         : "px-4 py-2.5 text-sm";
 
+  const widthStyle = fullWidth ? "w-full" : "inline-flex";
+  const disabled = loading || props.disabled;
+
   return (
     <button
-      className={`${VARIANT[variant] || VARIANT.primary} ${sizeStyle} rounded-lg font-semibold transition focus:outline-none focus:ring-2 focus:ring-[#C5612C] ${className}`.trim()}
+      className={`${VARIANT[variant] || VARIANT.primary} ${sizeStyle} ${widthStyle} rounded-lg font-semibold transition focus:outline-none focus:ring-2 focus:ring-[#C5612C] ${className}`.trim()}
+      disabled={disabled}
       {...props}
     >
-      {children}
+      {loading ? "Loading..." : children}
     </button>
   );
 }

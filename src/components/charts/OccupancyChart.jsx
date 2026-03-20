@@ -1,6 +1,13 @@
 import {
-  BarChart, Bar, XAxis, YAxis, CartesianGrid,
-  Tooltip, Legend, ResponsiveContainer, Cell,
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  ResponsiveContainer,
+  Cell,
 } from "recharts";
 
 // =============================================================================
@@ -24,24 +31,50 @@ import {
 
 function DarkTooltip({ active, payload, label }) {
   if (!active || !payload?.length) return null;
-  const total    = payload.reduce((s, p) => s + (p.value ?? 0), 0);
-  const occupied = payload.find(p => p.dataKey === "occupied")?.value ?? 0;
-  const rate     = total > 0 ? Math.round((occupied / total) * 100) : 0;
+  const total = payload.reduce((s, p) => s + (p.value ?? 0), 0);
+  const occupied = payload.find((p) => p.dataKey === "occupied")?.value ?? 0;
+  const rate = total > 0 ? Math.round((occupied / total) * 100) : 0;
 
   return (
-    <div style={{
-      background: "#1A1412", border: "1px solid rgba(255,255,255,0.10)",
-      borderRadius: 12, padding: "10px 14px", fontSize: 12,
-      fontFamily: "'DM Sans', system-ui", boxShadow: "0 8px 24px rgba(0,0,0,0.30)",
-      minWidth: 140,
-    }}>
-      <p style={{ color: "rgba(255,255,255,0.55)", marginBottom: 6, fontWeight: 600 }}>{label}</p>
-      {payload.map(p => (
-        <p key={p.name} style={{ color: p.fill ?? p.color, margin: "3px 0", fontWeight: 600 }}>
+    <div
+      style={{
+        background: "#1A1412",
+        border: "1px solid rgba(255,255,255,0.10)",
+        borderRadius: 12,
+        padding: "10px 14px",
+        fontSize: 12,
+        fontFamily: "'DM Sans', system-ui",
+        boxShadow: "0 8px 24px rgba(0,0,0,0.30)",
+        minWidth: 140,
+      }}
+    >
+      <p
+        style={{
+          color: "rgba(255,255,255,0.55)",
+          marginBottom: 6,
+          fontWeight: 600,
+        }}
+      >
+        {label}
+      </p>
+      {payload.map((p) => (
+        <p
+          key={p.name}
+          style={{ color: p.fill ?? p.color, margin: "3px 0", fontWeight: 600 }}
+        >
           {p.name}: {p.value} rooms
         </p>
       ))}
-      <p style={{ color: "#10B981", marginTop: 6, fontWeight: 700, borderTop: "1px solid rgba(255,255,255,0.08)", paddingTop: 6, fontSize: 11 }}>
+      <p
+        style={{
+          color: "#10B981",
+          marginTop: 6,
+          fontWeight: 700,
+          borderTop: "1px solid rgba(255,255,255,0.08)",
+          paddingTop: 6,
+          fontSize: 11,
+        }}
+      >
         Occupancy: {rate}%
       </p>
     </div>
@@ -50,9 +83,10 @@ function DarkTooltip({ active, payload, label }) {
 
 function RateLabel({ x, y, width, value, index, data }) {
   if (!data?.[index]) return null;
-  const row  = data[index];
-  const total = (row.occupied ?? 0) + (row.available ?? 0) + (row.maintenance ?? 0);
-  const rate  = total > 0 ? Math.round(((row.occupied ?? 0) / total) * 100) : 0;
+  const row = data[index];
+  const total =
+    (row.occupied ?? 0) + (row.available ?? 0) + (row.maintenance ?? 0);
+  const rate = total > 0 ? Math.round(((row.occupied ?? 0) / total) * 100) : 0;
   return (
     <text
       x={x + width / 2}
@@ -69,10 +103,10 @@ function RateLabel({ x, y, width, value, index, data }) {
 }
 
 export default function OccupancyChart({
-  data      = [],
-  height    = 240,
-  variant   = "grouped",
-  showRate  = false,
+  data = [],
+  height = 240,
+  variant = "grouped",
+  showRate = false,
 }) {
   const isStacked = variant === "stacked";
 
@@ -85,24 +119,49 @@ export default function OccupancyChart({
           barCategoryGap="30%"
           barGap={isStacked ? 0 : 3}
         >
-          <CartesianGrid strokeDasharray="3 3" stroke="rgba(0,0,0,0.06)" vertical={false} />
+          <CartesianGrid
+            strokeDasharray="3 3"
+            stroke="rgba(0,0,0,0.06)"
+            vertical={false}
+          />
 
           <XAxis
             dataKey="name"
-            tick={{ fontSize: 11, fill: "#8B7355", fontFamily: "'DM Sans', system-ui" }}
-            axisLine={false} tickLine={false} dy={6}
+            tick={{
+              fontSize: 11,
+              fill: "#8B7355",
+              fontFamily: "'DM Sans', system-ui",
+            }}
+            axisLine={false}
+            tickLine={false}
+            dy={6}
           />
           <YAxis
-            tick={{ fontSize: 11, fill: "#8B7355", fontFamily: "'DM Sans', system-ui" }}
-            axisLine={false} tickLine={false} width={36}
+            tick={{
+              fontSize: 11,
+              fill: "#8B7355",
+              fontFamily: "'DM Sans', system-ui",
+            }}
+            axisLine={false}
+            tickLine={false}
+            width={36}
             allowDecimals={false}
           />
 
-          <Tooltip content={<DarkTooltip />} cursor={{ fill: "rgba(197,97,44,0.05)" }} />
+          <Tooltip
+            content={<DarkTooltip />}
+            cursor={{ fill: "rgba(197,97,44,0.05)" }}
+          />
 
           <Legend
-            wrapperStyle={{ fontSize: 12, color: "#5C4A3A", fontFamily: "'DM Sans', system-ui", paddingTop: 10 }}
-            iconType="circle" iconSize={8}
+            wrapperStyle={{
+              fontSize: 12,
+              color: "#5C4A3A",
+              fontFamily: "'DM Sans', system-ui",
+              paddingTop: 10,
+            }}
+            iconType="circle"
+            iconSize={8}
           />
 
           {/* Occupied */}
@@ -113,7 +172,9 @@ export default function OccupancyChart({
             radius={isStacked ? [0, 0, 0, 0] : [4, 4, 0, 0]}
             stackId={isStacked ? "a" : undefined}
             maxBarSize={48}
-            label={showRate && !isStacked ? <RateLabel data={data} /> : undefined}
+            label={
+              showRate && !isStacked ? <RateLabel data={data} /> : undefined
+            }
           />
 
           {/* Available */}
@@ -127,7 +188,7 @@ export default function OccupancyChart({
           />
 
           {/* Maintenance (optional field) */}
-          {data.some(d => d.maintenance != null) && (
+          {data.some((d) => d.maintenance != null) && (
             <Bar
               dataKey="maintenance"
               name="Maintenance"
@@ -142,3 +203,4 @@ export default function OccupancyChart({
     </div>
   );
 }
+export { OccupancyChart };

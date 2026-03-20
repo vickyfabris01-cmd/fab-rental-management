@@ -1,4 +1,11 @@
-import { PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer } from "recharts";
+import {
+  PieChart,
+  Pie,
+  Cell,
+  Tooltip,
+  Legend,
+  ResponsiveContainer,
+} from "recharts";
 
 // =============================================================================
 // PaymentMethodPie
@@ -22,10 +29,10 @@ import { PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer } from "recha
 
 // Method colours — fixed so they're consistent across every chart in the app
 const METHOD_COLORS = {
-  "M-Pesa":        "#10B981",
-  "Cash":          "#C5612C",
+  "M-Pesa": "#10B981",
+  Cash: "#C5612C",
   "Bank Transfer": "#3B82F6",
-  "Other":         "#8B7355",
+  Other: "#8B7355",
 };
 
 // Fallback palette for unknown methods
@@ -39,18 +46,31 @@ function DarkTooltip({ active, payload, valueType, currency }) {
   if (!active || !payload?.length) return null;
   const { name, value, payload: row } = payload[0];
   return (
-    <div style={{
-      background: "#1A1412", border: "1px solid rgba(255,255,255,0.10)",
-      borderRadius: 12, padding: "10px 14px", fontSize: 12,
-      fontFamily: "'DM Sans', system-ui", boxShadow: "0 8px 24px rgba(0,0,0,0.30)",
-      minWidth: 150,
-    }}>
-      <p style={{ color: "rgba(255,255,255,0.55)", marginBottom: 4, fontWeight: 600 }}>{name}</p>
+    <div
+      style={{
+        background: "#1A1412",
+        border: "1px solid rgba(255,255,255,0.10)",
+        borderRadius: 12,
+        padding: "10px 14px",
+        fontSize: 12,
+        fontFamily: "'DM Sans', system-ui",
+        boxShadow: "0 8px 24px rgba(0,0,0,0.30)",
+        minWidth: 150,
+      }}
+    >
+      <p
+        style={{
+          color: "rgba(255,255,255,0.55)",
+          marginBottom: 4,
+          fontWeight: 600,
+        }}
+      >
+        {name}
+      </p>
       <p style={{ color: row.color ?? "#fff", fontWeight: 700, fontSize: 15 }}>
         {valueType === "amount"
           ? `${currency} ${Number(value).toLocaleString("en-KE")}`
-          : `${value} payments`
-        }
+          : `${value} payments`}
       </p>
     </div>
   );
@@ -58,20 +78,36 @@ function DarkTooltip({ active, payload, valueType, currency }) {
 
 // Centre label rendered inside the donut hole
 function CentreLabel({ cx, cy, total, currency, valueType }) {
-  const label = valueType === "amount"
-    ? total >= 1_000_000
-      ? `${(total / 1_000_000).toFixed(1)}M`
-      : total >= 1_000
-      ? `${(total / 1_000).toFixed(0)}k`
-      : String(total)
-    : String(total);
+  const label =
+    valueType === "amount"
+      ? total >= 1_000_000
+        ? `${(total / 1_000_000).toFixed(1)}M`
+        : total >= 1_000
+          ? `${(total / 1_000).toFixed(0)}k`
+          : String(total)
+      : String(total);
 
   return (
     <g>
-      <text x={cx} y={cy - 8} textAnchor="middle" fill="#1A1412" fontWeight={900} fontSize={18} fontFamily="'Playfair Display', serif">
+      <text
+        x={cx}
+        y={cy - 8}
+        textAnchor="middle"
+        fill="#1A1412"
+        fontWeight={900}
+        fontSize={18}
+        fontFamily="'Playfair Display', serif"
+      >
         {valueType === "amount" ? currency : ""} {label}
       </text>
-      <text x={cx} y={cy + 12} textAnchor="middle" fill="#8B7355" fontSize={11} fontFamily="'DM Sans', system-ui">
+      <text
+        x={cx}
+        y={cy + 12}
+        textAnchor="middle"
+        fill="#8B7355"
+        fontSize={11}
+        fontFamily="'DM Sans', system-ui"
+      >
         total {valueType === "amount" ? "collected" : "payments"}
       </text>
     </g>
@@ -79,12 +115,12 @@ function CentreLabel({ cx, cy, total, currency, valueType }) {
 }
 
 export default function PaymentMethodPie({
-  data        = [],
-  height      = 220,
-  valueType   = "amount",
-  currency    = "KES",
+  data = [],
+  height = 220,
+  valueType = "amount",
+  currency = "KES",
   innerRadius = 52,
-  showLegend  = true,
+  showLegend = true,
 }) {
   const total = data.reduce((s, d) => s + (d.value ?? 0), 0);
 
@@ -110,11 +146,7 @@ export default function PaymentMethodPie({
             endAngle={-270}
           >
             {enriched.map((entry, i) => (
-              <Cell
-                key={`cell-${i}`}
-                fill={entry.color}
-                stroke="none"
-              />
+              <Cell key={`cell-${i}`} fill={entry.color} stroke="none" />
             ))}
           </Pie>
 
@@ -144,7 +176,10 @@ export default function PaymentMethodPie({
                 paddingTop: 8,
               }}
               formatter={(value, entry) => {
-                const pct = total > 0 ? Math.round((entry.payload.value / total) * 100) : 0;
+                const pct =
+                  total > 0
+                    ? Math.round((entry.payload.value / total) * 100)
+                    : 0;
                 return `${value} (${pct}%)`;
               }}
             />
@@ -154,3 +189,5 @@ export default function PaymentMethodPie({
     </div>
   );
 }
+
+export { PaymentMethodPie };

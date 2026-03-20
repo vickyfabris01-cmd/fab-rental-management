@@ -1,294 +1,393 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useNavigate, Link }   from "react-router-dom";
 
-// ─── Data ─────────────────────────────────────────────────────────────────────
-const worker = { name:"Samuel Oloo", role:"Security Guard", tenant:"Sunrise Hostel", salary:18000, payCycle:"Monthly", phone:"0712 345 678", startDate:"Aug 12, 2023" };
-const payments = [
-  { id:1, period:"Feb 2025",  amount:18000, method:"M-Pesa", ref:"QKT12XBABY", status:"paid", paidAt:"Feb 28, 2025" },
-  { id:2, period:"Jan 2025",  amount:18000, method:"M-Pesa", ref:"PJR09WZNBX", status:"paid", paidAt:"Jan 31, 2025" },
-  { id:3, period:"Dec 2024",  amount:18000, method:"Cash",   ref:"MANUAL",     status:"paid", paidAt:"Dec 31, 2024" },
-  { id:4, period:"Nov 2024",  amount:18000, method:"M-Pesa", ref:"MXZ44PLQRT", status:"paid", paidAt:"Nov 30, 2024" },
-  { id:5, period:"Oct 2024",  amount:18000, method:"M-Pesa", ref:"NXZ11BPLYT", status:"paid", paidAt:"Oct 31, 2024" },
-  { id:6, period:"Mar 2025",  amount:18000, method:"M-Pesa", ref:null,          status:"pending", paidAt:null },
-];
-// Generate attendance for current month
-const today = new Date();
-const daysInMonth = new Date(today.getFullYear(), today.getMonth()+1, 0).getDate();
-const attendance = Array.from({length: daysInMonth}, (_, i) => {
-  const day = i + 1;
-  const date = new Date(today.getFullYear(), today.getMonth(), day);
-  const dow = date.getDay();
-  if (day > today.getDate()) return { day, status: "future" };
-  if (dow === 0) return { day, status: "off" }; // Sunday off
-  const r = Math.random();
-  if (r < 0.82) return { day, status: "present" };
-  if (r < 0.90) return { day, status: "absent" };
-  if (r < 0.95) return { day, status: "half" };
-  return { day, status: "leave" };
-});
+// ── Layout ────────────────────────────────────────────────────────────────────
+import DashboardLayout         from "../../layouts/DashboardLayout.jsx";
 
-const attStats = {
-  present: attendance.filter(a=>a.status==="present").length,
-  absent:  attendance.filter(a=>a.status==="absent").length,
-  half:    attendance.filter(a=>a.status==="half").length,
-  leave:   attendance.filter(a=>a.status==="leave").length,
+// ── Components ────────────────────────────────────────────────────────────────
+import PageHeader              from "../../components/layout/PageHeader.jsx";
+import StatsCard               from "../../components/data/StatsCard.jsx";
+import Avatar                  from "../../components/ui/Avatar.jsx";
+import Badge                   from "../../components/ui/Badge.jsx";
+import Button                  from "../../components/ui/Button.jsx";
+import { Spinner }             from "../../components/ui/Spinner.jsx";
+import { Alert }               from "../../components/ui/Alert.jsx";
+
+// ── Store / hooks ─────────────────────────────────────────────────────────────
+import useAuthStore            from "../../store/authStore.js";
+import useTenantStore          from "../../store/tenantStore.js";
+
+// ── API ───────────────────────────────────────────────────────────────────────
+import { getWorkers, getMyWorkerPayments, getAttendance } from "../../lib/api/workers.js";
+
+// ── Utils ─────────────────────────────────────────────────────────────────────
+import { formatCurrency, formatDate, formatRelativeTime } from "../../lib/formatters.js";
+
+// =============================================================================
+// WorkerDashboard  /worker
+//
+// Sections:
+//   1. Profile hero banner
+//   2. KPI stats
+//   3. Attendance calendar (current month) + Recent salary payments side by side
+// =============================================================================
+
+const Ic = ({ d, size = 16 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none"
+    stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
+    <path d={d} />
+  </svg>
+);
+
+// ── Attendance colour config ──────────────────────────────────────────────────
+const ATT = {
+  present: { dot:"#10B981", bg:"#ECFDF5", border:"#A7F3D0", text:"#065F46", label:"Present"  },
+  absent:  { dot:"#EF4444", bg:"#FEF2F2", border:"#FECACA", text:"#991B1B", label:"Absent"   },
+  half_day:{ dot:"#F59E0B", bg:"#FFFBEB", border:"#FDE68A", text:"#92400E", label:"Half Day" },
+  leave:   { dot:"#3B82F6", bg:"#EFF6FF", border:"#BFDBFE", text:"#1E40AF", label:"Leave"    },
+  off:     { dot:"#D1D5DB", bg:"#F9FAFB", border:"transparent", text:"#9CA3AF", label:"Off"  },
+  future:  { dot:"transparent", bg:"transparent", border:"transparent", text:"#E5E7EB", label:"" },
 };
 
-// ─── Icons ─────────────────────────────────────────────────────────────────────
-const Ic = ({d,s=20,c=""}) => <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" className={c}><path d={d}/></svg>;
-const HomeIcon   = () => <Ic d="M3 9.5L12 3l9 6.5V20a1 1 0 01-1 1H4a1 1 0 01-1-1V9.5z"/>;
-const WalletIcon = () => <Ic d="M2 7h20v13a1 1 0 01-1 1H3a1 1 0 01-1-1V7zm0 0l2-4h16l2 4"/>;
-const CalIcon    = () => <Ic d="M8 2v3M16 2v3M3 9h18M5 4h14a1 1 0 011 1v14a1 1 0 01-1 1H5a1 1 0 01-1-1V5a1 1 0 011-1z"/>;
-const UserIcon   = () => <Ic d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2M12 11a4 4 0 100-8 4 4 0 000 8z"/>;
-const BellIcon   = () => <Ic d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9M13.73 21a2 2 0 01-3.46 0"/>;
-const MenuIcon   = () => <Ic d="M4 6h16M4 12h16M4 18h16"/>;
-const LogoutIcon = () => <Ic d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>;
+const DAY_LABELS = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
 
-// ─── Status dot colors ────────────────────────────────────────────────────────
-const attColor = {
-  present: { bg:"bg-emerald-500", label:"Present", text:"text-emerald-700", light:"bg-emerald-50 border-emerald-200" },
-  absent:  { bg:"bg-red-500",     label:"Absent",  text:"text-red-600",     light:"bg-red-50 border-red-200" },
-  half:    { bg:"bg-amber-400",   label:"Half-day", text:"text-amber-700",  light:"bg-amber-50 border-amber-200" },
-  leave:   { bg:"bg-blue-400",    label:"Leave",   text:"text-blue-700",    light:"bg-blue-50 border-blue-200" },
-  off:     { bg:"bg-stone-200",   label:"Off",     text:"text-stone-400",   light:"bg-stone-50 border-stone-200" },
-  future:  { bg:"bg-transparent", label:"",        text:"text-stone-300",   light:"bg-transparent border-transparent" },
-};
+// ── Attendance calendar ───────────────────────────────────────────────────────
+function AttendanceCalendar({ records, month, year }) {
+  const today        = new Date();
+  const daysInMonth  = new Date(year, month + 1, 0).getDate();
+  const firstDow     = new Date(year, month, 1).getDay();
 
-const dayLabels = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
+  // Build a map of day → status from DB records
+  const byDay = {};
+  records.forEach(r => {
+    const d = new Date(r.date);
+    if (d.getMonth() === month && d.getFullYear() === year) {
+      byDay[d.getDate()] = r.status;
+    }
+  });
 
-// ─── Main ─────────────────────────────────────────────────────────────────────
-export default function WorkerDashboard() {
-  const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [activePage, setActivePage] = useState("overview");
-
-  const monthName = today.toLocaleString("default",{month:"long"});
-  const year = today.getFullYear();
-  const firstDayOfMonth = new Date(year, today.getMonth(), 1).getDay();
-
-  // Calendar grid (including leading empty cells)
-  const calendarCells = [...Array(firstDayOfMonth).fill(null), ...attendance];
-
-  const navItems = [
-    { id:"overview",   label:"My Overview",  icon:<HomeIcon /> },
-    { id:"payments",   label:"Pay History",  icon:<WalletIcon /> },
-    { id:"attendance", label:"Attendance",   icon:<CalIcon /> },
-    { id:"profile",    label:"My Profile",   icon:<UserIcon /> },
+  const cells = [
+    ...Array(firstDow).fill(null),
+    ...Array.from({ length: daysInMonth }, (_, i) => {
+      const day  = i + 1;
+      const date = new Date(year, month, day);
+      const dow  = date.getDay();
+      if (date > today) return { day, status:"future" };
+      if (dow === 0)    return { day, status:"off" };     // Sunday
+      return { day, status: byDay[day] ?? "future" };     // not-yet-recorded = muted
+    }),
   ];
 
+  const counts = { present:0, absent:0, half_day:0, leave:0 };
+  Object.values(byDay).forEach(s => { if (counts[s] !== undefined) counts[s]++; });
+
   return (
-    <div className="flex h-screen bg-[#FAF7F2] overflow-hidden" style={{fontFamily:"'DM Sans', sans-serif"}}>
-      <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Sans:wght@300;400;500;600&display=swap');
-        .font-display{font-family:'Playfair Display',serif}
-        .nav-item{transition:all 0.18s ease}
-        .nav-item:hover{background:rgba(197,97,44,0.08)}
-        .nav-item.active{background:rgba(197,97,44,0.12)}
-        ::-webkit-scrollbar{width:4px}
-        ::-webkit-scrollbar-thumb{background:#E8DDD4;border-radius:2px}
-        @keyframes fadeSlide{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
-        .fade-slide{animation:fadeSlide 0.4s ease forwards}
-        .s1{animation-delay:.05s;opacity:0}.s2{animation-delay:.10s;opacity:0}
-        .s3{animation-delay:.15s;opacity:0}.s4{animation-delay:.20s;opacity:0}
-      `}</style>
-
-      {/* Sidebar */}
-      <aside className={`fixed lg:static inset-y-0 left-0 z-40 flex flex-col w-60 bg-[#1A1412] transition-transform duration-300 ${sidebarOpen?"translate-x-0":"-translate-x-full lg:translate-x-0"}`}>
-        <div className="flex items-center gap-3 px-5 py-5 border-b border-white/10">
-          <div className="w-8 h-8 rounded-lg bg-[#C5612C] flex items-center justify-center flex-shrink-0">
-            <svg viewBox="0 0 24 24" fill="white" className="w-5 h-5"><path d="M3 9.5L12 3l9 6.5V20a1 1 0 01-1 1H4a1 1 0 01-1-1V9.5z"/></svg>
+    <div>
+      {/* Legend */}
+      <div style={{ display:"flex", flexWrap:"wrap", gap:10, marginBottom:16 }}>
+        {Object.entries(ATT).filter(([k]) => k !== "future" && k !== "off").map(([k, v]) => (
+          <div key={k} style={{ display:"flex", alignItems:"center", gap:5 }}>
+            <span style={{ width:8, height:8, borderRadius:"50%", background:v.dot, flexShrink:0 }}/>
+            <span style={{ fontSize:11, color:"#8B7355" }}>{v.label}</span>
           </div>
-          <div>
-            <p className="font-display font-bold text-white text-sm">{worker.tenant}</p>
-            <p className="text-xs text-white/40">Worker Portal</p>
+        ))}
+      </div>
+
+      {/* Day headers */}
+      <div style={{ display:"grid", gridTemplateColumns:"repeat(7,1fr)", marginBottom:6 }}>
+        {DAY_LABELS.map(d => (
+          <p key={d} style={{ textAlign:"center", fontSize:11, fontWeight:600, color:"#8B7355", margin:0, padding:"4px 0" }}>{d}</p>
+        ))}
+      </div>
+
+      {/* Calendar grid */}
+      <div style={{ display:"grid", gridTemplateColumns:"repeat(7,1fr)", gap:4 }}>
+        {cells.map((cell, i) => {
+          if (!cell) return <div key={`e-${i}`} />;
+          const cfg     = ATT[cell.status] ?? ATT.future;
+          const isToday = cell.day === today.getDate() && month === today.getMonth() && year === today.getFullYear() && cell.status !== "future";
+          return (
+            <div key={cell.day} style={{
+              aspectRatio:"1", borderRadius:9, display:"flex", flexDirection:"column",
+              alignItems:"center", justifyContent:"center",
+              background: cfg.bg,
+              border: isToday ? `2px solid #C5612C` : `1px solid ${cfg.border}`,
+              opacity: cell.status === "future" ? 0.35 : 1,
+            }}>
+              <span style={{ fontSize:12, fontWeight: isToday ? 700 : 500,
+                color: isToday ? "#C5612C" : cfg.text }}>
+                {cell.day}
+              </span>
+              {cell.status !== "future" && cell.status !== "off" && (
+                <span style={{ width:5, height:5, borderRadius:"50%", background:cfg.dot, marginTop:2 }}/>
+              )}
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Summary row */}
+      <div style={{ display:"grid", gridTemplateColumns:"repeat(4,1fr)", gap:8, marginTop:16, paddingTop:14, borderTop:"1px solid #F5EDE0" }}>
+        {[
+          ["Present",  counts.present,  "#10B981", "#ECFDF5"],
+          ["Absent",   counts.absent,   "#EF4444", "#FEF2F2"],
+          ["Half Day", counts.half_day, "#F59E0B", "#FFFBEB"],
+          ["Leave",    counts.leave,    "#3B82F6", "#EFF6FF"],
+        ].map(([label, count, color, bg]) => (
+          <div key={label} style={{ background:bg, borderRadius:12, padding:"10px 8px", textAlign:"center" }}>
+            <p style={{ fontFamily:"'Playfair Display',serif", fontWeight:900, fontSize:22, color, margin:0 }}>{count}</p>
+            <p style={{ fontSize:11, color:"#8B7355", margin:"2px 0 0" }}>{label}</p>
           </div>
-        </div>
-        <nav className="flex-1 px-3 py-4 space-y-0.5">
-          {navItems.map(item => (
-            <button key={item.id} onClick={() => { setActivePage(item.id); setSidebarOpen(false); }}
-              className={`nav-item w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left ${activePage===item.id?"active text-white":"text-white/50 hover:text-white/80"}`}>
-              <span className={activePage===item.id?"text-[#C5612C]":""}>{item.icon}</span>
-              <span className="text-sm font-medium">{item.label}</span>
-            </button>
-          ))}
-        </nav>
-        <div className="px-3 py-4 border-t border-white/10">
-          <button className="nav-item w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-white/50 hover:text-red-400">
-            <LogoutIcon /><span className="text-sm font-medium">Sign Out</span>
-          </button>
-        </div>
-      </aside>
-      {sidebarOpen && <div className="fixed inset-0 z-30 bg-black/50 lg:hidden" onClick={() => setSidebarOpen(false)} />}
-
-      {/* Main */}
-      <div className="flex-1 flex flex-col overflow-hidden">
-        <header className="flex items-center justify-between px-6 py-4 bg-white border-b border-[#E8DDD4] flex-shrink-0">
-          <div className="flex items-center gap-3">
-            <button onClick={() => setSidebarOpen(true)} className="lg:hidden text-[#8B7355]"><MenuIcon /></button>
-            <div>
-              <p className="text-xs text-[#8B7355]">Worker Portal</p>
-              <h1 className="font-display font-bold text-[#1A1412] text-lg">{worker.name}</h1>
-            </div>
-          </div>
-          <div className="flex items-center gap-3">
-            <button className="text-[#8B7355] hover:text-[#C5612C] p-2 transition-colors"><BellIcon /></button>
-            <div className="flex items-center gap-2 pl-3 border-l border-[#E8DDD4]">
-              <div className="w-8 h-8 rounded-full bg-[#C5612C]/15 flex items-center justify-center text-sm font-bold text-[#C5612C]">
-                {worker.name.split(" ").map(n=>n[0]).join("")}
-              </div>
-              <div className="hidden sm:block">
-                <p className="text-xs font-semibold text-[#1A1412] leading-none">{worker.name.split(" ")[0]}</p>
-                <p className="text-xs text-[#8B7355]">{worker.role}</p>
-              </div>
-            </div>
-          </div>
-        </header>
-
-        <main className="flex-1 overflow-y-auto px-6 py-6 space-y-5">
-
-          {/* Profile Banner */}
-          <div className="fade-slide s1 relative rounded-3xl overflow-hidden p-6"
-            style={{background:"linear-gradient(135deg, #1A1412 0%, #3D2415 100%)"}}>
-            <div className="absolute inset-0 opacity-5">
-              <svg className="w-full h-full"><defs><pattern id="pw" width="20" height="20" patternUnits="userSpaceOnUse"><circle cx="2" cy="2" r="1" fill="white"/></pattern></defs><rect width="100%" height="100%" fill="url(#pw)"/></svg>
-            </div>
-            <div className="relative flex flex-col sm:flex-row sm:items-center gap-5">
-              <div className="w-16 h-16 rounded-2xl bg-[#C5612C]/25 border border-[#C5612C]/40 flex items-center justify-center text-2xl font-black text-[#C5612C] flex-shrink-0">
-                {worker.name.split(" ").map(n=>n[0]).join("")}
-              </div>
-              <div className="flex-1">
-                <h2 className="font-display font-black text-white text-2xl">{worker.name}</h2>
-                <p className="text-white/60 text-sm mt-0.5">{worker.role} · {worker.tenant}</p>
-                <p className="text-white/40 text-xs mt-1">Since {worker.startDate}</p>
-              </div>
-              <div className="grid grid-cols-2 gap-3 sm:grid-cols-2">
-                <div className="bg-white/8 border border-white/10 rounded-xl px-4 py-2.5 text-center">
-                  <p className="text-white/40 text-xs">Monthly Salary</p>
-                  <p className="font-display font-bold text-[#C5612C] text-lg leading-tight">KES {worker.salary.toLocaleString()}</p>
-                </div>
-                <div className="bg-white/8 border border-white/10 rounded-xl px-4 py-2.5 text-center">
-                  <p className="text-white/40 text-xs">Pay Cycle</p>
-                  <p className="font-display font-bold text-white text-lg leading-tight">{worker.payCycle}</p>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Attendance + Payments side by side */}
-          <div className="grid lg:grid-cols-5 gap-5">
-            {/* Attendance Calendar */}
-            <div className="fade-slide s2 lg:col-span-3 bg-white rounded-2xl border border-[#E8DDD4] p-6">
-              <div className="flex items-center justify-between mb-5">
-                <div>
-                  <p className="text-xs font-semibold uppercase tracking-widest text-[#C5612C] mb-0.5">This Month</p>
-                  <h3 className="font-display font-bold text-[#1A1412] text-xl">{monthName} {year}</h3>
-                </div>
-                <div className="flex gap-2 flex-wrap justify-end">
-                  {["present","absent","half","leave","off"].map(k => (
-                    <div key={k} className="flex items-center gap-1">
-                      <span className={`w-2 h-2 rounded-full ${attColor[k].bg}`} />
-                      <span className="text-xs text-[#8B7355] capitalize">{attColor[k].label||k}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Day headers */}
-              <div className="grid grid-cols-7 mb-2">
-                {dayLabels.map(d => <p key={d} className="text-center text-xs font-semibold text-[#8B7355] py-1">{d}</p>)}
-              </div>
-
-              {/* Calendar grid */}
-              <div className="grid grid-cols-7 gap-1">
-                {calendarCells.map((cell, i) => {
-                  if (!cell) return <div key={`e-${i}`} />;
-                  const cfg = attColor[cell.status] || attColor.off;
-                  const isToday = cell.day === today.getDate() && cell.status !== "future";
-                  return (
-                    <div key={cell.day}
-                      className={`relative aspect-square rounded-lg flex flex-col items-center justify-center text-xs transition-all
-                        ${cell.status==="future" ? "opacity-30" : "cursor-default"}
-                        ${isToday ? "ring-2 ring-[#C5612C] ring-offset-1" : ""}
-                        ${cell.status !== "future" && cell.status !== "off" ? cfg.light + " border" : ""}
-                        ${cell.status==="off" ? "bg-stone-50" : ""}
-                      `}>
-                      <span className={`font-semibold ${isToday ? "text-[#C5612C]" : cfg.text} ${cell.status==="future" ? "text-stone-300" : ""}`}>
-                        {cell.day}
-                      </span>
-                      {cell.status !== "future" && cell.status !== "off" && (
-                        <span className={`w-1.5 h-1.5 rounded-full ${cfg.bg} mt-0.5`} />
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-
-              {/* Attendance summary */}
-              <div className="grid grid-cols-4 gap-2 mt-5 pt-4 border-t border-[#F5EDE0]">
-                {[
-                  { label:"Present", count:attStats.present, color:"text-emerald-600", bg:"bg-emerald-50" },
-                  { label:"Absent",  count:attStats.absent,  color:"text-red-600",     bg:"bg-red-50" },
-                  { label:"Half",    count:attStats.half,    color:"text-amber-600",   bg:"bg-amber-50" },
-                  { label:"Leave",   count:attStats.leave,   color:"text-blue-600",    bg:"bg-blue-50" },
-                ].map(s => (
-                  <div key={s.label} className={`${s.bg} rounded-xl py-2.5 text-center`}>
-                    <p className={`font-display font-black text-xl ${s.color}`}>{s.count}</p>
-                    <p className="text-xs text-[#8B7355] mt-0.5">{s.label}</p>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Payment History */}
-            <div className="fade-slide s3 lg:col-span-2 bg-white rounded-2xl border border-[#E8DDD4] p-6 flex flex-col">
-              <div className="mb-5">
-                <p className="text-xs font-semibold uppercase tracking-widest text-[#C5612C] mb-0.5">Salary</p>
-                <h3 className="font-display font-bold text-[#1A1412] text-xl">Payment History</h3>
-              </div>
-
-              {/* Next payment banner */}
-              <div className="bg-amber-50 border border-amber-200 rounded-2xl p-3.5 mb-4 flex items-center gap-3">
-                <div className="w-8 h-8 bg-amber-100 rounded-full flex items-center justify-center flex-shrink-0">
-                  <span className="text-base">⏳</span>
-                </div>
-                <div>
-                  <p className="text-xs font-semibold text-amber-800">March 2025 — Pending</p>
-                  <p className="text-xs text-amber-600">KES 18,000 · Due Mar 31</p>
-                </div>
-              </div>
-
-              <div className="flex-1 space-y-3 overflow-y-auto">
-                {payments.filter(p=>p.status==="paid").map(p => (
-                  <div key={p.id} className="flex items-center gap-3 py-2.5 border-b border-[#F5EDE0] last:border-0">
-                    <div className="w-8 h-8 rounded-xl bg-emerald-50 flex items-center justify-center flex-shrink-0">
-                      <svg className="w-4 h-4 text-emerald-600" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"/></svg>
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-semibold text-[#1A1412]">{p.period}</p>
-                      <p className="text-xs text-[#8B7355]">{p.paidAt} · {p.method}</p>
-                    </div>
-                    <div className="text-right flex-shrink-0">
-                      <p className="text-sm font-bold text-emerald-600">KES {p.amount.toLocaleString()}</p>
-                      <p className="text-xs text-[#8B7355] font-mono">{p.ref !== "MANUAL" ? p.ref : "Cash"}</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              <div className="mt-4 pt-4 border-t border-[#F5EDE0] space-y-1.5">
-                <div className="flex justify-between text-xs">
-                  <span className="text-[#8B7355]">Total paid (2024–2025)</span>
-                  <span className="font-bold text-[#1A1412]">KES {(payments.filter(p=>p.status==="paid").reduce((a,p)=>a+p.amount,0)).toLocaleString()}</span>
-                </div>
-                <div className="flex justify-between text-xs">
-                  <span className="text-[#8B7355]">Next expected</span>
-                  <span className="font-semibold text-amber-600">KES {worker.salary.toLocaleString()}</span>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div className="h-4" />
-        </main>
+        ))}
       </div>
     </div>
+  );
+}
+
+// =============================================================================
+// Main dashboard
+// =============================================================================
+export default function WorkerDashboard() {
+  const navigate  = useNavigate();
+  const profile   = useAuthStore(s => s.profile);
+  const user      = useAuthStore(s => s.user);
+  const tenant    = useTenantStore(s => s.tenant);
+
+  const [workerRecord, setWorkerRecord] = useState(null);
+  const [payments,     setPayments]     = useState([]);
+  const [attendance,   setAttendance]   = useState([]);
+  const [loading,      setLoading]      = useState(true);
+
+  const now          = new Date();
+  const currentMonth = now.getMonth();
+  const currentYear  = now.getFullYear();
+  const monthStart   = new Date(currentYear, currentMonth, 1).toISOString().slice(0, 10);
+  const monthEnd     = new Date(currentYear, currentMonth + 1, 0).toISOString().slice(0, 10);
+  const monthName    = now.toLocaleString("en-KE", { month:"long" });
+
+  useEffect(() => {
+    if (!profile?.id || !profile?.tenant_id) return;
+
+    // Workers have a workers table row linked by user_id.
+    // Fetch by matching user_id = profile.id within the tenant.
+    Promise.all([
+      getWorkers(profile.tenant_id, { limit: 100 }),
+      getMyWorkerPayments(profile.id),
+      getAttendance(profile.tenant_id, { dateFrom: monthStart, dateTo: monthEnd }),
+    ]).then(([{ data: workers }, { data: pays }, { data: att }]) => {
+      // Find the worker row that belongs to this profile
+      const mine = (workers ?? []).find(w =>
+        w.user_id === profile.id ||
+        w.phone   === profile.phone ||
+        w.full_name?.toLowerCase() === profile.full_name?.toLowerCase()
+      );
+      setWorkerRecord(mine ?? null);
+
+      // Filter attendance to this worker if we found them
+      const myAtt = mine
+        ? (att ?? []).filter(a => a.worker_id === mine.id)
+        : (att ?? []);
+      setAttendance(myAtt);
+      setPayments(pays ?? []);
+    }).finally(() => setLoading(false));
+  }, [profile?.id, profile?.tenant_id]);
+
+  const pendingPay = payments.find(p => p.payment_status !== "paid");
+  const totalPaid  = payments.filter(p => p.payment_status === "paid")
+    .reduce((s, p) => s + Number(p.amount), 0);
+
+  // Attendance counts for current month
+  const attCounts = { present:0, absent:0, half_day:0, leave:0 };
+  attendance.forEach(a => { if (attCounts[a.status] !== undefined) attCounts[a.status]++; });
+  const workingDays = attCounts.present + attCounts.absent + attCounts.half_day + attCounts.leave;
+  const attendanceRate = workingDays > 0 ? Math.round(((attCounts.present + attCounts.half_day * 0.5) / workingDays) * 100) : 0;
+
+  const firstName = profile?.full_name?.split(" ")[0] ?? "Worker";
+
+  if (loading) return (
+    <DashboardLayout pageTitle="My Dashboard">
+      <div style={{ display:"flex", justifyContent:"center", padding:80 }}><Spinner size="lg"/></div>
+    </DashboardLayout>
+  );
+
+  return (
+    <DashboardLayout pageTitle="My Dashboard">
+      <style>{`
+        @keyframes fadeUp{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
+        .fu1{animation:fadeUp 0.4s 0.04s ease both} .fu2{animation:fadeUp 0.4s 0.10s ease both}
+        .fu3{animation:fadeUp 0.4s 0.16s ease both} .fu4{animation:fadeUp 0.4s 0.22s ease both}
+        @media(max-width:900px){.w-two{grid-template-columns:1fr!important}}
+      `}</style>
+
+      {/* ── Profile hero ── */}
+      <div className="fu1" style={{
+        background:"linear-gradient(135deg,#1A1412 0%,#2D1E16 55%,#3D2318 100%)",
+        borderRadius:20, padding:"26px 28px", marginBottom:24,
+        display:"flex", justifyContent:"space-between", alignItems:"center", flexWrap:"wrap", gap:16,
+      }}>
+        <div style={{ display:"flex", gap:16, alignItems:"center", flexWrap:"wrap" }}>
+          <Avatar name={profile?.full_name} src={profile?.avatar_url} size={64}
+            style={{ border:"3px solid rgba(197,97,44,0.5)" }}/>
+          <div>
+            <p style={{ fontSize:11, fontWeight:700, color:"rgba(255,255,255,0.4)", letterSpacing:"0.1em",
+              textTransform:"uppercase", marginBottom:4 }}>Worker Portal</p>
+            <h1 style={{ fontFamily:"'Playfair Display',serif", fontWeight:900,
+              fontSize:"clamp(20px,2.8vw,26px)", color:"#fff", margin:"0 0 4px" }}>
+              Good {now.getHours()<12?"morning":now.getHours()<17?"afternoon":"evening"}, {firstName}
+            </h1>
+            <p style={{ fontSize:13, color:"rgba(255,255,255,0.5)", margin:0 }}>
+              {workerRecord
+                ? `${workerRecord.role?.replace(/_/g," ")} · ${tenant?.name ?? "Your Property"}`
+                : profile?.full_name}
+            </p>
+          </div>
+        </div>
+
+        {workerRecord && (
+          <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10 }}>
+            {[
+              ["Monthly Salary", formatCurrency(workerRecord.salary)],
+              ["Pay Cycle",      workerRecord.pay_cycle ?? "Monthly"],
+              ["Start Date",     formatDate(workerRecord.start_date)],
+              ["Status",         workerRecord.status],
+            ].map(([k, v]) => (
+              <div key={k} style={{ background:"rgba(255,255,255,0.06)", border:"1px solid rgba(255,255,255,0.10)",
+                borderRadius:12, padding:"10px 14px", textAlign:"center" }}>
+                <p style={{ fontSize:10, color:"rgba(255,255,255,0.4)", margin:"0 0 3px" }}>{k}</p>
+                <p style={{ fontFamily:"'Playfair Display',serif", fontWeight:700, fontSize:14,
+                  color: k === "Status" && v === "active" ? "#10B981" : k === "Monthly Salary" ? "#C5612C" : "#fff",
+                  margin:0, textTransform:"capitalize" }}>{v}</p>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* ── KPI stats ── */}
+      <div className="fu2" style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(200px,1fr))", gap:16, marginBottom:24 }}>
+        <StatsCard label="Total Paid (All time)" value={formatCurrency(totalPaid)} color="success"
+          icon={<Ic d="M12 2v20M17 5H9.5a3.5 3.5 0 100 7h5a3.5 3.5 0 110 7H6"/>}
+          onClick={() => navigate("/worker/payments")} />
+        <StatsCard label="Attendance Rate" value={`${attendanceRate}%`} sublabel={`${monthName}`}
+          color={attendanceRate >= 80 ? "success" : attendanceRate >= 60 ? "warning" : "error"}
+          icon={<Ic d="M8 2v3M16 2v3M3 9h18M5 4h14a1 1 0 011 1v14a1 1 0 01-1 1H5a1 1 0 01-1-1V5a1 1 0 011-1z"/>}
+          onClick={() => navigate("/worker/attendance")} />
+        <StatsCard label="Days Present" value={attCounts.present} sublabel={`${monthName}`} color="brand"
+          icon={<Ic d="M22 11.08V12a10 10 0 11-5.93-9.14 M22 4L12 14.01l-3-3"/>}
+          onClick={() => navigate("/worker/attendance")} />
+        {pendingPay ? (
+          <StatsCard label="Pending Salary" value={formatCurrency(pendingPay.amount)} sublabel="Awaiting payment" color="warning"
+            icon={<Ic d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0"/>}
+            onClick={() => navigate("/worker/payments")} />
+        ) : (
+          <StatsCard label="Next Payment" value={formatCurrency(workerRecord?.salary ?? 0)} sublabel="All paid up" color="neutral"
+            icon={<Ic d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0"/>}
+            onClick={() => navigate("/worker/payments")} />
+        )}
+      </div>
+
+      {/* ── Calendar + Payments ── */}
+      <div className="fu3 w-two" style={{ display:"grid", gridTemplateColumns:"1fr 340px", gap:20 }}>
+
+        {/* Attendance calendar */}
+        <div style={{ background:"#fff", borderRadius:20, border:"1px solid #EDE4D8",
+          boxShadow:"0 2px 8px rgba(0,0,0,0.04)", padding:"22px" }}>
+          <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:16 }}>
+            <div>
+              <p style={{ fontSize:10, fontWeight:700, color:"#C5612C", textTransform:"uppercase",
+                letterSpacing:"0.1em", margin:"0 0 3px" }}>This Month</p>
+              <h3 style={{ fontFamily:"'Playfair Display',serif", fontWeight:700, fontSize:18,
+                color:"#1A1412", margin:0 }}>{monthName} {currentYear}</h3>
+            </div>
+            <Link to="/worker/attendance" style={{ fontSize:12, fontWeight:600, color:"#C5612C",
+              textDecoration:"none", display:"flex", alignItems:"center", gap:3 }}>
+              Full history
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M9 18l6-6-6-6"/></svg>
+            </Link>
+          </div>
+          <AttendanceCalendar records={attendance} month={currentMonth} year={currentYear} />
+        </div>
+
+        {/* Salary payments */}
+        <div style={{ background:"#fff", borderRadius:20, border:"1px solid #EDE4D8",
+          boxShadow:"0 2px 8px rgba(0,0,0,0.04)", padding:"22px",
+          display:"flex", flexDirection:"column" }}>
+          <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:16 }}>
+            <div>
+              <p style={{ fontSize:10, fontWeight:700, color:"#C5612C", textTransform:"uppercase",
+                letterSpacing:"0.1em", margin:"0 0 3px" }}>Salary</p>
+              <h3 style={{ fontFamily:"'Playfair Display',serif", fontWeight:700, fontSize:18,
+                color:"#1A1412", margin:0 }}>Payments</h3>
+            </div>
+            <Link to="/worker/payments" style={{ fontSize:12, fontWeight:600, color:"#C5612C",
+              textDecoration:"none", display:"flex", alignItems:"center", gap:3 }}>
+              View all
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M9 18l6-6-6-6"/></svg>
+            </Link>
+          </div>
+
+          {/* Pending banner */}
+          {pendingPay && (
+            <div style={{ background:"#FFFBEB", border:"1px solid #FDE68A", borderRadius:12,
+              padding:"12px 14px", marginBottom:14, display:"flex", gap:10, alignItems:"center" }}>
+              <span style={{ fontSize:18, flexShrink:0 }}>⏳</span>
+              <div>
+                <p style={{ fontSize:12, fontWeight:700, color:"#92400E", margin:0 }}>Pending Payment</p>
+                <p style={{ fontSize:11, color:"#D97706", margin:"2px 0 0" }}>
+                  {formatCurrency(pendingPay.amount)} — due soon
+                </p>
+              </div>
+            </div>
+          )}
+
+          {/* Payment list */}
+          <div style={{ flex:1, overflowY:"auto", display:"flex", flexDirection:"column", gap:0 }}>
+            {payments.length === 0 ? (
+              <p style={{ fontSize:13, color:"#8B7355", textAlign:"center", padding:"24px 0" }}>
+                No payment records yet.
+              </p>
+            ) : (
+              payments.slice(0, 6).map((p, i) => {
+                const isPaid = p.payment_status === "paid";
+                return (
+                  <div key={p.id} style={{ display:"flex", alignItems:"center", gap:10,
+                    padding:"11px 0", borderBottom: i < Math.min(payments.length,6)-1 ? "1px solid #F5EDE0" : "none" }}>
+                    <div style={{ width:34, height:34, borderRadius:10, flexShrink:0,
+                      background: isPaid ? "#ECFDF5" : "#FFFBEB",
+                      display:"flex", alignItems:"center", justifyContent:"center", fontSize:15 }}>
+                      {isPaid ? "✅" : "⏳"}
+                    </div>
+                    <div style={{ flex:1, minWidth:0 }}>
+                      <p style={{ fontSize:13, fontWeight:600, color:"#1A1412", margin:0 }}>
+                        {p.period_start ? new Date(p.period_start).toLocaleString("en-KE",{month:"short",year:"numeric"}) : "—"}
+                      </p>
+                      <p style={{ fontSize:11, color:"#8B7355", margin:"1px 0 0" }}>
+                        {p.payment_method === "mpesa" ? "M-Pesa" : p.payment_method ?? "—"}
+                        {p.mpesa_transaction_id && ` · ${p.mpesa_transaction_id}`}
+                      </p>
+                    </div>
+                    <div style={{ textAlign:"right", flexShrink:0 }}>
+                      <p style={{ fontSize:14, fontWeight:700,
+                        color: isPaid ? "#10B981" : "#D97706",
+                        fontFamily:"'Playfair Display',serif", margin:0 }}>
+                        {formatCurrency(p.amount)}
+                      </p>
+                    </div>
+                  </div>
+                );
+              })
+            )}
+          </div>
+
+          {/* Footer */}
+          <div style={{ marginTop:14, paddingTop:12, borderTop:"1px solid #EDE4D8",
+            display:"flex", justifyContent:"space-between", alignItems:"center" }}>
+            <span style={{ fontSize:12, color:"#8B7355" }}>Total received</span>
+            <span style={{ fontFamily:"'Playfair Display',serif", fontWeight:700,
+              fontSize:15, color:"#10B981" }}>{formatCurrency(totalPaid)}</span>
+          </div>
+        </div>
+      </div>
+    </DashboardLayout>
   );
 }
