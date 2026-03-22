@@ -42,7 +42,7 @@ export function useTenant() {
   const fontFamily     = branding?.font_family     ?? "DM Sans";
   const billingType    = settings?.billing_type    ?? "monthly";
   const currency       = settings?.currency        ?? "KES";
-  const paymentDueDay  = settings?.payment_due_day ?? 5;
+  const paymentDueDay  = settings?.billing_due_day ?? 5;
   const lateFeeAmount  = settings?.late_fee_amount ?? 0;
 
   /** True if a valid tenant row is loaded */
@@ -126,7 +126,7 @@ export function useTenantSettings() {
 
   return {
     billingType:    settings?.billing_type          ?? "monthly",
-    paymentDueDay:  settings?.payment_due_day       ?? 5,
+    paymentDueDay:  settings?.billing_due_day       ?? 5,
     lateFeeAmount:  settings?.late_fee_amount       ?? 0,
     gracedays:      settings?.late_fee_grace_days   ?? 3,
     currency:       settings?.currency              ?? "KES",

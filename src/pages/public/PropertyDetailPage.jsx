@@ -163,19 +163,28 @@ export default function PropertyDetailPage() {
   useEffect(() => {
     if (!slug) return;
     setLoading(true);
-    Promise.all([
-      getTenantBySlug(slug),
-      // rooms fetched after tenant is known
-    ])
-      .then(([{ data: tenant }]) => {
+    getTenantBySlug(slug)
+      .then(({ data: tenant }) => {
         if (tenant) {
-          // Merge with seed shape for fields we enrich in seed
-          setProperty(prev => ({ ...(SEED_PROPERTIES[slug] ?? {}), ...tenant }));
-          return getRooms(tenant.id, { status: "available" });
+          // Merge real tenant data with seed shape (seed provides amenities, reviews, rules etc.)
+          const seed = SEED_PROPERTIES[slug] ?? {};
+          setProperty({ ...seed, ...tenant,
+            // Use tenant branding logo if available
+            images: tenant.logo_url
+              ? [tenant.logo_url, ...(seed.images ?? []).slice(1)]
+              : seed.images ?? [],
+          });
+          return getRooms(tenant.id, { limit: 50 });
         }
+        // Tenant not found or not accessible — keep seed data
         return { data: null };
       })
-      .then(({ data }) => { if (data?.length) setRooms(data); })
+      .then(({ data }) => {
+        if (data?.length) {
+          // Show all rooms (available + occupied for display)
+          setRooms(data);
+        }
+      })
       .catch(() => {})
       .finally(() => setLoading(false));
   }, [slug]);

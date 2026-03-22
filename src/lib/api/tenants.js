@@ -17,7 +17,7 @@ const TENANT_SELECT = `
 const TENANT_DETAIL_SELECT = `
   ${TENANT_SELECT.trim()},
   tenant_branding(primary_color, secondary_color, logo_url, font_family),
-  tenant_settings(billing_type, currency, payment_due_day)
+  tenant_settings(billing_type, currency, billing_due_day)
 `;
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -67,7 +67,8 @@ export async function getTenantBySlug(slug) {
     .tenants()
     .select(TENANT_DETAIL_SELECT)
     .eq("slug", slug)
-    .eq("status", "active")
+    // No status filter — RLS handles access (active tenants visible publicly,
+    // managers can see their own pending tenant)
     .single();
   return { data, error };
 }
@@ -163,6 +164,127 @@ export async function getPlatformStats() {
     data: { tenants: tenantCounts, users: roleCounts },
     error: null,
   };
+}
+
+
+// ─────────────────────────────────────────────────────────────────────────────
+// createTenant
+// Super admin creates a new tenant (rental business) on the platform.
+// Also bootstraps tenant_branding and tenant_settings rows.
+//
+// @param {object} payload
+// @param {string}   payload.name
+// @param {string}   [payload.email]
+// @param {string}   [payload.phone]
+// @param {string}   [payload.address]
+// @param {string}   [payload.county]
+// @param {string}   [payload.plan]       'basic' | 'pro' | 'enterprise'
+// @param {string}   [payload.ownerUserId] profile id to assign as owner
+// ─────────────────────────────────────────────────────────────────────────────
+export async function createTenant(payload) {
+  const { ownerUserId, ...tenantData } = payload;
+
+  // 1. Generate slug from name
+  const slug = tenantData.name
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/(^-|-$)/g, "");
+
+  const { data: tenant, error: tenantError } = await db
+    .tenants()
+    .insert({
+      name:          tenantData.name.trim(),
+      slug:          `${slug}-${Date.now().toString(36)}`,  // ensure uniqueness
+      status:        "pending",
+      plan:          tenantData.plan     ?? "basic",
+      email:         tenantData.email    ?? null,
+      phone:         tenantData.phone    ?? null,
+      address:       tenantData.address  ?? null,
+      county:        tenantData.county   ?? null,
+      country:       "Kenya",
+      owner_user_id: ownerUserId         ?? null,
+    })
+    .select(TENANT_SELECT)
+    .single();
+
+  if (tenantError) return { data: null, error: tenantError };
+
+  // 2. Bootstrap branding row
+  await db.tenantBranding().insert({
+    tenant_id:       tenant.id,
+    primary_color:   "#C5612C",
+    secondary_color: "#1A1412",
+    font_family:     "DM Sans",
+  });
+
+  // 3. Bootstrap settings row
+  await db.tenantSettings().insert({
+    tenant_id:        tenant.id,
+    billing_type:     "monthly",
+    billing_due_day:  5,
+    grace_period_days:3,
+    currency:         "KES",
+    email_enabled:    true,
+    sms_enabled:      false,
+  });
+
+  // 4. If an owner was provided, link their profile to this tenant and set role
+  if (ownerUserId) {
+    await db
+      .profiles()
+      .update({ tenant_id: tenant.id, role: "owner", updated_at: new Date().toISOString() })
+      .eq("id", ownerUserId);
+  }
+
+  return { data: tenant, error: null };
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// assignUserToTenant
+// Links an existing user (by profile id) to a tenant with a given role.
+// Used to assign owner or manager after tenant creation.
+//
+// @param {string} tenantId
+// @param {string} userId     — profiles.id
+// @param {string} role       — 'owner' | 'manager'
+// ─────────────────────────────────────────────────────────────────────────────
+export async function assignUserToTenant(tenantId, userId, role) {
+  const { data, error } = await db
+    .profiles()
+    .update({
+      tenant_id:  tenantId,
+      role:       role,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", userId)
+    .select("id, full_name, email, role, tenant_id")
+    .single();
+
+  // Also update the tenant's owner_user_id if assigning owner
+  if (!error && role === "owner") {
+    await db
+      .tenants()
+      .update({ owner_user_id: userId, updated_at: new Date().toISOString() })
+      .eq("id", tenantId);
+  }
+
+  return { data, error };
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// removeUserFromTenant
+// Unlinks a user from a tenant — resets to visitor role.
+//
+// @param {string} userId  — profiles.id
+// ─────────────────────────────────────────────────────────────────────────────
+export async function removeUserFromTenant(userId) {
+  const { data, error } = await db
+    .profiles()
+    .update({ tenant_id: null, role: "visitor", updated_at: new Date().toISOString() })
+    .eq("id", userId)
+    .select("id, full_name, role")
+    .single();
+  return { data, error };
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

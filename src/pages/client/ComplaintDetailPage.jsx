@@ -181,14 +181,14 @@ export default function ComplaintDetailPage() {
             {/* Original complaint body */}
             <div style={{ padding:"20px", borderBottom:"1px solid #F5EDE0", background:"#FAF7F2" }}>
               <div style={{ display:"flex", gap:10, alignItems:"flex-start" }}>
-                <Avatar name={complaint.profiles?.full_name} src={complaint.profiles?.avatar_url} size="sm" />
+                <Avatar name={complaint.submitter?.full_name} src={complaint.submitter?.avatar_url} size="sm" />
                 <div>
                   <div style={{ display:"flex", gap:8, alignItems:"center", marginBottom:6 }}>
-                    <span style={{ fontSize:13, fontWeight:700, color:"#1A1412" }}>{complaint.profiles?.full_name}</span>
+                    <span style={{ fontSize:13, fontWeight:700, color:"#1A1412" }}>{complaint.submitter?.full_name}</span>
                     <span style={{ fontSize:11, color:"#8B7355" }}>{formatDate(complaint.created_at)}</span>
                     <Badge variant="brand" size="sm">Original</Badge>
                   </div>
-                  <p style={{ fontSize:14, color:"#5C4A3A", lineHeight:1.65, margin:0 }}>{complaint.description}</p>
+                  <p style={{ fontSize:14, color:"#5C4A3A", lineHeight:1.65, margin:0 }}>{complaint.body}</p>
                 </div>
               </div>
             </div>

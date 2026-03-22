@@ -1,4 +1,4 @@
-import { useEffect, useCallback } from "react";
+import { useEffect, useCallback, useMemo } from "react";
 import useNotificationStore from "../store/notificationStore";
 import useAuthStore from "../store/authStore";
 
@@ -19,18 +19,22 @@ import useAuthStore from "../store/authStore";
 //   } = useNotifications();
 // =============================================================================
 export function useNotifications() {
-  const userId = useAuthStore(s => s.user?.id ?? null);
+  const userId = useAuthStore((s) => s.user?.id ?? null);
 
-  const notifications            = useNotificationStore(s => s.notifications);
-  const unreadCount              = useNotificationStore(s => s.unreadCount);
-  const loading                  = useNotificationStore(s => s.loading);
-  const error                    = useNotificationStore(s => s.error);
-  const fetchNotifications       = useNotificationStore(s => s.fetchNotifications);
-  const markRead                 = useNotificationStore(s => s.markRead);
-  const markAllRead              = useNotificationStore(s => s.markAllRead);
-  const subscribeToNotifications = useNotificationStore(s => s.subscribeToNotifications);
-  const unsubscribeFromNotifications = useNotificationStore(s => s.unsubscribeFromNotifications);
-  const clearError               = useNotificationStore(s => s.clearError);
+  const notifications = useNotificationStore((s) => s.notifications);
+  const unreadCount = useNotificationStore((s) => s.unreadCount);
+  const loading = useNotificationStore((s) => s.loading);
+  const error = useNotificationStore((s) => s.error);
+  const fetchNotifications = useNotificationStore((s) => s.fetchNotifications);
+  const markRead = useNotificationStore((s) => s.markRead);
+  const markAllRead = useNotificationStore((s) => s.markAllRead);
+  const subscribeToNotifications = useNotificationStore(
+    (s) => s.subscribeToNotifications,
+  );
+  const unsubscribeFromNotifications = useNotificationStore(
+    (s) => s.unsubscribeFromNotifications,
+  );
+  const clearError = useNotificationStore((s) => s.clearError);
 
   // Fetch + subscribe when userId becomes available
   useEffect(() => {
@@ -42,7 +46,12 @@ export function useNotifications() {
     return () => {
       unsubscribeFromNotifications();
     };
-  }, [userId, fetchNotifications, subscribeToNotifications, unsubscribeFromNotifications]);
+  }, [
+    userId,
+    fetchNotifications,
+    subscribeToNotifications,
+    unsubscribeFromNotifications,
+  ]);
 
   // Stable markAllRead bound to userId
   const markAllReadForUser = useCallback(() => {
@@ -50,10 +59,10 @@ export function useNotifications() {
   }, [userId, markAllRead]);
 
   // ── Derived ───────────────────────────────────────────────────────────────
-  const unread      = notifications.filter(n => !n.read_at);
-  const recent      = notifications.slice(0, 8);   // latest 8 for the bell dropdown
-  const hasUnread   = unreadCount > 0;
-  const badgeCount  = unreadCount > 99 ? "99+" : String(unreadCount);
+  const unread = notifications.filter((n) => !n.is_read);
+  const recent = notifications.slice(0, 8); // latest 8 for the bell dropdown
+  const hasUnread = unreadCount > 0;
+  const badgeCount = unreadCount > 99 ? "99+" : String(unreadCount);
 
   return {
     // Data
@@ -86,12 +95,13 @@ export function useNotifications() {
 //   const { unreadCount, hasUnread } = useMiniNotifications();
 // =============================================================================
 export function useMiniNotifications() {
-  const unreadCount = useNotificationStore(s => s.unreadCount);
-  const recent      = useNotificationStore(s => s.notifications.slice(0, 8));
+  const unreadCount = useNotificationStore((s) => s.unreadCount);
+  const notifications = useNotificationStore((s) => s.notifications);
+  const recent = useMemo(() => notifications.slice(0, 8), [notifications]);
 
   return {
     unreadCount,
-    hasUnread:  unreadCount > 0,
+    hasUnread: unreadCount > 0,
     badgeCount: unreadCount > 99 ? "99+" : String(unreadCount),
     recent,
   };
@@ -108,9 +118,9 @@ export function useMiniNotifications() {
 //   const { toasts, removeToast } = useToasts();
 // =============================================================================
 export function useToasts() {
-  const toasts      = useNotificationStore(s => s.toasts);
-  const removeToast = useNotificationStore(s => s.removeToast);
-  const addToast    = useNotificationStore(s => s.addToast);
+  const toasts = useNotificationStore((s) => s.toasts);
+  const removeToast = useNotificationStore((s) => s.removeToast);
+  const addToast = useNotificationStore((s) => s.addToast);
 
   return { toasts, removeToast, addToast };
 }
@@ -127,14 +137,14 @@ export function useToasts() {
 //   toast.error("Something went wrong.", "Payment Failed");
 // =============================================================================
 export function useToast() {
-  const addToast = useNotificationStore(s => s.addToast);
+  const addToast = useNotificationStore((s) => s.addToast);
 
   return {
     success: (message, title) => addToast({ type: "success", title, message }),
-    error:   (message, title) => addToast({ type: "error",   title, message }),
-    info:    (message, title) => addToast({ type: "info",    title, message }),
+    error: (message, title) => addToast({ type: "error", title, message }),
+    info: (message, title) => addToast({ type: "info", title, message }),
     warning: (message, title) => addToast({ type: "warning", title, message }),
-    custom:  (opts)           => addToast(opts),
+    custom: (opts) => addToast(opts),
   };
 }
 

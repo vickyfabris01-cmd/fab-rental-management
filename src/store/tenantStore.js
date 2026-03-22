@@ -25,7 +25,7 @@ const DEFAULT_BRANDING = {
 
 const DEFAULT_SETTINGS = {
   billing_type:          "monthly",    // "monthly" | "semester"
-  payment_due_day:       5,            // day of month rent is due
+  billing_due_day:       5,            // day of month rent is due
   late_fee_amount:       0,
   late_fee_grace_days:   3,
   currency:              "KES",

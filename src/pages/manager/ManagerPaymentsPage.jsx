@@ -28,7 +28,7 @@ const METHOD_ICONS  = { mpesa:"📱", cash:"💵", bank_transfer:"🏦", other:"
 
 function PaymentRow({ payment }) {
   const isOk = payment.payment_status === "confirmed";
-  const client = payment.profiles;
+  const client = payment.client;
   return (
     <div style={{ display:"flex", alignItems:"center", gap:12, padding:"13px 20px", borderBottom:"1px solid #F5EDE0" }}
       onMouseOver={e => e.currentTarget.style.background = "#FFFAF6"}
@@ -45,7 +45,7 @@ function PaymentRow({ payment }) {
         <p style={{ fontSize:11, color:"#8B7355", margin:"2px 0 0" }}>
           {METHOD_LABELS[payment.payment_method] ?? payment.payment_method}
           {payment.mpesa_receipt && <span style={{ fontFamily:"'DM Mono','Courier New',monospace", marginLeft:6 }}>{payment.mpesa_receipt}</span>}
-          {payment.recorder && <span style={{ color:"#C5612C", marginLeft:8 }}>· Recorded by {payment.recorder.full_name}</span>}
+          {payment.recorded_by && <span style={{ color:"#C5612C", marginLeft:8 }}>· Manual entry</span>}
         </p>
       </div>
       <div style={{ textAlign:"right", flexShrink:0, minWidth:90 }}>
@@ -96,7 +96,7 @@ export default function ManagerPaymentsPage() {
   useEffect(() => { load(); }, [load]);
 
   const filtered = debouncedSearch
-    ? payments.filter(p => p.profiles?.full_name?.toLowerCase().includes(debouncedSearch.toLowerCase()) || p.mpesa_receipt?.includes(debouncedSearch))
+    ? payments.filter(p => p.client?.full_name?.toLowerCase().includes(debouncedSearch.toLowerCase()) || p.mpesa_receipt?.includes(debouncedSearch))
     : payments;
 
   const TABS = [

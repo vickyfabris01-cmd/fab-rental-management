@@ -147,17 +147,19 @@ export async function getAvailableRooms(opts = {}) {
     .rooms()
     .select(`
       id, tenant_id, room_number, room_type, capacity,
-      monthly_price, semester_price, amenities, images,
+      monthly_price, semester_price, status,
+      description, amenities, images,
       buildings(id, name, address),
       tenants(id, name, slug)
     `)
     .eq("status", "available")
     .order("monthly_price");
 
-  if (opts.roomType) query = query.eq("room_type", opts.roomType);
-  if (opts.maxPrice) query = query.lte("monthly_price", opts.maxPrice);
-  if (opts.minPrice) query = query.gte("monthly_price", opts.minPrice);
-  if (opts.limit)    query = query.limit(opts.limit);
+  if (opts.roomType)   query = query.eq("room_type", opts.roomType);
+  if (opts.maxPrice)   query = query.lte("monthly_price", opts.maxPrice);
+  if (opts.minPrice)   query = query.gte("monthly_price", opts.minPrice);
+  if (opts.buildingId) query = query.eq("building_id", opts.buildingId);
+  if (opts.limit)      query = query.limit(opts.limit);
 
   const { data, error } = await query;
   return { data: data ?? [], error };
@@ -228,16 +230,16 @@ export async function uploadRoomImages(roomId, tenantId, files) {
 export async function getBeds(roomId) {
   const { data, error } = await db
     .beds()
-    .select("id, room_id, bed_label, is_occupied, created_at")
+    .select("id, room_id, bed_number, status, created_at")
     .eq("room_id", roomId)
-    .order("bed_label");
+    .order("bed_number");
   return { data: data ?? [], error };
 }
 
-export async function createBed(tenantId, roomId, bedLabel) {
+export async function createBed(tenantId, roomId, bedNumber) {
   const { data, error } = await db
     .beds()
-    .insert({ tenant_id: tenantId, room_id: roomId, bed_label: bedLabel })
+    .insert({ tenant_id: tenantId, room_id: roomId, bed_number: bedNumber, status: "available" })
     .select()
     .single();
   return { data, error };

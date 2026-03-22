@@ -27,6 +27,8 @@ import { getBillingCycles }        from "../../lib/api/billing.js";
 
 // ── Utils ─────────────────────────────────────────────────────────────────────
 import { formatCurrency, formatDate } from "../../lib/formatters.js";
+import InviteManagerModal  from "../../components/modals/InviteManagerModal.jsx";
+import { fetchManagerInvites } from "../../lib/api/profile.js";
 
 // =============================================================================
 // OwnerDashboard  /owner
@@ -83,6 +85,8 @@ function fmtMonth(key) {
 
 export default function OwnerDashboard() {
   const navigate    = useNavigate();
+  const [inviteOpen,   setInviteOpen]   = useState(false);
+  const [invites,      setInvites]      = useState([]);
   const profile     = useAuthStore(s => s.profile);
   const tenant      = useTenantStore(s => s.tenant);
   const tenantId    = profile?.tenant_id;
@@ -119,9 +123,10 @@ export default function OwnerDashboard() {
       getWorkerCostsSummary(tenantId, months),
       getWorkers(tenantId, { status:"active" }),
       getBillingCycles(tenantId, { status:"overdue", limit:1 }),
+      fetchManagerInvites(tenantId),
     ]).then(([
       { data: occ }, { data: bOcc }, { data: rev }, { data: series },
-      { data: methods }, { data: wCosts }, { data: w }, { data: od },
+      { data: methods }, { data: wCosts }, { data: w }, { data: od }, { data: inv },
     ]) => {
       setOccupancy(occ);
       setBuildingOcc(bOcc ?? []);
@@ -134,6 +139,7 @@ export default function OwnerDashboard() {
       setWorkerCosts(wCosts);
       setWorkers(w ?? []);
       setOverdueCount(od?.length ?? 0);
+      setInvites(inv ?? []);
     }).finally(() => setLoading(false));
   }, [tenantId, period]);
 
@@ -345,6 +351,86 @@ export default function OwnerDashboard() {
           </div>
         </Card>
       </div>
+
+      {/* ── Team / Manager Invites ── */}
+      <Card style={{ marginTop: 24 }}>
+        <div style={{ padding:"20px 22px", borderBottom:"1px solid #EDE4D8",
+          display:"flex", justifyContent:"space-between", alignItems:"center" }}>
+          <div>
+            <p style={{ fontSize:10, fontWeight:700, color:"#C5612C",
+              textTransform:"uppercase", letterSpacing:"0.1em", margin:"0 0 3px" }}>Team</p>
+            <h3 style={{ fontFamily:"'Playfair Display',serif", fontWeight:700,
+              fontSize:18, color:"#1A1412", margin:0 }}>Property Managers</h3>
+          </div>
+          <Button variant="primary" onClick={() => setInviteOpen(true)}>
+            + Invite Manager
+          </Button>
+        </div>
+        <div style={{ padding:"16px 22px" }}>
+          {invites.length === 0 ? (
+            <div style={{ textAlign:"center", padding:"24px 0",
+              display:"flex", flexDirection:"column", alignItems:"center", gap:10 }}>
+              <div style={{ width:48, height:48, borderRadius:14,
+                background:"rgba(197,97,44,0.10)", display:"flex",
+                alignItems:"center", justifyContent:"center", fontSize:22 }}>🗝️</div>
+              <p style={{ fontSize:14, fontWeight:600, color:"#1A1412", margin:0 }}>
+                No managers yet
+              </p>
+              <p style={{ fontSize:13, color:"#8B7355", margin:0, maxWidth:320 }}>
+                Invite a property manager to handle day-to-day operations —
+                residents, payments, complaints and workforce.
+              </p>
+              <Button variant="secondary" onClick={() => setInviteOpen(true)}>
+                Send First Invite
+              </Button>
+            </div>
+          ) : (
+            <div style={{ display:"flex", flexDirection:"column", gap:0 }}>
+              {invites.map((inv, i) => (
+                <div key={inv.id} style={{ display:"flex", alignItems:"center",
+                  gap:14, padding:"12px 0",
+                  borderBottom: i < invites.length - 1 ? "1px solid #F5EDE0" : "none" }}>
+                  <div style={{ width:36, height:36, borderRadius:10,
+                    background: inv.status === "accepted" ? "#ECFDF5" : "rgba(197,97,44,0.10)",
+                    display:"flex", alignItems:"center", justifyContent:"center",
+                    fontSize:16, flexShrink:0 }}>
+                    {inv.status === "accepted" ? "✅" : "📧"}
+                  </div>
+                  <div style={{ flex:1, minWidth:0 }}>
+                    <p style={{ fontSize:14, fontWeight:600, color:"#1A1412",
+                      margin:0, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>
+                      {inv.email}
+                    </p>
+                    <p style={{ fontSize:12, color:"#8B7355", margin:"2px 0 0" }}>
+                      Invited {formatDate(inv.created_at)}
+                      {inv.profiles?.full_name && ` by ${inv.profiles.full_name}`}
+                    </p>
+                  </div>
+                  <span style={{ fontSize:11, fontWeight:700, padding:"3px 10px",
+                    borderRadius:999, textTransform:"capitalize", flexShrink:0,
+                    background: inv.status === "accepted"
+                      ? "rgba(16,185,129,0.12)" : inv.status === "expired"
+                      ? "rgba(239,68,68,0.10)" : "rgba(245,158,11,0.12)",
+                    color: inv.status === "accepted" ? "#059669"
+                      : inv.status === "expired" ? "#DC2626" : "#D97706",
+                  }}>
+                    {inv.status}
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </Card>
+
+      <InviteManagerModal
+        isOpen={inviteOpen}
+        onClose={() => setInviteOpen(false)}
+        onSuccess={(inv) => {
+          setInviteOpen(false);
+          setInvites(p => [inv, ...p]);
+        }}
+      />
     </DashboardLayout>
   );
 }

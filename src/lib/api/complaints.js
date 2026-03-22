@@ -8,9 +8,9 @@ import { db } from "../../config/supabase";
 
 const COMPLAINT_SELECT = `
   id, tenant_id, submitted_by, tenancy_id, category,
-  title, description, status, priority, assigned_to,
+  title, body, status, priority, assigned_to,
   resolved_at, created_at, updated_at,
-  profiles!submitted_by(id, full_name, avatar_url, phone),
+  submitter:profiles!submitted_by(id, full_name, avatar_url, phone),
   assignee:profiles!assigned_to(id, full_name, avatar_url)
 `;
 
@@ -102,7 +102,7 @@ export async function createComplaint({
       submitted_by: submittedBy,
       tenancy_id:   tenancyId  ?? null,
       title:        title.trim(),
-      description:  description.trim(),
+      body:         description?.trim() ?? "",
       category:     category  ?? "other",
       priority:     priority  ?? "normal",
       status:       "open",

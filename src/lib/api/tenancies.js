@@ -9,7 +9,7 @@ import { db } from "../../config/supabase";
 // =============================================================================
 
 const TENANCY_SELECT = `
-  id, tenant_id, room_id, bed_id, client_id, rental_request_id,
+  id, tenant_id, room_id, client_id, request_id, rental_request_id,
   status, move_in_date, move_out_date, billing_type, agreed_price,
   approved_by, notes, created_at, updated_at,
   rooms(id, room_number, room_type, monthly_price, buildings(id, name)),
@@ -104,17 +104,17 @@ export async function createTenancy({
   const { data, error } = await db
     .tenancies()
     .insert({
-      tenant_id:         tenantId,
-      room_id:           roomId,
-      bed_id:            bedId  ?? null,
-      client_id:         clientId,
-      rental_request_id: rentalRequestId ?? null,
-      move_in_date:      moveInDate,
-      billing_type:      billingType,
-      agreed_price:      agreedPrice,
-      approved_by:       approvedBy ?? null,
-      notes:             notes?.trim() ?? null,
-      status:            "active",
+      tenant_id:          tenantId,
+      room_id:            roomId,
+      client_id:          clientId,
+      request_id:         rentalRequestId ?? null,
+      rental_request_id:  rentalRequestId ?? null,
+      move_in_date:       moveInDate,
+      billing_type:       billingType,
+      agreed_price:       agreedPrice,
+      approved_by:        approvedBy ?? null,
+      notes:              notes?.trim() ?? null,
+      status:             "active",
     })
     .select(TENANCY_SELECT)
     .single();

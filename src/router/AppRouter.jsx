@@ -30,6 +30,7 @@ const LoginPage         = lazy(() => import("../pages/auth/LoginPage.jsx"));
 const SignupPage         = lazy(() => import("../pages/auth/SignupPage.jsx"));
 const AcceptInvitePage   = lazy(() => import("../pages/auth/AcceptInvitePage.jsx"));
 const ResetPasswordPage  = lazy(() => import("../pages/auth/ResetPasswordPage.jsx"));
+const ConfirmPage        = lazy(() => import("../pages/auth/ConfirmPage.jsx"));
 
 // ── Client (resident) ─────────────────────────────────────────────────────────
 const ClientDashboard       = lazy(() => import("../pages/client/ClientDashboard.jsx"));
@@ -173,28 +174,36 @@ function TitleSync() {
 // protected routes.  Public pages (landing, browse) render immediately.
 // =============================================================================
 function AppLoader() {
-  const init          = useAuthStore(s => s.init);
-  const user          = useAuthStore(s => s.user);
-  const profile       = useAuthStore(s => s.profile);
-  const fetchTenant   = useTenantStore(s => s.fetchTenantData);
-  const initNotifs    = useNotificationStore(s => s.init);
+  const init              = useAuthStore(s => s.init);
+  const user              = useAuthStore(s => s.user);
+  const profile           = useAuthStore(s => s.profile);
+  const fetchTenant       = useTenantStore(s => s.fetchTenantData);
+  const fetchNotifs       = useNotificationStore(s => s.fetchNotifications);
+  const subscribeNotifs   = useNotificationStore(s => s.subscribeToNotifications);
+  const unsubscribeNotifs = useNotificationStore(s => s.unsubscribeFromNotifications);
 
-  // Bootstrap auth once
+  // Bootstrap auth once — init() returns an unsubscribe cleanup fn
   useEffect(() => {
     let cleanup;
     init().then(fn => { cleanup = fn; });
     return () => { cleanup?.(); };
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Once profile is loaded, hydrate tenant + notifications
+  // Once profile is available, hydrate tenant branding + notifications
   useEffect(() => {
     if (!user || !profile) return;
 
+    // Hydrate tenant branding/settings (needed for DashboardLayout theming)
     if (profile.tenant_id) {
       fetchTenant(profile.tenant_id);
     }
 
-    initNotifs(profile.id);
+    // Load existing notifications then subscribe to realtime new ones
+    fetchNotifs(profile.id);
+    subscribeNotifs(profile.id);
+
+    // On unmount (sign-out / role change) clean up the realtime subscription
+    return () => { unsubscribeNotifs(); };
   }, [user?.id, profile?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   return null;
@@ -248,6 +257,7 @@ export default function AppRouter() {
           <Route path="/signup"            element={<SignupPage />} />
           <Route path="/invite/:token"     element={<AcceptInvitePage />} />
           <Route path="/reset-password"    element={<ResetPasswordPage />} />
+          <Route path="/confirm"           element={<ConfirmPage />} />
 
           {/* ────────────────────────────────────────────────────────────── */}
           {/* All routes below require a session                             */}

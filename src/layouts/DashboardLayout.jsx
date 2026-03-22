@@ -6,6 +6,7 @@ import { useMiniNotifications }  from "../hooks/useNotifications";
 import useAuthStore               from "../store/authStore";
 import LogoSrc                    from "../assets/logo.svg";
 import LogoIconSrc                from "../assets/logo-icon.svg";
+import BottomNav                  from "../components/layout/BottomNav.jsx";
 
 // =============================================================================
 // DashboardLayout
@@ -88,24 +89,21 @@ function getNavItems(role) {
       { label: "Move-In / Move-Out",to: "/manage/residents/tenancies" },
     ]},
     { type: "group", label: "Billing",       icon: "billing",    children: [
-      { label: "Billing Cycles",    to: "/manage/billing" },
+      { label: "Billing Cycles",    to: "/manage/billing/cycles" },
       { label: "Payments",          to: "/manage/billing/payments" },
       { label: "Invoices",          to: "/manage/billing/invoices" },
     ]},
     { type: "group", label: "Workforce",     icon: "workforce",  children: [
-      { label: "Workers",           to: "/manage/workforce" },
+      { label: "Workers",           to: "/manage/workforce/workers" },
       { label: "Salaries",          to: "/manage/workforce/salaries" },
       { label: "Attendance",        to: "/manage/workforce/attendance" },
     ]},
     { type: "item",  label: "Complaints",    icon: "complaints",    to: "/manage/complaints" },
     { type: "item",  label: "Announcements", icon: "announcements", to: "/manage/announcements" },
-    { type: "item",  label: "Notifications", icon: "notifications", to: "/manage/notifications" },
+    
     { type: "divider" },
-    { type: "group", label: "Settings",      icon: "settings",   children: [
-      { label: "Branding",          to: "/manage/settings/branding" },
-      { label: "Billing Config",    to: "/manage/settings/billing" },
-      { label: "Notifications",     to: "/manage/settings/notifications" },
-    ]},
+    { type: "item",  label: "Settings",      icon: "settings",      to: "/manage/settings" },
+    { type: "item",  label: "My Profile",     icon: "profile",       to: "/manage/profile" },
   ];
 
   if (role === "owner") return [
@@ -115,6 +113,7 @@ function getNavItems(role) {
     { type: "item", label: "Billing",          icon: "billing",     to: "/owner/billing" },
     { type: "item", label: "Worker Costs",     icon: "workforce",   to: "/owner/workforce" },
     { type: "item", label: "Analytics",        icon: "analytics",   to: "/owner/analytics" },
+    { type: "item", label: "Team & Managers",  icon: "team",        to: "/owner#team" },
   ];
 
   if (role === "worker") return [
@@ -562,6 +561,9 @@ export default function DashboardLayout({ children, pageTitle }) {
           </svg>
         </button>
       </div>
+
+      {/* Mobile bottom navigation — renders its own fixed bar + spacer */}
+      <BottomNav />
     </>
   );
 }

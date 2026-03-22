@@ -268,23 +268,57 @@ export async function getWorkerCostsSummary(tenantId, months = 6) {
 
 // ─────────────────────────────────────────────────────────────────────────────
 // getPlatformAnalytics
-// Super-admin only — aggregated platform-wide stats via FastAPI.
-// (Cannot do cross-tenant aggregation from the client via RLS.)
+// Super-admin only — aggregated platform-wide stats built directly from
+// Supabase. FastAPI is not required for this. RLS super_admin policies
+// allow full cross-tenant reads.
 //
-// @param {string} accessToken   Supabase JWT
+// Returns:
+//   growth  — last 6 months of new tenants + new users for the growth chart
+//   totals  — platform-wide counts for the KPI tiles
 // ─────────────────────────────────────────────────────────────────────────────
-export async function getPlatformAnalytics(accessToken) {
+export async function getPlatformAnalytics(_accessToken) {
   try {
-    const res = await fetch(`${FASTAPI_BASE}/analytics/platform`, {
-      headers: { Authorization: `Bearer ${accessToken}` },
-    });
+    // Fetch all data in parallel
+    const [tenantsRes, profilesRes] = await Promise.all([
+      db.tenants().select("id, status, created_at"),
+      db.profiles().select("id, role, created_at"),
+    ]);
 
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({ detail: res.statusText }));
-      return { data: null, error: { message: err.detail } };
+    const tenants  = tenantsRes.data  ?? [];
+    const profiles = profilesRes.data ?? [];
+
+    // Build last-6-months growth series
+    const months = [];
+    for (let i = 5; i >= 0; i--) {
+      const d = new Date();
+      d.setDate(1);
+      d.setMonth(d.getMonth() - i);
+      months.push({
+        month: d.toLocaleDateString("en-KE", { month: "short", year: "2-digit" }),
+        start: new Date(d.getFullYear(), d.getMonth(), 1).toISOString(),
+        end:   new Date(d.getFullYear(), d.getMonth() + 1, 0, 23, 59, 59).toISOString(),
+      });
     }
 
-    const data = await res.json();
+    const growth = months.map(({ month, start, end }) => ({
+      month,
+      tenants: tenants.filter(t => t.created_at >= start && t.created_at <= end).length,
+      users:   profiles.filter(p => p.created_at >= start && p.created_at <= end).length,
+    }));
+
+    const data = {
+      growth,
+      totals: {
+        tenants:  tenants.length,
+        active:   tenants.filter(t => t.status === "active").length,
+        pending:  tenants.filter(t => t.status === "pending").length,
+        suspended:tenants.filter(t => t.status === "suspended").length,
+        users:    profiles.length,
+        clients:  profiles.filter(p => p.role === "client").length,
+        managers: profiles.filter(p => p.role === "manager").length,
+      },
+    };
+
     return { data, error: null };
   } catch (err) {
     return { data: null, error: { message: err.message } };

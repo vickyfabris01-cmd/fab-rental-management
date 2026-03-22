@@ -55,13 +55,13 @@ function ComplaintRow({ complaint, onStatusChange }) {
     >
       {/* Priority dot */}
       <div style={{ width:8, height:8, borderRadius:"50%", background:pm.color, flexShrink:0, marginTop:5 }}/>
-      <Avatar name={complaint.profiles?.full_name} src={complaint.profiles?.avatar_url} size="sm" />
+      <Avatar name={complaint.submitter?.full_name} src={complaint.submitter?.avatar_url} size="sm" />
       <div style={{ flex:1, minWidth:0 }}>
         <p style={{ fontSize:13, fontWeight:600, color:"#1A1412", margin:"0 0 3px", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>
           {complaint.title}
         </p>
         <div style={{ display:"flex", gap:8, alignItems:"center", flexWrap:"wrap" }}>
-          <span style={{ fontSize:11, color:"#8B7355" }}>{complaint.profiles?.full_name ?? "—"}</span>
+          <span style={{ fontSize:11, color:"#8B7355" }}>{complaint.submitter?.full_name ?? "—"}</span>
           <span style={{ fontSize:11, color:"#8B7355" }}>·</span>
           <span style={{ fontSize:11, color:"#8B7355", textTransform:"capitalize" }}>{complaint.category}</span>
           <span style={{ fontSize:11, color:"#8B7355" }}>·</span>
@@ -131,7 +131,7 @@ export default function ManagerComplaintsPage() {
   };
 
   const filtered = debouncedSearch
-    ? complaints.filter(c => c.title.toLowerCase().includes(debouncedSearch.toLowerCase()) || c.profiles?.full_name?.toLowerCase().includes(debouncedSearch.toLowerCase()))
+    ? complaints.filter(c => c.title.toLowerCase().includes(debouncedSearch.toLowerCase()) || c.submitter?.full_name?.toLowerCase().includes(debouncedSearch.toLowerCase()))
     : complaints;
 
   const TABS = [

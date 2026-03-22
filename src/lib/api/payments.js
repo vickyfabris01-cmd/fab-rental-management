@@ -19,10 +19,10 @@ const FASTAPI_BASE = import.meta.env.VITE_API_BASE_URL;
 const PAYMENT_SELECT = `
   id, tenant_id, billing_cycle_id, client_id,
   amount, payment_method, payment_status,
-  mpesa_transaction_id, mpesa_phone, mpesa_receipt,
+  mpesa_transaction_id, mpesa_receipt, reference,
   paid_at, recorded_by, notes, created_at,
   billing_cycles(period_start, period_end, amount_due),
-  profiles!client_id(id, full_name, avatar_url),
+  client:profiles!client_id(id, full_name, avatar_url),
   recorder:profiles!recorded_by(id, full_name)
 `;
 
@@ -143,6 +143,24 @@ export async function recordManualPayment({
 // @returns {Promise<{ data: { checkout_request_id, payment_id } | null, error }>}
 // ─────────────────────────────────────────────────────────────────────────────
 export async function mpesaSTKPush({ cycleId, clientId, phone, amount, reference }) {
+  // M-Pesa STK Push requires the FastAPI backend (Daraja credentials are server-side only).
+  // If the backend is not running, return a clear error rather than ERR_CONNECTION_REFUSED.
+  if (!FASTAPI_BASE || FASTAPI_BASE === "http://localhost:8000") {
+    // Check if backend is actually available first
+    try {
+      const ping = await fetch(`${FASTAPI_BASE}/health`, { signal: AbortSignal.timeout(2000) });
+      if (!ping.ok) throw new Error("backend down");
+    } catch {
+      return {
+        data: null,
+        error: {
+          message: "M-Pesa payments require the FastAPI backend to be running. " +
+                   "Start it with: cd backend && uvicorn main:app --reload",
+        },
+      };
+    }
+  }
+
   // Get the current session JWT to authenticate with FastAPI
   const { data: { session } } = await import("../../config/supabase")
     .then(m => m.supabase.auth.getSession());

@@ -8,7 +8,7 @@ import PasswordInput    from "../../components/ui/PasswordInput.jsx";
 import Button           from "../../components/ui/Button.jsx";
 import Avatar           from "../../components/ui/Avatar.jsx";
 import { Alert }        from "../../components/ui/Alert.jsx";
-import { Divider }      from "../../components/ui/Spinner.jsx";
+import { Divider }      from "../../components/ui/Divider.jsx";
 import Badge            from "../../components/ui/Badge.jsx";
 
 import useAuthStore     from "../../store/authStore.js";

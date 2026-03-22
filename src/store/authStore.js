@@ -137,10 +137,7 @@ const useAuthStore = create((set, get) => ({
   signIn: async (email, password) => {
     set({ loading: true, error: null });
 
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
+    const { error } = await supabase.auth.signInWithPassword({ email, password });
 
     if (error) {
       const msg = _mapAuthError(error.message);
@@ -161,7 +158,7 @@ const useAuthStore = create((set, get) => ({
    * @param {{ fullName: string, phone?: string }} meta
    * @returns {{ error: string | null }}
    */
-  signUp: async (email, password, { fullName, phone } = {}) => {
+  signUp: async ({ email, password, fullName, phone } = {}) => {
     set({ loading: true, error: null });
 
     const { error } = await supabase.auth.signUp({
@@ -170,9 +167,9 @@ const useAuthStore = create((set, get) => ({
       options: {
         data: {
           full_name: fullName ?? "",
-          phone: phone ?? "",
+          phone:     phone    ?? "",
         },
-        emailRedirectTo: `${window.location.origin}/login`,
+        emailRedirectTo: `${window.location.origin}/confirm`,
       },
     });
 
@@ -305,17 +302,20 @@ const useAuthStore = create((set, get) => ({
     await supabase.auth.updateUser({
       data: {
         ...(fullName !== undefined && { full_name: fullName }),
-        ...(phone !== undefined && { phone }),
+        ...(phone    !== undefined && { phone }),
       },
     });
 
     // Update profiles table
     const updates = {};
-    if (fullName !== undefined) updates.full_name = fullName;
-    if (phone !== undefined) updates.phone = phone;
+    if (fullName  !== undefined) updates.full_name  = fullName;
+    if (phone     !== undefined) updates.phone      = phone;
     if (avatarUrl !== undefined) updates.avatar_url = avatarUrl;
 
-    const { error } = await db.profiles().update(updates).eq("id", user.id);
+    const { error } = await db
+      .profiles()
+      .update(updates)
+      .eq("id", user.id);
 
     if (error) {
       const msg = error.message;
@@ -332,8 +332,6 @@ const useAuthStore = create((set, get) => ({
   clearError: () => set({ error: null }),
 }));
 
-export { useAuthStore };
-
 // =============================================================================
 // Private helpers
 // =============================================================================
@@ -345,10 +343,7 @@ export { useAuthStore };
 function _mapAuthError(msg = "") {
   const m = msg.toLowerCase();
 
-  if (
-    m.includes("invalid login credentials") ||
-    m.includes("invalid email or password")
-  )
+  if (m.includes("invalid login credentials") || m.includes("invalid email or password"))
     return "Incorrect email or password. Please try again.";
 
   if (m.includes("email not confirmed"))

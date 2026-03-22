@@ -148,7 +148,7 @@ export function PaymentRow({ payment, showClient = false }) {
           {payment.mpesa_receipt && <span style={{ fontSize: 11, color: "#8B7355", fontWeight: 400, marginLeft: 8 }}>{payment.mpesa_receipt}</span>}
         </p>
         <p style={{ fontSize: 12, color: "#8B7355", margin: "2px 0 0" }}>
-          {showClient ? (payment.profiles?.full_name ?? "—") : formatRelativeTime(payment.created_at)}
+          {showClient ? (payment.client?.full_name ?? "—") : formatRelativeTime(payment.created_at)}
           {payment.recorded_by && <span style={{ marginLeft: 6, color: "#C5612C" }}>· Manual</span>}
         </p>
       </div>
@@ -200,14 +200,14 @@ export function ComplaintCard({ complaint, onView }) {
 
       {/* Description snippet */}
       <p style={{ fontSize: 13, color: "#5C4A3A", margin: "0 0 10px", lineHeight: 1.55, overflow: "hidden", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical" }}>
-        {complaint.description}
+        {complaint.body}
       </p>
 
       {/* Footer */}
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-          <Avatar name={complaint.profiles?.full_name} src={complaint.profiles?.avatar_url} size="xs" />
-          <span style={{ fontSize: 11, color: "#8B7355" }}>{complaint.profiles?.full_name ?? "Unknown"}</span>
+          <Avatar name={complaint.submitter?.full_name} src={complaint.submitter?.avatar_url} size="xs" />
+          <span style={{ fontSize: 11, color: "#8B7355" }}>{complaint.submitter?.full_name ?? "Unknown"}</span>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
           <span style={{ fontSize: 11, color: "#8B7355" }}>{formatRelativeTime(complaint.created_at)}</span>

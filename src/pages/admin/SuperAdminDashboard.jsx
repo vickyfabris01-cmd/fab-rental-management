@@ -15,7 +15,8 @@ import useAuthStore            from "../../store/authStore.js";
 import { useToast }            from "../../hooks/useNotifications.js";
 
 // ── API ───────────────────────────────────────────────────────────────────────
-import { getTenants, getPlatformStats, approveTenant, suspendTenant, reactivateTenant } from "../../lib/api/tenants.js";
+import { getTenants, getPlatformStats, approveTenant, suspendTenant, reactivateTenant, createTenant } from "../../lib/api/tenants.js";
+import TenantFormModal from "../../components/modals/TenantFormModal.jsx";
 import { getPlatformAnalytics } from "../../lib/api/analytics.js";
 import { formatDate, formatRelativeTime } from "../../lib/formatters.js";
 
@@ -106,7 +107,8 @@ function THead({ cols }) {
 export default function SuperAdminDashboard() {
   const navigate  = useNavigate();
   const profile   = useAuthStore(s => s.profile);
-  const toast     = useToast();
+  const toast          = useToast();
+  const [newTenantOpen, setNewTenantOpen] = useState(false);
 
   const [stats,      setStats]      = useState(null);
   const [tenants,    setTenants]    = useState([]);
@@ -117,14 +119,10 @@ export default function SuperAdminDashboard() {
 
   const load = async () => {
     setLoading(true);
-    const { data: session } = await import("../../config/supabase.js")
-      .then(m => m.supabase.auth.getSession());
-    const token = session?.session?.access_token;
-
     const [{ data: st }, { data: ten }, { data: anl }] = await Promise.all([
       getPlatformStats(),
       getTenants({ limit: 20 }),
-      token ? getPlatformAnalytics(token) : Promise.resolve({ data: null }),
+      getPlatformAnalytics(),
     ]);
     setStats(st);
     setTenants(ten ?? []);
@@ -253,7 +251,14 @@ export default function SuperAdminDashboard() {
               All Tenants
             </h3>
           </div>
-          <div style={{ display:"flex", gap:6, alignItems:"center" }}>
+          <div style={{ display:"flex", gap:8, alignItems:"center" }}>
+            <button onClick={() => setNewTenantOpen(true)}
+              style={{ fontSize:12, fontWeight:700, padding:"7px 14px", borderRadius:10,
+                background:ACCENT, color:"#fff", border:"none", cursor:"pointer",
+                display:"flex", alignItems:"center", gap:5, flexShrink:0 }}>
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+              New Tenant
+            </button>
             {["all","active","pending","suspended"].map(s => (
               <button key={s} onClick={() => setFilterStatus(s)}
                 style={{ fontSize:11, fontWeight:600, padding:"5px 11px", borderRadius:999, border:"1px solid",
@@ -373,6 +378,11 @@ export default function SuperAdminDashboard() {
           </div>
         </div>
       )}
+    <TenantFormModal
+        open={newTenantOpen}
+        onClose={() => setNewTenantOpen(false)}
+        onCreated={(t) => { setNewTenantOpen(false); load(); toast.success(`Tenant "${t.name}" created.`); }}
+      />
     </AdminLayout>
   );
 }

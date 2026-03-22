@@ -29,7 +29,15 @@ import { useDebounce }       from "../../hooks/useDebounce.js";
 //   - RentalRequestModal on "Request" click
 // =============================================================================
 
-const TYPES = ["All", "Hostel", "Apartment", "Student Residence", "Farm Housing"];
+const TYPES = [
+  { label:"All",        value:"all"       },
+  { label:"Single",     value:"single"    },
+  { label:"Double",     value:"double"    },
+  { label:"Bedsitter",  value:"bedsitter" },
+  { label:"Studio",     value:"studio"    },
+  { label:"Dormitory",  value:"dormitory" },
+  { label:"Suite",      value:"suite"     },
+];
 
 const AMENITIES_LIST = [
   "WiFi", "Parking", "Gym", "Security", "Laundry",
@@ -73,9 +81,10 @@ function Stars({ rating }) {
 // ── Property card grid ────────────────────────────────────────────────────────
 function PropertyCardGrid({ room, onRequest }) {
   const [hovered, setHovered] = useState(false);
-  const slug = room.tenants?.slug ?? room.slug;
+  const slug = room.tenants?.slug ?? room.slug ?? "";
   const name = room.tenants?.name ?? room.name ?? "";
   const img  = room.images?.[0] ?? "";
+  const location = room.buildings?.address ?? room.location ?? room.buildings?.name ?? "";
 
   return (
     <div
@@ -91,7 +100,7 @@ function PropertyCardGrid({ room, onRequest }) {
       }}
       onClick={() => {}}
     >
-      <Link to={`/property/${slug}`} style={{ display:"block", textDecoration:"none" }}>
+      <div style={{ display:"block", textDecoration:"none", cursor: slug ? "pointer" : "default" }} onClick={() => slug && window.location.assign(`/property/${slug}`)}>
         <div style={{ position:"relative", height:200, overflow:"hidden" }}>
           {img && <img src={img} alt={name} style={{ width:"100%",height:"100%",objectFit:"cover",display:"block", transform:hovered?"scale(1.06)":"scale(1)", transition:"transform 0.5s ease" }}/>}
           <div style={{ position:"absolute",inset:0,background:"linear-gradient(to top,rgba(0,0,0,0.28) 0%,transparent 50%)" }}/>
@@ -106,7 +115,7 @@ function PropertyCardGrid({ room, onRequest }) {
             {room.type ?? room.room_type}
           </span>
         </div>
-      </Link>
+      </div>
 
       <div style={{ padding:"15px 17px 17px" }}>
         <div style={{ display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:8,marginBottom:4 }}>
@@ -116,7 +125,7 @@ function PropertyCardGrid({ room, onRequest }) {
         </div>
         <p style={{ fontSize:12,color:"#8B7355",margin:"0 0 10px",display:"flex",alignItems:"center",gap:3 }}>
           <svg width="11" height="11" viewBox="0 0 20 20" fill="#C5612C"><path fillRule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clipRule="evenodd"/></svg>
-          {room.location ?? room.buildings?.address}
+          {location}
         </p>
         <div style={{ display:"flex",flexWrap:"wrap",gap:5,marginBottom:12 }}>
           {(room.amenities ?? []).slice(0,4).map(a => (
@@ -159,9 +168,10 @@ function PropertyCardGrid({ room, onRequest }) {
 // ── Property card list ────────────────────────────────────────────────────────
 function PropertyCardList({ room, onRequest }) {
   const [hovered, setHovered] = useState(false);
-  const slug = room.tenants?.slug ?? room.slug;
+  const slug = room.tenants?.slug ?? room.slug ?? "";
   const name = room.tenants?.name ?? room.name ?? "";
   const img  = room.images?.[0] ?? "";
+  const location = room.buildings?.address ?? room.location ?? room.buildings?.name ?? "";
 
   return (
     <div
@@ -195,7 +205,7 @@ function PropertyCardList({ room, onRequest }) {
           </div>
           <p style={{ fontSize:12,color:"#8B7355",margin:"0 0 8px",display:"flex",alignItems:"center",gap:3 }}>
             <svg width="11" height="11" viewBox="0 0 20 20" fill="#C5612C"><path fillRule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clipRule="evenodd"/></svg>
-            {room.location ?? room.buildings?.address}
+            {location}
           </p>
           <div style={{ display:"flex",flexWrap:"wrap",gap:4 }}>
             {(room.amenities ?? []).slice(0,5).map(a=>(
@@ -231,10 +241,10 @@ export default function BrowsePage() {
   const navigate                           = useNavigate();
   const [searchParams, setSearchParams]    = useSearchParams();
 
-  const [rooms,             setRooms]            = useState(SEED);
-  const [loading,           setLoading]           = useState(false);
+  const [rooms,             setRooms]            = useState([]);
+  const [loading,           setLoading]           = useState(true);
   const [search,            setSearch]            = useState(searchParams.get("q") || "");
-  const [activeType,        setActiveType]        = useState(searchParams.get("type") || "All");
+  const [activeType,        setActiveType]        = useState(searchParams.get("type") || "all");
   const [sortBy,            setSortBy]            = useState("popular");
   const [viewMode,          setViewMode]          = useState("grid");
   const [filtersOpen,       setFiltersOpen]       = useState(false);
@@ -245,12 +255,12 @@ export default function BrowsePage() {
 
   const debouncedSearch = useDebounce(search, 300);
 
-  // Fetch real rooms
+  // Fetch real rooms — fall back to seed data for demo if none exist
   useEffect(() => {
     setLoading(true);
     getAvailableRooms({ limit: 30 })
-      .then(({ data }) => { if (data?.length) setRooms(data); })
-      .catch(() => {})
+      .then(({ data }) => { setRooms(data?.length ? data : SEED); })
+      .catch(() => { setRooms(SEED); })
       .finally(() => setLoading(false));
   }, []);
 
@@ -258,7 +268,7 @@ export default function BrowsePage() {
   useEffect(() => {
     const params = {};
     if (search)           params.q    = search;
-    if (activeType !== "All") params.type = activeType;
+    if (activeType !== "all") params.type = activeType;
     setSearchParams(params, { replace: true });
   }, [search, activeType, setSearchParams]);
 
@@ -278,7 +288,7 @@ export default function BrowsePage() {
       const name      = r.tenants?.name ?? r.name ?? "";
       const location  = r.buildings?.address ?? r.location ?? "";
       const price     = Number(r.monthly_price ?? 0);
-      if (activeType !== "All" && type !== activeType) return false;
+      if (activeType !== "all" && type !== activeType) return false;
       if (debouncedSearch && !name.toLowerCase().includes(debouncedSearch.toLowerCase()) && !location.toLowerCase().includes(debouncedSearch.toLowerCase())) return false;
       if (price < priceRange[0] || price > priceRange[1]) return false;
       if (verifiedOnly && !r.verified) return false;
@@ -328,15 +338,15 @@ export default function BrowsePage() {
                   onBlur={e=>e.target.style.borderColor="#E8DDD4"}
                 />
               </div>
-              {TYPES.map(type => (
-                <button key={type} onClick={()=>setActiveType(type)} style={{
+              {TYPES.map(t => (
+                <button key={t.value} onClick={()=>setActiveType(t.value)} style={{
                   padding:"8px 18px",borderRadius:999,fontSize:13,fontWeight:500,cursor:"pointer",border:"1.5px solid",
-                  background: activeType===type ? "#C5612C" : "#fff",
-                  color:      activeType===type ? "#fff"    : "#5C4A3A",
-                  borderColor:activeType===type ? "#C5612C" : "#E8DDD4",
-                  boxShadow:  activeType===type ? "0 3px 10px rgba(197,97,44,0.22)" : "none",
+                  background: activeType===t.value ? "#C5612C" : "#fff",
+                  color:      activeType===t.value ? "#fff"    : "#5C4A3A",
+                  borderColor:activeType===t.value ? "#C5612C" : "#E8DDD4",
+                  boxShadow:  activeType===t.value ? "0 3px 10px rgba(197,97,44,0.22)" : "none",
                   transition: "all 0.18s",
-                }}>{type}</button>
+                }}>{t.label}</button>
               ))}
             </div>
           </div>

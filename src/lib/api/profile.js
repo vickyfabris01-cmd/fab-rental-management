@@ -90,8 +90,10 @@ export async function fetchTenantProfiles(tenantId, opts = {}) {
   let query = db
     .profiles()
     .select(PROFILE_SELECT)
-    .eq("tenant_id", tenantId)
     .order("created_at", { ascending: false });
+
+  // tenantId = null means super_admin querying across all tenants (RLS allows)
+  if (tenantId) query = query.eq("tenant_id", tenantId);
 
   if (opts.role)   query = query.eq("role", opts.role);
   if (opts.limit)  query = query.limit(opts.limit);
@@ -165,7 +167,7 @@ export async function sendManagerInvite(tenantId, email, invitedBy) {
 export async function fetchInviteByToken(token) {
   const { data, error } = await db
     .managerInvites()
-    .select("id, tenant_id, email, status, expires_at, tenants(name, slug)")
+    .select("id, tenant_id, email, status, expires_at, token, tenants(name, slug), profiles!invited_by(full_name)")
     .eq("token", token)
     .single();
   return { data, error };

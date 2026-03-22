@@ -240,10 +240,10 @@ export default function ManagerDashboard() {
               <p style={{ fontSize:13, color:"#8B7355", textAlign:"center", padding:"24px 20px" }}>No overdue payments 🎉</p>
             ) : overdueCycles.map(c => (
               <div key={c.id} style={{ display:"flex", alignItems:"center", gap:10, padding:"10px 20px", borderBottom:"1px solid #F5EDE0", background:"#FFFCFC" }}>
-                <Avatar name={c.profiles?.full_name} src={c.profiles?.avatar_url} size="sm" />
+                <Avatar name={c.submitter?.full_name} src={c.submitter?.avatar_url} size="sm" />
                 <div style={{ flex:1, minWidth:0 }}>
                   <p style={{ fontSize:12, fontWeight:600, color:"#1A1412", margin:0, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>
-                    {c.profiles?.full_name ?? "—"}
+                    {c.submitter?.full_name ?? "—"}
                   </p>
                   <p style={{ fontSize:11, color:"#8B7355", margin:"1px 0 0" }}>Rm {c.rooms?.room_number}</p>
                 </div>
@@ -269,10 +269,10 @@ export default function ManagerDashboard() {
               <p style={{ fontSize:13, color:"#8B7355", textAlign:"center", padding:"24px 20px" }}>No payments yet today.</p>
             ) : recentPayments.map(p => (
               <div key={p.id} style={{ display:"flex", alignItems:"center", gap:10, padding:"10px 20px", borderBottom:"1px solid #F5EDE0" }}>
-                <Avatar name={p.profiles?.full_name} src={p.profiles?.avatar_url} size="sm" />
+                <Avatar name={p.client?.full_name} src={p.client?.avatar_url} size="sm" />
                 <div style={{ flex:1, minWidth:0 }}>
                   <p style={{ fontSize:12, fontWeight:600, color:"#1A1412", margin:0, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>
-                    {p.profiles?.full_name ?? "—"}
+                    {p.client?.full_name ?? "—"}
                   </p>
                   <p style={{ fontSize:11, color:"#8B7355", margin:"1px 0 0" }}>
                     {p.payment_method === "mpesa" ? "M-Pesa" : p.payment_method === "cash" ? "Cash" : "Bank"} · {formatRelativeTime(p.created_at)}
@@ -318,7 +318,7 @@ export default function ManagerDashboard() {
                   <Badge variant={c.priority} size="sm" style={{ flexShrink:0 }} />
                 </div>
                 <p style={{ fontSize:11, color:"#8B7355", margin:0 }}>
-                  {c.profiles?.full_name} · {formatRelativeTime(c.created_at)}
+                  {c.submitter?.full_name} · {formatRelativeTime(c.created_at)}
                 </p>
               </div>
             ))}
