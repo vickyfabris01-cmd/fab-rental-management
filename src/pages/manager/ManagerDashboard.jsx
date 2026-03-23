@@ -11,6 +11,7 @@ import { Spinner }          from "../../components/ui/Spinner.jsx";
 import ManualPaymentModal   from "../../components/modals/ManualPaymentModal.jsx";
 import RoomFormModal        from "../../components/modals/RoomFormModal.jsx";
 
+import { WidgetErrorBoundary } from "../../components/feedback/ErrorBoundary.jsx";
 import useAuthStore         from "../../store/authStore.js";
 import { getBuildings, getRooms, getRoomOccupancySummary } from "../../lib/api/rooms.js";
 import { getRequests, getPendingRequestCount } from "../../lib/api/rentalRequests.js";
@@ -78,7 +79,7 @@ export default function ManagerDashboard() {
   const [payModalCycle,  setPayModalCycle]  = useState(null);
   const [addRoomOpen,    setAddRoomOpen]    = useState(false);
 
-  useEffect(() => {
+  const load = () => {
     if (!tenantId) return;
     Promise.all([
       getBuildings(tenantId),
@@ -101,6 +102,17 @@ export default function ManagerDashboard() {
       setOpenComplaints(comp ?? []);
       setSummary(sum);
     }).finally(() => setLoading(false));
+  };
+
+  // Initial load
+  useEffect(() => { load(); }, [tenantId]);
+
+  // Refresh when user returns to this tab — catches stale requests after
+  // approving a move-in from the Requests page
+  useEffect(() => {
+    const onVisible = () => { if (document.visibilityState === "visible") load(); };
+    document.addEventListener("visibilitychange", onVisible);
+    return () => document.removeEventListener("visibilitychange", onVisible);
   }, [tenantId]);
 
   // Derived stats

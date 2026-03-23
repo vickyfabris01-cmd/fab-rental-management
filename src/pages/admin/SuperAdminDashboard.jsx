@@ -11,6 +11,7 @@ import Button                  from "../../components/ui/Button.jsx";
 import { GrowthLineChart }     from "../../components/charts/GrowthLineChart.jsx";
 
 // ── Store / hooks ─────────────────────────────────────────────────────────────
+import { WidgetErrorBoundary } from "../../components/feedback/ErrorBoundary.jsx";
 import useAuthStore            from "../../store/authStore.js";
 import { useToast }            from "../../hooks/useNotifications.js";
 
@@ -194,7 +195,7 @@ export default function SuperAdminDashboard() {
           <h3 style={{ fontFamily:"'Playfair Display',serif", fontWeight:700, fontSize:17,
             color:TEXT, marginBottom:14 }}>Tenants & Users</h3>
           {growthData.length > 0
-            ? <GrowthLineChart data={growthData} height={180} />
+            ? <WidgetErrorBoundary label="GrowthLineChart"><GrowthLineChart data={growthData} height={180} /></WidgetErrorBoundary>
             : (
               // Placeholder when FastAPI not wired yet
               <div style={{ height:180, display:"flex", alignItems:"center", justifyContent:"center",

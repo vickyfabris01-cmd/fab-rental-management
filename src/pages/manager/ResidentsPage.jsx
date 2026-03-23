@@ -22,7 +22,7 @@ import { MoveInModal, MoveOutModal } from "../../components/modals/MoveInModal.j
 
 import useAuthStore       from "../../store/authStore.js";
 import { getTenancies, getMyTenancy, moveOut } from "../../lib/api/tenancies.js";
-import { getRequests, approveRequest, rejectRequest } from "../../lib/api/rentalRequests.js";
+import { getRequests, approveRequest, rejectRequest, acceptOffer } from "../../lib/api/rentalRequests.js";
 import { fetchTenantProfiles } from "../../lib/api/profile.js";
 import { getBillingSummary }   from "../../lib/api/billing.js";
 import { formatCurrency, formatDate, formatRelativeTime } from "../../lib/formatters.js";
@@ -266,7 +266,14 @@ export function RentalRequestsPage() {
         emptyIcon="requests" emptyTitle="No requests" emptyDesc="Rental requests will appear here." />
 
       <MoveInModal isOpen={!!moveInReq} onClose={() => setMoveInReq(null)} request={moveInReq}
-        onSuccess={() => { setMoveInReq(null); load(); }} />
+        onSuccess={async () => {
+          // Mark the rental request as accepted now that tenancy is created
+          if (moveInReq?.id) {
+            await acceptOffer(moveInReq.id).catch(() => {});
+          }
+          setMoveInReq(null);
+          load();
+        }} />
       <ConfirmDialog isOpen={!!rejectTarget} title="Reject Request?" variant="danger" loading={processing}
         message={`Decline ${rejectTarget?.profiles?.full_name}'s request for Room ${rejectTarget?.rooms?.room_number}?`}
         confirmLabel="Reject" onConfirm={handleReject} onCancel={() => setRejectTarget(null)} />

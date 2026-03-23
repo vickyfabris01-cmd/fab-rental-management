@@ -9,7 +9,7 @@ import { db } from "../../config/supabase";
 // =============================================================================
 
 const NOTIF_SELECT =
-  "id, tenant_id, user_id, type, title, body, is_read, metadata, created_at";
+  "id, tenant_id, user_id, type, title, body, data, is_read, created_at";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // getNotifications
@@ -104,7 +104,7 @@ export async function createNotification({ tenantId, userId, type, title, body, 
       type,
       title:     title.trim(),
       body:      body?.trim() ?? null,
-      metadata:  metadata ?? {},
+      data:      metadata ?? {},
       is_read:   false,
     })
     .select(NOTIF_SELECT)
@@ -130,7 +130,7 @@ export async function broadcastNotification(tenantId, userIds, { type, title, bo
     type,
     title:     title.trim(),
     body:      body?.trim() ?? null,
-    metadata:  metadata ?? {},
+    data:      metadata ?? {},
     is_read:   false,
   }));
 

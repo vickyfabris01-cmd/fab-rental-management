@@ -26,8 +26,8 @@ import { REALTIME_TABLES } from "../config/constants";
 // ── Toast defaults ────────────────────────────────────────────────────────────
 const TOAST_DURATION = {
   success: 4000,
-  error: 0, // 0 = persistent until manually closed
-  info: 5000,
+  error:   0,       // 0 = persistent until manually closed
+  info:    5000,
   warning: 5000,
 };
 
@@ -45,7 +45,7 @@ const useNotificationStore = create((set, get) => ({
   /** Array of notification rows from the DB, newest first */
   notifications: [],
 
-  /** Number of notifications where is_read IS false */
+  /** Number of notifications where is_read is false */
   unreadCount: 0,
 
   /** True while the initial notification fetch is in flight */
@@ -77,23 +77,22 @@ const useNotificationStore = create((set, get) => ({
 
     const { data, error } = await db
       .notifications()
-      .select("id, tenant_id, user_id, title, body, type, is_read, created_at")
+      .select(
+        "id, tenant_id, user_id, type, title, body, data, is_read, created_at"
+      )
       .eq("user_id", userId)
       .order("created_at", { ascending: false })
       .limit(50);
 
     if (error) {
-      console.error(
-        "[notificationStore] fetchNotifications error:",
-        error.message,
-      );
+      console.error("[notificationStore] fetchNotifications error:", error.message);
       set({ loading: false, error: error.message });
       return;
     }
 
     set({
       notifications: data ?? [],
-      unreadCount: _countUnread(data ?? []),
+      unreadCount:   _countUnread(data ?? []),
       loading: false,
       error: null,
     });
@@ -108,8 +107,10 @@ const useNotificationStore = create((set, get) => ({
     const { notifications } = get();
 
     // Optimistic update
-    const updated = notifications.map((n) =>
-      n.id === notificationId ? { ...n, is_read: true } : n,
+    const updated = notifications.map(n =>
+      n.id === notificationId
+        ? { ...n, is_read: true }
+        : n
     );
     set({ notifications: updated, unreadCount: _countUnread(updated) });
 
@@ -118,7 +119,7 @@ const useNotificationStore = create((set, get) => ({
       .notifications()
       .update({ is_read: true })
       .eq("id", notificationId)
-      .eq("is_read", false); // Only update if not already read
+      .eq("is_read", false);   // Only update if not already read
 
     if (error) {
       console.error("[notificationStore] markRead error:", error.message);
@@ -136,13 +137,9 @@ const useNotificationStore = create((set, get) => ({
     if (!userId) return;
 
     const { notifications } = get();
-    const readAt = new Date().toISOString();
 
     // Optimistic update
-    const updated = notifications.map((n) => ({
-      ...n,
-      is_read: true,
-    }));
+    const updated = notifications.map(n => ({ ...n, is_read: true }));
     set({ notifications: updated, unreadCount: 0 });
 
     // Persist to DB
@@ -190,9 +187,9 @@ const useNotificationStore = create((set, get) => ({
       .on(
         "postgres_changes",
         {
-          event: "INSERT",
+          event:  "INSERT",
           schema: "public",
-          table: REALTIME_TABLES.NOTIFICATIONS,
+          table:  REALTIME_TABLES.NOTIFICATIONS,
           filter: `user_id=eq.${userId}`,
         },
         (payload) => {
@@ -200,29 +197,27 @@ const useNotificationStore = create((set, get) => ({
 
           // Also show a toast for high-priority notification types
           const { type, title, body } = payload.new;
-          if (
-            [
-              "payment_confirmed",
-              "request_approved",
-              "complaint_update",
-            ].includes(type)
-          ) {
+          if (["payment_confirmed", "request_approved", "complaint_update"].includes(type)) {
             get().addToast({
-              type: "info",
-              title: title ?? "New notification",
-              message: body ?? "",
+              type:    "info",
+              title:   title ?? "New notification",
+              message: body  ?? "",
             });
           }
-        },
+        }
       )
-      .subscribe((status) => {
+      .subscribe((status, err) => {
         if (status === "SUBSCRIBED") {
           console.info("[notificationStore] Realtime subscribed for", userId);
         }
-        if (status === "CHANNEL_ERROR") {
-          console.warn(
-            "[notificationStore] Realtime channel error — will retry",
-          );
+        if (status === "CHANNEL_ERROR" || status === "TIMED_OUT") {
+          // Supabase Realtime requires the table to be added to the
+          // supabase_realtime publication. If not enabled, this fires.
+          // Suppress repeated console spam — fetch will still work.
+          if (err) console.warn("[notificationStore] Realtime unavailable — using polling fallback");
+        }
+        if (status === "CLOSED") {
+          _realtimeChannel = null;
         }
       });
   },
@@ -262,13 +257,13 @@ const useNotificationStore = create((set, get) => ({
     const toast = {
       id,
       type,
-      title: title ?? _defaultTitle(type),
-      message: message ?? "",
-      duration: ms,
+      title:     title   ?? _defaultTitle(type),
+      message:   message ?? "",
+      duration:  ms,
       createdAt: Date.now(),
     };
 
-    set((state) => {
+    set(state => {
       const current = state.toasts;
       // Keep max 3 — drop the oldest if we're at the limit
       const trimmed = current.length >= MAX_TOASTS ? current.slice(1) : current;
@@ -291,8 +286,8 @@ const useNotificationStore = create((set, get) => ({
    * @param {number} id
    */
   removeToast: (id) => {
-    set((state) => ({
-      toasts: state.toasts.filter((t) => t.id !== id),
+    set(state => ({
+      toasts: state.toasts.filter(t => t.id !== id),
     }));
   },
 
@@ -301,21 +296,13 @@ const useNotificationStore = create((set, get) => ({
    */
   toast: {
     success: (message, title) =>
-      useNotificationStore
-        .getState()
-        .addToast({ type: "success", title, message }),
-    error: (message, title) =>
-      useNotificationStore
-        .getState()
-        .addToast({ type: "error", title, message }),
-    info: (message, title) =>
-      useNotificationStore
-        .getState()
-        .addToast({ type: "info", title, message }),
+      useNotificationStore.getState().addToast({ type: "success", title, message }),
+    error:   (message, title) =>
+      useNotificationStore.getState().addToast({ type: "error",   title, message }),
+    info:    (message, title) =>
+      useNotificationStore.getState().addToast({ type: "info",    title, message }),
     warning: (message, title) =>
-      useNotificationStore
-        .getState()
-        .addToast({ type: "warning", title, message }),
+      useNotificationStore.getState().addToast({ type: "warning", title, message }),
   },
 
   /** Clear error flag */
@@ -327,15 +314,11 @@ const useNotificationStore = create((set, get) => ({
 // =============================================================================
 
 function _countUnread(notifications) {
-  return notifications.filter((n) => !n.is_read).length;
+  return notifications.filter(n => !n.is_read).length;
 }
 
 function _defaultTitle(type) {
-  return (
-    { success: "Success", error: "Error", info: "Info", warning: "Warning" }[
-      type
-    ] ?? "Notice"
-  );
+  return { success: "Success", error: "Error", info: "Info", warning: "Warning" }[type] ?? "Notice";
 }
 
 // =============================================================================
@@ -345,8 +328,8 @@ function _defaultTitle(type) {
 //   const unreadCount = useUnreadCount();
 //   const toasts = useToasts();
 // =============================================================================
-export const useUnreadCount = () => useNotificationStore((s) => s.unreadCount);
-export const useToasts = () => useNotificationStore((s) => s.toasts);
+export const useUnreadCount = () => useNotificationStore(s => s.unreadCount);
+export const useToasts      = () => useNotificationStore(s => s.toasts);
 
 /**
  * Standalone toast helper — import this anywhere you need to fire a toast
@@ -359,17 +342,13 @@ export const useToasts = () => useNotificationStore((s) => s.toasts);
  */
 export const toast = {
   success: (message, title) =>
-    useNotificationStore
-      .getState()
-      .addToast({ type: "success", title, message }),
+    useNotificationStore.getState().addToast({ type: "success", title, message }),
   error: (message, title) =>
     useNotificationStore.getState().addToast({ type: "error", title, message }),
   info: (message, title) =>
     useNotificationStore.getState().addToast({ type: "info", title, message }),
   warning: (message, title) =>
-    useNotificationStore
-      .getState()
-      .addToast({ type: "warning", title, message }),
+    useNotificationStore.getState().addToast({ type: "warning", title, message }),
 };
 
 export default useNotificationStore;

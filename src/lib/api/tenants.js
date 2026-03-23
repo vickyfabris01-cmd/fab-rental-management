@@ -122,14 +122,15 @@ export async function reactivateTenant(tenantId) {
 // General update (name, contact info, plan, etc.).
 // ─────────────────────────────────────────────────────────────────────────────
 export async function updateTenant(tenantId, updates) {
-  const { status: _s, id: _i, created_at: _c, slug: _sl, ...safe } = updates;
+  // Strip immutable fields — only super_admin can change status/plan/slug
+  const { status: _s, id: _i, created_at: _c, slug: _sl, plan: _p, owner_user_id: _o, ...safe } = updates;
   const { data, error } = await db
     .tenants()
     .update({ ...safe, updated_at: new Date().toISOString() })
     .eq("id", tenantId)
-    .select(TENANT_SELECT)
-    .single();
-  return { data, error };
+    .select(TENANT_SELECT);
+  // Return first row (not .single() — avoids 406 when RLS filters the row)
+  return { data: Array.isArray(data) ? data[0] ?? null : data, error };
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

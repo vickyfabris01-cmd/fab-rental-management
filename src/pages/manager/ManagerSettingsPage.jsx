@@ -128,6 +128,7 @@ export default function ManagerSettingsPage() {
   const handleSaveProperty = async () => {
     if (!tenant?.id) return;
     setPropSaving(true);
+    setLogoUploading(false);
     try {
       let logoUrl = branding?.logo_url ?? tenant.logo_url ?? null;
 
@@ -136,31 +137,43 @@ export default function ManagerSettingsPage() {
         setLogoUploading(true);
         const ext  = logoFile.name.split(".").pop();
         const path = `${profile.tenant_id}/logo/logo.${ext}`;
-        logoUrl    = await uploadFile(BUCKETS.PROPERTY_IMGS, path, logoFile, { upsert: true });
-        setLogoUploading(false);
-        setLogoFile(null);
+        try {
+          logoUrl = await uploadFile(BUCKETS.PROPERTY_IMGS, path, logoFile, { upsert: true });
+        } catch (uploadErr) {
+          throw new Error("Logo upload failed. Check your internet connection and try again.");
+        } finally {
+          setLogoUploading(false);
+          setLogoFile(null);
+        }
       }
 
-      // Update tenant basic info
-      const { error: tenantErr } = await updateTenant(tenant.id, {
-        name:    propName.trim()   || tenant.name,
-        phone:   propPhone.trim()  || null,
-        email:   propEmail.trim()  || null,
-        address: propAddr.trim()   || null,
-        county:  propCounty.trim() || null,
-        logo_url: logoUrl,
-      });
-      if (tenantErr) throw new Error(tenantErr.message);
+      // Run tenant + branding updates in parallel for speed
+      const [tenantResult, brandingResult] = await Promise.all([
+        updateTenant(tenant.id, {
+          name:     propName.trim()   || tenant.name,
+          phone:    propPhone.trim()  || null,
+          email:    propEmail.trim()  || null,
+          address:  propAddr.trim()   || null,
+          county:   propCounty.trim() || null,
+          logo_url: logoUrl,
+        }),
+        db.tenantBranding()
+          .update({
+            tagline:    propTagline.trim() || null,
+            logo_url:   logoUrl,
+            updated_at: new Date().toISOString(),
+          })
+          .eq("tenant_id", tenant.id),
+      ]);
 
-      // Update branding row (tagline + logo)
-      await db.tenantBranding()
-        .update({ tagline: propTagline.trim() || null, logo_url: logoUrl, updated_at: new Date().toISOString() })
-        .eq("tenant_id", tenant.id);
+      if (tenantResult.error) throw new Error(tenantResult.error.message);
+      if (brandingResult.error) throw new Error(brandingResult.error.message);
 
-      await refresh(tenant.id);
+      // Refresh store in background — don't block the success toast on it
       toast.success("Property info saved.");
+      refresh(tenant.id).catch(() => {});
     } catch (err) {
-      toast.error(err.message ?? "Failed to save.");
+      toast.error(err.message ?? "Failed to save. Please try again.");
     } finally {
       setPropSaving(false);
       setLogoUploading(false);
@@ -269,6 +282,14 @@ export default function ManagerSettingsPage() {
                 placeholder="e.g. Modern living in the heart of Nairobi"
                 helper="Shown on your public listing page" />
             </div>
+          </div>
+
+          {/* Save button for branding section */}
+          <div style={{ display:"flex", justifyContent:"flex-end", marginTop:16, paddingTop:16,
+            borderTop:"1px solid #F5EDE0" }}>
+            <Button variant="primary" loading={propSaving || logoUploading} onClick={handleSaveProperty}>
+              {logoUploading ? "Uploading logo…" : propSaving ? "Saving…" : "Save Branding"}
+            </Button>
           </div>
         </Section>
 

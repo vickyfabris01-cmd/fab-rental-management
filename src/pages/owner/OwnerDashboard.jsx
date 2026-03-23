@@ -17,6 +17,7 @@ import { PaymentMethodPie }        from "../../components/charts/PaymentMethodPi
 import { OccupancyChart }          from "../../components/charts/OccupancyChart.jsx";
 
 // ── Store / hooks ─────────────────────────────────────────────────────────────
+import { WidgetErrorBoundary } from "../../components/feedback/ErrorBoundary.jsx";
 import useAuthStore                from "../../store/authStore.js";
 import useTenantStore              from "../../store/tenantStore.js";
 
@@ -245,7 +246,7 @@ export default function OwnerDashboard() {
           <CardHead label="Revenue" title="Billed vs Collected" linkTo="/owner/financials" />
           <div style={{ padding:"16px 20px 20px" }}>
             {revSeries.length > 0
-              ? <RevenueChart data={revSeries} height={260} />
+              ? <WidgetErrorBoundary label="RevenueChart"><RevenueChart data={revSeries} height={260} /></WidgetErrorBoundary>
               : <p style={{ fontSize:13, color:"#8B7355", textAlign:"center", padding:"40px 0" }}>No data for this period.</p>
             }
           </div>
@@ -255,7 +256,7 @@ export default function OwnerDashboard() {
           <CardHead label="Breakdown" title="Payment Methods" linkTo="/owner/analytics" />
           <div style={{ padding:"16px 20px 20px" }}>
             {methodBreak.length > 0
-              ? <PaymentMethodPie data={methodBreak} height={200} />
+              ? <WidgetErrorBoundary label="PaymentMethodPie"><PaymentMethodPie data={methodBreak} height={200} /></WidgetErrorBoundary>
               : <p style={{ fontSize:13, color:"#8B7355", textAlign:"center", padding:"40px 0" }}>No payment data.</p>
             }
           </div>
@@ -267,7 +268,7 @@ export default function OwnerDashboard() {
         <Card>
           <CardHead label="Trend" title="Occupancy Rate" linkTo="/owner/occupancy" />
           <div style={{ padding:"14px 20px 20px" }}>
-            <OccupancyTrendLine data={occTrend} height={200} target={85} variant="area" />
+            <WidgetErrorBoundary label="OccupancyTrendLine"><OccupancyTrendLine data={occTrend} height={200} target={85} variant="area" /></WidgetErrorBoundary>
             <div style={{ display:"flex", justifyContent:"space-between", marginTop:10 }}>
               <span style={{ fontSize:12, color:"#8B7355" }}>Current</span>
               <span style={{ fontSize:15, fontWeight:700, color:"#C5612C",
@@ -280,7 +281,7 @@ export default function OwnerDashboard() {
           <CardHead label="Properties" title="Building Performance" linkTo="/owner/occupancy" />
           <div style={{ padding:"14px 20px 20px" }}>
             {buildingOcc.length > 0
-              ? <OccupancyChart data={buildingOcc} height={200} variant="grouped" showRate />
+              ? <WidgetErrorBoundary label="OccupancyChart"><OccupancyChart data={buildingOcc} height={200} variant="grouped" showRate /></WidgetErrorBoundary>
               : <p style={{ fontSize:13, color:"#8B7355", textAlign:"center", padding:"40px 0" }}>No building data.</p>
             }
           </div>

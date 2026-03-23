@@ -11,6 +11,7 @@ import RequireAuth from "./RequireAuth";
 import RequireRole from "./RequireRole";
 import { ROUTE_META } from "./routes";
 import useAuthStore from "../store/authStore";
+import { PageErrorBoundary, WidgetErrorBoundary } from "../components/feedback/ErrorBoundary.jsx";
 import useTenantStore from "../store/tenantStore";
 import useNotificationStore from "../store/notificationStore";
 import { ROLES, ROLE_HOME } from "../config/constants";
@@ -240,6 +241,7 @@ export default function AppRouter() {
       {/* Bootstrap + title sync — render before everything */}
       <AppLoader />
 
+      <PageErrorBoundary route="application">
       <Suspense fallback={<PageSpinner />}>
         <Routes>
           {/* ── Title tracker ─────────────────────────────────────────── */}
@@ -282,9 +284,9 @@ export default function AppRouter() {
               <Route path="/manage"                        element={<ManagerDashboard />} />
               <Route path="/manage/properties"             element={<PropertiesPage />} />
               <Route path="/manage/residents"              element={<ResidentsPage />} />
-              <Route path="/manage/residents/:id"          element={<ResidentDetailPage />} />
               <Route path="/manage/residents/requests"     element={<RentalRequestsPage />} />
               <Route path="/manage/residents/tenancies"    element={<TenanciesPage />} />
+              <Route path="/manage/residents/:id"          element={<ResidentDetailPage />} />
               <Route path="/manage/billing/cycles"         element={<ManagerBillingPage />} />
               <Route path="/manage/billing/payments"       element={<ManagerPaymentsPage />} />
               <Route path="/manage/billing/invoices"       element={<InvoicesPage />} />
@@ -339,6 +341,7 @@ export default function AppRouter() {
 
         </Routes>
       </Suspense>
+      </PageErrorBoundary>
     </BrowserRouter>
   );
 }
