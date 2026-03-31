@@ -143,7 +143,8 @@ export default function BillingStatusDonut({
             </text>
             <text
               x={cx}
-              y={showLegend ? "calc(42% + 18px)" : "calc(50% + 18px)"}
+              y={cy}
+              dy="18px"
               textAnchor="middle"
               style={{
                 fontFamily: "'DM Sans', system-ui",

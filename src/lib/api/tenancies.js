@@ -18,7 +18,7 @@ const TENANCY_SELECT = `
 
 const TRANSFER_SELECT = `
   id, tenant_id, tenancy_id, from_room_id, to_room_id,
-  from_bed_id, to_bed_id, transfer_date, reason, approved_by, created_at,
+  transfer_date, reason, approved_by, created_at,
   from_room:rooms!from_room_id(id, room_number, buildings(name)),
   to_room:rooms!to_room_id(id, room_number, buildings(name))
 `;
@@ -43,8 +43,9 @@ export async function getTenancies(tenantId, opts = {}) {
 
   if (opts.status) query = query.eq("status", opts.status);
   if (opts.roomId) query = query.eq("room_id", opts.roomId);
-  if (opts.limit)  query = query.limit(opts.limit);
-  if (opts.offset) query = query.range(opts.offset, opts.offset + (opts.limit ?? 50) - 1);
+  if (opts.limit) query = query.limit(opts.limit);
+  if (opts.offset)
+    query = query.range(opts.offset, opts.offset + (opts.limit ?? 50) - 1);
 
   const { data, error } = await query;
   return { data: data ?? [], error };
@@ -62,7 +63,7 @@ export async function getMyTenancy(clientId) {
     .select(TENANCY_SELECT)
     .eq("client_id", clientId)
     .eq("status", "active")
-    .maybeSingle();          // returns null (not error) if no active tenancy
+    .maybeSingle(); // returns null (not error) if no active tenancy
   return { data, error };
 }
 
@@ -98,23 +99,31 @@ export async function getTenancy(tenancyId) {
 // @param {string} [payload.notes]
 // ─────────────────────────────────────────────────────────────────────────────
 export async function createTenancy({
-  tenantId, roomId, bedId, clientId, rentalRequestId,
-  moveInDate, billingType, agreedPrice, approvedBy, notes,
+  tenantId,
+  roomId,
+  bedId,
+  clientId,
+  rentalRequestId,
+  moveInDate,
+  billingType,
+  agreedPrice,
+  approvedBy,
+  notes,
 }) {
   const { data, error } = await db
     .tenancies()
     .insert({
-      tenant_id:          tenantId,
-      room_id:            roomId,
-      client_id:          clientId,
-      request_id:         rentalRequestId ?? null,
-      rental_request_id:  rentalRequestId ?? null,
-      move_in_date:       moveInDate,
-      billing_type:       billingType,
-      agreed_price:       agreedPrice,
-      approved_by:        approvedBy ?? null,
-      notes:              notes?.trim() ?? null,
-      status:             "active",
+      tenant_id: tenantId,
+      room_id: roomId,
+      client_id: clientId,
+      request_id: rentalRequestId ?? null,
+      rental_request_id: rentalRequestId ?? null,
+      move_in_date: moveInDate,
+      billing_type: billingType,
+      agreed_price: agreedPrice,
+      approved_by: approvedBy ?? null,
+      notes: notes?.trim() ?? null,
+      status: "active",
     })
     .select(TENANCY_SELECT)
     .single();
@@ -134,10 +143,10 @@ export async function moveOut(tenancyId, moveOutDate, notes) {
   const { data, error } = await db
     .tenancies()
     .update({
-      status:       "completed",
+      status: "completed",
       move_out_date: moveOutDate,
-      notes:        notes?.trim() ?? null,
-      updated_at:   new Date().toISOString(),
+      notes: notes?.trim() ?? null,
+      updated_at: new Date().toISOString(),
     })
     .eq("id", tenancyId)
     .select(TENANCY_SELECT)
@@ -153,8 +162,8 @@ export async function terminateTenancy(tenancyId, notes) {
   const { data, error } = await db
     .tenancies()
     .update({
-      status:     "terminated",
-      notes:      notes?.trim() ?? null,
+      status: "terminated",
+      notes: notes?.trim() ?? null,
       updated_at: new Date().toISOString(),
     })
     .eq("id", tenancyId)
@@ -181,20 +190,26 @@ export async function terminateTenancy(tenancyId, notes) {
  * @param {string} [payload.reason]
  */
 export async function requestTransfer({
-  tenantId, tenancyId, fromRoomId, toRoomId,
-  fromBedId, toBedId, transferDate, reason,
+  tenantId,
+  tenancyId,
+  fromRoomId,
+  toRoomId,
+  fromBedId,
+  toBedId,
+  transferDate,
+  reason,
 }) {
   const { data, error } = await db
     .roomTransfers()
     .insert({
-      tenant_id:    tenantId,
-      tenancy_id:   tenancyId,
+      tenant_id: tenantId,
+      tenancy_id: tenancyId,
       from_room_id: fromRoomId,
-      to_room_id:   toRoomId,
-      from_bed_id:  fromBedId ?? null,
-      to_bed_id:    toBedId   ?? null,
+      to_room_id: toRoomId,
+      from_bed_id: fromBedId ?? null,
+      to_bed_id: toBedId ?? null,
       transfer_date: transferDate,
-      reason:        reason?.trim() ?? null,
+      reason: reason?.trim() ?? null,
     })
     .select(TRANSFER_SELECT)
     .single();
@@ -224,9 +239,9 @@ export async function approveTransfer(transferId, approvedBy) {
   const { data, error } = await db
     .tenancies()
     .update({
-      room_id:    transfer.to_room_id,
-      bed_id:     transfer.to_bed_id ?? null,
-      status:     "active",
+      room_id: transfer.to_room_id,
+      bed_id: transfer.to_bed_id ?? null,
+      status: "active",
       updated_at: new Date().toISOString(),
     })
     .eq("id", transfer.tenancy_id)
@@ -247,7 +262,7 @@ export async function getTransfers(tenantId, opts = {}) {
     .order("created_at", { ascending: false });
 
   if (opts.tenancyId) query = query.eq("tenancy_id", opts.tenancyId);
-  if (opts.limit)     query = query.limit(opts.limit);
+  if (opts.limit) query = query.limit(opts.limit);
 
   const { data, error } = await query;
   return { data: data ?? [], error };

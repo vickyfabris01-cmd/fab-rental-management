@@ -95,17 +95,24 @@ export async function getUnreadCount(userId) {
 // @param {string}   [payload.body]
 // @param {object}   [payload.metadata]   Arbitrary context (billing_cycle_id, etc.)
 // ─────────────────────────────────────────────────────────────────────────────
-export async function createNotification({ tenantId, userId, type, title, body, metadata }) {
+export async function createNotification({
+  tenantId,
+  userId,
+  type,
+  title,
+  body,
+  metadata,
+}) {
   const { data, error } = await db
     .notifications()
     .insert({
       tenant_id: tenantId ?? null,
-      user_id:   userId,
+      user_id: userId,
       type,
-      title:     title.trim(),
-      body:      body?.trim() ?? null,
-      data:      metadata ?? {},
-      is_read:   false,
+      title: title.trim(),
+      body: body?.trim() ?? null,
+      data: metadata ?? {},
+      is_read: false,
     })
     .select(NOTIF_SELECT)
     .single();
@@ -121,23 +128,48 @@ export async function createNotification({ tenantId, userId, type, title, body, 
 // @param {string[]} userIds     Array of profile UUIDs
 // @param {object}   payload     { type, title, body?, metadata? }
 // ─────────────────────────────────────────────────────────────────────────────
-export async function broadcastNotification(tenantId, userIds, { type, title, body, metadata }) {
+export async function broadcastNotification(
+  tenantId,
+  userIds,
+  { type, title, body, metadata },
+) {
   if (!userIds.length) return { data: [], error: null };
 
-  const rows = userIds.map(userId => ({
+  const rows = userIds.map((userId) => ({
     tenant_id: tenantId,
-    user_id:   userId,
+    user_id: userId,
     type,
-    title:     title.trim(),
-    body:      body?.trim() ?? null,
-    data:      metadata ?? {},
-    is_read:   false,
+    title: title.trim(),
+    body: body?.trim() ?? null,
+    data: metadata ?? {},
+    is_read: false,
   }));
 
   const { data, error } = await db
     .notifications()
     .insert(rows)
     .select(NOTIF_SELECT);
+  return { data: data ?? [], error };
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// getAnnouncementsByTenant
+// Fetches all broadcast announcements (type = 'announcement') for a tenant.
+// Used by managers to view announcements they've sent.
+//
+// @param {string} tenantId
+// @param {object} [opts]
+// @param {number}   [opts.limit]       Default 40
+// @returns {Promise<{ data: object[], error }>}
+// ─────────────────────────────────────────────────────────────────────────────
+export async function getAnnouncementsByTenant(tenantId, opts = {}) {
+  const { data, error } = await db
+    .notifications()
+    .select(NOTIF_SELECT)
+    .eq("tenant_id", tenantId)
+    .eq("type", "announcement")
+    .order("created_at", { ascending: false })
+    .limit(opts.limit ?? 40);
   return { data: data ?? [], error };
 }
 

@@ -91,8 +91,10 @@ function CentreLabel({ cx, cy, total, currency, valueType }) {
     <g>
       <text
         x={cx}
-        y={cy - 8}
+        y={cy}
+        dy="-8"
         textAnchor="middle"
+        dominantBaseline="central"
         fill="#1A1412"
         fontWeight={900}
         fontSize={18}
@@ -102,8 +104,10 @@ function CentreLabel({ cx, cy, total, currency, valueType }) {
       </text>
       <text
         x={cx}
-        y={cy + 12}
+        y={cy}
+        dy="12"
         textAnchor="middle"
+        dominantBaseline="central"
         fill="#8B7355"
         fontSize={11}
         fontFamily="'DM Sans', system-ui"
