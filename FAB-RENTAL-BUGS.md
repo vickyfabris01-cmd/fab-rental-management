@@ -114,3 +114,6 @@
 ### Batch 4 — Public page & polish
 19. `P-1` through `P-9`
 20. `S-3`, `O-5`, `O-6`, `M-7`, `P-8`, `P-9`
+
+### To do Later in the database
+1. update the billing triger, under `M-2` Record payment / balance not updating

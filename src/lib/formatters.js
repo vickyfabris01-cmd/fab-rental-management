@@ -28,9 +28,9 @@
 export function formatCurrency(amount, opts = {}) {
   const {
     showSymbol = true,
-    compact    = false,
-    decimals   = 0,
-    currency   = "KES",
+    compact = false,
+    decimals = 0,
+    currency = "KES",
   } = opts;
 
   const num = Number(amount ?? 0);
@@ -98,9 +98,9 @@ export function formatDate(value, opts = {}) {
     }
     const monthFmt = style === "long" ? "long" : "short";
     return date.toLocaleDateString("en-KE", {
-      day:   "numeric",
+      day: "numeric",
       month: monthFmt,
-      year:  "numeric",
+      year: "numeric",
     });
   })();
 
@@ -121,20 +121,23 @@ export function formatDate(value, opts = {}) {
 export function formatRelativeTime(value) {
   if (!value) return "—";
 
-  const date  = value instanceof Date ? value : new Date(value);
-  const now   = new Date();
+  const date = value instanceof Date ? value : new Date(value);
+  const now = new Date();
   const diffMs = now.getTime() - date.getTime();
-  const diffS  = Math.round(diffMs / 1000);
-  const diffM  = Math.round(diffS / 60);
-  const diffH  = Math.round(diffM / 60);
-  const diffD  = Math.round(diffH / 24);
+  const diffS = Math.round(diffMs / 1000);
+  const diffM = Math.round(diffS / 60);
+  const diffH = Math.round(diffM / 60);
+  const diffD = Math.round(diffH / 24);
 
-  if (Math.abs(diffS) < 30)  return "just now";
-  if (Math.abs(diffS) < 90)  return diffS > 0 ? "1 minute ago" : "in 1 minute";
-  if (Math.abs(diffM) < 60)  return diffM > 0 ? `${diffM} minutes ago` : `in ${Math.abs(diffM)} minutes`;
-  if (Math.abs(diffH) < 24)  return diffH > 0 ? `${diffH}h ago` : `in ${Math.abs(diffH)}h`;
-  if (Math.abs(diffD) < 7)   return diffD > 0 ? `${diffD}d ago` : `in ${Math.abs(diffD)}d`;
-  if (Math.abs(diffD) < 30)  {
+  if (Math.abs(diffS) < 30) return "just now";
+  if (Math.abs(diffS) < 90) return diffS > 0 ? "1 minute ago" : "in 1 minute";
+  if (Math.abs(diffM) < 60)
+    return diffM > 0 ? `${diffM} minutes ago` : `in ${Math.abs(diffM)} minutes`;
+  if (Math.abs(diffH) < 24)
+    return diffH > 0 ? `${diffH}h ago` : `in ${Math.abs(diffH)}h`;
+  if (Math.abs(diffD) < 7)
+    return diffD > 0 ? `${diffD}d ago` : `in ${Math.abs(diffD)}d`;
+  if (Math.abs(diffD) < 30) {
     const weeks = Math.round(diffD / 7);
     return diffD > 0 ? `${weeks}w ago` : `in ${weeks}w`;
   }
@@ -155,7 +158,7 @@ export function formatBillingPeriod(periodStart, periodEnd, billingType) {
 
   if (billingType === "semester") {
     const start = formatDate(periodStart, { style: "medium" });
-    const end   = formatDate(periodEnd,   { style: "medium" });
+    const end = formatDate(periodEnd, { style: "medium" });
     return `${start} – ${end}`;
   }
 
@@ -173,10 +176,10 @@ export function formatBillingPeriod(periodStart, periodEnd, billingType) {
  */
 export function formatDueDate(dueDate) {
   if (!dueDate) return { label: "—", isOverdue: false };
-  const today     = new Date().toISOString().slice(0, 10);
+  const today = new Date().toISOString().slice(0, 10);
   const isOverdue = dueDate < today;
   return {
-    label:     formatDate(dueDate),
+    label: formatDate(dueDate),
     isOverdue,
   };
 }
@@ -253,9 +256,7 @@ export function truncate(text, maxLength = 80) {
  */
 export function capitalize(text) {
   if (!text) return "";
-  return text
-    .toLowerCase()
-    .replace(/(^|\s)\S/g, (l) => l.toUpperCase());
+  return text.toLowerCase().replace(/(^|\s)\S/g, (l) => l.toUpperCase());
 }
 
 /**
@@ -288,7 +289,7 @@ export function slugify(text) {
 export function formatFileSize(bytes) {
   if (!bytes || bytes === 0) return "0 B";
   const units = ["B", "KB", "MB", "GB"];
-  const i     = Math.floor(Math.log(bytes) / Math.log(1024));
+  const i = Math.floor(Math.log(bytes) / Math.log(1024));
   const value = bytes / Math.pow(1024, i);
   return `${value.toFixed(1).replace(/\.0$/, "")} ${units[i]}`;
 }
@@ -310,7 +311,7 @@ export function formatInitials(name, max = 2) {
   return name
     .trim()
     .split(/\s+/)
-    .map(w => w[0] ?? "")
+    .map((w) => w[0] ?? "")
     .join("")
     .toUpperCase()
     .slice(0, max);
@@ -325,12 +326,12 @@ export function formatInitials(name, max = 2) {
  */
 export function formatRole(role) {
   const labels = {
-    super_admin:      "Super Admin",
-    owner:            "Owner",
-    manager:          "Manager",
-    client:           "Resident",
-    worker:           "Worker",
-    visitor:          "Visitor",
+    super_admin: "Super Admin",
+    owner: "Owner",
+    manager: "Manager",
+    client: "Resident",
+    worker: "Worker",
+    visitor: "Visitor",
   };
   return labels[role] ?? capitalize(role ?? "");
 }
@@ -341,11 +342,12 @@ export function formatRole(role) {
  */
 export function formatRoomType(type) {
   const labels = {
-    single:    "Single Room",
-    double:    "Double Room",
-    dormitory: "Dormitory",
-    studio:    "Studio",
+    single: "Single Room",
+    double: "Double Room",
+    dormitory: "Stalls",
+    studio: "1 Bedroom",
     bedsitter: "Bedsitter",
+    suite: "2 Bedroom",
   };
   return labels[type] ?? capitalize(type ?? "");
 }

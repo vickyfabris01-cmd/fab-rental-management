@@ -34,8 +34,8 @@ export async function getWorkers(tenantId, opts = {}) {
     .order("full_name");
 
   if (opts.status) query = query.eq("status", opts.status);
-  if (opts.role)   query = query.eq("role", opts.role);
-  if (opts.limit)  query = query.limit(opts.limit);
+  if (opts.role) query = query.eq("role", opts.role);
+  if (opts.limit) query = query.limit(opts.limit);
 
   const { data, error } = await query;
   return { data: data ?? [], error };
@@ -56,6 +56,7 @@ export async function getWorker(workerId) {
  * @param {string} tenantId
  * @param {object} payload
  * @param {string}   payload.fullName
+ * @param {string}   payload.email     Email for worker dashboard access
  * @param {string}   payload.role       'security' | 'cleaner' | 'maintenance' | ...
  * @param {number}   payload.salary
  * @param {string}   [payload.phone]
@@ -68,16 +69,16 @@ export async function createWorker(tenantId, payload) {
   const { data, error } = await db
     .workers()
     .insert({
-      tenant_id:  tenantId,
-      full_name:  payload.fullName,
-      role:       payload.role,
-      salary:     Number(payload.salary),
-      phone:      payload.phone      ?? null,
-      id_number:  payload.idNumber   ?? null,
-      pay_cycle:  payload.payCycle   ?? "monthly",
-      start_date: payload.startDate  ?? null,
-      user_id:    payload.userId     ?? null,
-      status:     "active",
+      tenant_id: tenantId,
+      full_name: payload.fullName,
+      role: payload.role,
+      salary: Number(payload.salary),
+      phone: payload.phone ?? null,
+      id_number: payload.idNumber ?? null,
+      pay_cycle: payload.payCycle ?? "monthly",
+      start_date: payload.startDate ?? null,
+      user_id: payload.userId ?? null,
+      status: "active",
     })
     .select(WORKER_SELECT)
     .single();
@@ -101,8 +102,8 @@ export async function terminateWorker(workerId, endDate) {
   const { data, error } = await db
     .workers()
     .update({
-      status:     "terminated",
-      end_date:   endDate ?? new Date().toISOString().slice(0, 10),
+      status: "terminated",
+      end_date: endDate ?? new Date().toISOString().slice(0, 10),
       updated_at: new Date().toISOString(),
     })
     .eq("id", workerId)
@@ -123,8 +124,9 @@ export async function getWorkerPayments(tenantId, opts = {}) {
     .order("paid_at", { ascending: false });
 
   if (opts.workerId) query = query.eq("worker_id", opts.workerId);
-  if (opts.limit)    query = query.limit(opts.limit);
-  if (opts.offset)   query = query.range(opts.offset, opts.offset + (opts.limit ?? 50) - 1);
+  if (opts.limit) query = query.limit(opts.limit);
+  if (opts.offset)
+    query = query.range(opts.offset, opts.offset + (opts.limit ?? 50) - 1);
 
   const { data, error } = await query;
   return { data: data ?? [], error };
@@ -154,22 +156,29 @@ export async function getMyWorkerPayments(workerId) {
  * @param {string} [payload.paidAt]       ISO timestamp
  */
 export async function recordSalaryPayment({
-  tenantId, workerId, amount, periodStart, periodEnd,
-  method, recordedBy, notes, paidAt,
+  tenantId,
+  workerId,
+  amount,
+  periodStart,
+  periodEnd,
+  method,
+  recordedBy,
+  notes,
+  paidAt,
 }) {
   const { data, error } = await db
     .workerPayments()
     .insert({
-      tenant_id:      tenantId,
-      worker_id:      workerId,
-      amount:         Number(amount),
-      period_start:   periodStart,
-      period_end:     periodEnd,
-      payment_method: method        ?? "cash",
+      tenant_id: tenantId,
+      worker_id: workerId,
+      amount: Number(amount),
+      period_start: periodStart,
+      period_end: periodEnd,
+      payment_method: method ?? "cash",
       payment_status: "paid",
-      recorded_by:    recordedBy    ?? null,
-      notes:          notes?.trim() ?? null,
-      paid_at:        paidAt        ?? new Date().toISOString(),
+      recorded_by: recordedBy ?? null,
+      notes: notes?.trim() ?? null,
+      paid_at: paidAt ?? new Date().toISOString(),
     })
     .select(WORKER_PAYMENT_SELECT)
     .single();
@@ -187,7 +196,7 @@ export async function getPayrollSummary(tenantId, periodStart, periodEnd) {
     .eq("tenant_id", tenantId)
     .eq("payment_status", "paid")
     .gte("period_start", periodStart)
-    .lte("period_end",   periodEnd);
+    .lte("period_end", periodEnd);
 
   if (error) return { data: null, error };
 
@@ -198,7 +207,7 @@ export async function getPayrollSummary(tenantId, periodStart, periodEnd) {
       acc.byRole[role] = (acc.byRole[role] ?? 0) + Number(p.amount);
       return acc;
     },
-    { total: 0, byRole: {} }
+    { total: 0, byRole: {} },
   );
 
   return { data: summary, error: null };
@@ -226,10 +235,10 @@ export async function getAttendance(tenantId, opts = {}) {
     .order("date", { ascending: false });
 
   if (opts.workerId) query = query.eq("worker_id", opts.workerId);
-  if (opts.status)   query = query.eq("status", opts.status);
+  if (opts.status) query = query.eq("status", opts.status);
   if (opts.dateFrom) query = query.gte("date", opts.dateFrom);
-  if (opts.dateTo)   query = query.lte("date", opts.dateTo);
-  if (opts.limit)    query = query.limit(opts.limit);
+  if (opts.dateTo) query = query.lte("date", opts.dateTo);
+  if (opts.limit) query = query.limit(opts.limit);
 
   const { data, error } = await query;
   return { data: data ?? [], error };
@@ -246,19 +255,26 @@ export async function getAttendance(tenantId, opts = {}) {
  * @param {string} [payload.notes]
  * @param {string} [payload.recordedBy] Manager profile UUID
  */
-export async function recordAttendance({ tenantId, workerId, date, status, notes, recordedBy }) {
+export async function recordAttendance({
+  tenantId,
+  workerId,
+  date,
+  status,
+  notes,
+  recordedBy,
+}) {
   const { data, error } = await db
     .attendance()
     .upsert(
       {
-        tenant_id:   tenantId,
-        worker_id:   workerId,
+        tenant_id: tenantId,
+        worker_id: workerId,
         date,
         status,
-        notes:       notes?.trim() ?? null,
+        notes: notes?.trim() ?? null,
         recorded_by: recordedBy ?? null,
       },
-      { onConflict: "worker_id,date" }   // overwrite if same worker/day
+      { onConflict: "worker_id,date" }, // overwrite if same worker/day
     )
     .select(ATTENDANCE_SELECT)
     .single();
@@ -273,12 +289,12 @@ export async function recordAttendance({ tenantId, workerId, date, status, notes
  * @param {Array<{ workerId, status, notes?, recordedBy? }>} records
  */
 export async function bulkRecordAttendance(tenantId, date, records) {
-  const rows = records.map(r => ({
-    tenant_id:   tenantId,
-    worker_id:   r.workerId,
+  const rows = records.map((r) => ({
+    tenant_id: tenantId,
+    worker_id: r.workerId,
     date,
-    status:      r.status,
-    notes:       r.notes?.trim() ?? null,
+    status: r.status,
+    notes: r.notes?.trim() ?? null,
     recorded_by: r.recordedBy ?? null,
   }));
 

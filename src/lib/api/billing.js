@@ -48,11 +48,12 @@ export async function getBillingCycles(tenantId, opts = {}) {
     .eq("tenant_id", tenantId)
     .order("period_start", { ascending: false });
 
-  if (opts.status)    query = query.eq("status", opts.status);
-  if (opts.clientId)  query = query.eq("client_id", opts.clientId);
+  if (opts.status) query = query.eq("status", opts.status);
+  if (opts.clientId) query = query.eq("client_id", opts.clientId);
   if (opts.tenancyId) query = query.eq("tenancy_id", opts.tenancyId);
-  if (opts.limit)     query = query.limit(opts.limit);
-  if (opts.offset)    query = query.range(opts.offset, opts.offset + (opts.limit ?? 50) - 1);
+  if (opts.limit) query = query.limit(opts.limit);
+  if (opts.offset)
+    query = query.range(opts.offset, opts.offset + (opts.limit ?? 50) - 1);
 
   const { data, error } = await query;
   return { data: data ?? [], error };
@@ -146,6 +147,37 @@ export async function getUpcomingCycles(clientId, limit = 6) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// regenerateBillingCycles
+// Client view — regenerate billing cycles if missing (for debugging).
+// This queries the client's tenancies and creates missing cycles.
+//
+// @param {string} clientId
+// ─────────────────────────────────────────────────────────────────────────────
+export async function regenerateBillingCycles(clientId) {
+  try {
+    // Call RPC function if available, or warn user to contact support
+    const { data, error } = await db.rpc("regenerate_billing_for_client", {
+      p_client_id: clientId,
+    });
+
+    if (error) {
+      // If RPC doesn't exist, return helpful message
+      return {
+        data: null,
+        error: {
+          message:
+            "Contact manager to regenerate billing cycles — RPC function not available yet",
+        },
+      };
+    }
+
+    return { data, error: null };
+  } catch (err) {
+    return { data: null, error: { message: err.message } };
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // getBillingSummary
 // Aggregate totals for a client — total paid, outstanding, next due.
 // ─────────────────────────────────────────────────────────────────────────────
@@ -170,7 +202,7 @@ export async function getBillingSummary(clientId) {
       }
       return acc;
     },
-    { totalPaid: 0, outstanding: 0, nextDueDate: null }
+    { totalPaid: 0, outstanding: 0, nextDueDate: null },
   );
 
   return { data: summary, error: null };
@@ -207,8 +239,9 @@ export async function getInvoices(tenantId, opts = {}) {
     .order("issued_at", { ascending: false });
 
   if (opts.clientId) query = query.eq("client_id", opts.clientId);
-  if (opts.limit)    query = query.limit(opts.limit);
-  if (opts.offset)   query = query.range(opts.offset, opts.offset + (opts.limit ?? 50) - 1);
+  if (opts.limit) query = query.limit(opts.limit);
+  if (opts.offset)
+    query = query.range(opts.offset, opts.offset + (opts.limit ?? 50) - 1);
 
   const { data, error } = await query;
   return { data: data ?? [], error };

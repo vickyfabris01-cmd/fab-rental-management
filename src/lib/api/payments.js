@@ -19,11 +19,8 @@ const FASTAPI_BASE = import.meta.env.VITE_API_BASE_URL;
 const PAYMENT_SELECT = `
   id, tenant_id, billing_cycle_id, client_id,
   amount, payment_method, payment_status,
-  mpesa_transaction_id, mpesa_receipt, reference,
-  paid_at, recorded_by, notes, created_at,
-  billing_cycles(period_start, period_end, amount_due),
-  client:profiles!client_id(id, full_name, avatar_url),
-  recorder:profiles!recorded_by(id, full_name)
+  mpesa_transaction_id, mpesa_receipt,
+  paid_at, recorded_by, notes, created_at
 `;
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -47,11 +44,12 @@ export async function getPayments(tenantId, opts = {}) {
     .order("created_at", { ascending: false });
 
   if (opts.clientId) query = query.eq("client_id", opts.clientId);
-  if (opts.cycleId)  query = query.eq("billing_cycle_id", opts.cycleId);
-  if (opts.method)   query = query.eq("payment_method", opts.method);
-  if (opts.status)   query = query.eq("payment_status", opts.status);
-  if (opts.limit)    query = query.limit(opts.limit);
-  if (opts.offset)   query = query.range(opts.offset, opts.offset + (opts.limit ?? 50) - 1);
+  if (opts.cycleId) query = query.eq("billing_cycle_id", opts.cycleId);
+  if (opts.method) query = query.eq("payment_method", opts.method);
+  if (opts.status) query = query.eq("payment_status", opts.status);
+  if (opts.limit) query = query.limit(opts.limit);
+  if (opts.offset)
+    query = query.range(opts.offset, opts.offset + (opts.limit ?? 50) - 1);
 
   const { data, error } = await query;
   return { data: data ?? [], error };
@@ -69,7 +67,7 @@ export async function getMyPayments(clientId, opts = {}) {
     .order("created_at", { ascending: false });
 
   if (opts.status) query = query.eq("payment_status", opts.status);
-  if (opts.limit)  query = query.limit(opts.limit);
+  if (opts.limit) query = query.limit(opts.limit);
 
   const { data, error } = await query;
   return { data: data ?? [], error };
@@ -105,24 +103,38 @@ export async function getPaymentsForCycle(cycleId) {
 // @param {string} [payload.paidAt]        ISO timestamp, defaults to now
 // ─────────────────────────────────────────────────────────────────────────────
 export async function recordManualPayment({
-  tenantId, cycleId, clientId, amount, method, recordedBy, notes, paidAt,
+  tenantId,
+  cycleId,
+  clientId,
+  amount,
+  method,
+  recordedBy,
+  notes,
+  paidAt,
 }) {
-  const { data, error } = await db
-    .payments()
-    .insert({
-      tenant_id:        tenantId,
+  try {
+    const { data, error } = await db.payments().insert({
+      tenant_id: tenantId,
       billing_cycle_id: cycleId,
-      client_id:        clientId,
-      amount:           Number(amount),
-      payment_method:   method,
-      payment_status:   "confirmed",   // manual = already confirmed
-      recorded_by:      recordedBy,
-      notes:            notes?.trim() ?? null,
-      paid_at:          paidAt ?? new Date().toISOString(),
-    })
-    .select(PAYMENT_SELECT)
-    .single();
-  return { data, error };
+      client_id: clientId,
+      amount: Number(amount),
+      payment_method: method,
+      payment_status: "confirmed",
+      recorded_by: recordedBy,
+      notes: notes?.trim() ?? null,
+      paid_at: paidAt ?? new Date().toISOString(),
+    });
+
+    if (error) {
+      console.error("Payment insert error:", error);
+      return { data: null, error };
+    }
+
+    return { data: { success: true, amount: Number(amount) }, error: null };
+  } catch (err) {
+    console.error("Payment error:", err);
+    return { data: null, error: { message: err.message } };
+  }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -142,28 +154,40 @@ export async function recordManualPayment({
 // @param {string} payload.reference     Account reference shown in M-Pesa prompt
 // @returns {Promise<{ data: { checkout_request_id, payment_id } | null, error }>}
 // ─────────────────────────────────────────────────────────────────────────────
-export async function mpesaSTKPush({ cycleId, clientId, phone, amount, reference }) {
+export async function mpesaSTKPush({
+  cycleId,
+  clientId,
+  phone,
+  amount,
+  reference,
+}) {
   // M-Pesa STK Push requires the FastAPI backend (Daraja credentials are server-side only).
   // If the backend is not running, return a clear error rather than ERR_CONNECTION_REFUSED.
   if (!FASTAPI_BASE || FASTAPI_BASE === "http://localhost:8000") {
     // Check if backend is actually available first
     try {
-      const ping = await fetch(`${FASTAPI_BASE}/health`, { signal: AbortSignal.timeout(2000) });
+      const ping = await fetch(`${FASTAPI_BASE}/health`, {
+        signal: AbortSignal.timeout(2000),
+      });
       if (!ping.ok) throw new Error("backend down");
     } catch {
       return {
         data: null,
         error: {
-          message: "M-Pesa payments require the FastAPI backend to be running. " +
-                   "Start it with: cd backend && uvicorn main:app --reload",
+          message:
+            "M-Pesa payments require the FastAPI backend to be running. " +
+            "Start it with: cd backend && uvicorn main:app --reload",
         },
       };
     }
   }
 
   // Get the current session JWT to authenticate with FastAPI
-  const { data: { session } } = await import("../../config/supabase")
-    .then(m => m.supabase.auth.getSession());
+  const {
+    data: { session },
+  } = await import("../../config/supabase").then((m) =>
+    m.supabase.auth.getSession(),
+  );
 
   if (!session) return { data: null, error: { message: "Not authenticated" } };
 
@@ -172,21 +196,24 @@ export async function mpesaSTKPush({ cycleId, clientId, phone, amount, reference
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        Authorization:  `Bearer ${session.access_token}`,
+        Authorization: `Bearer ${session.access_token}`,
       },
       body: JSON.stringify({
         billing_cycle_id: cycleId,
-        client_id:        clientId,
+        client_id: clientId,
         phone,
-        amount:           Math.ceil(amount), // M-Pesa requires integer KES
-        reference:        reference ?? "Rent Payment",
-        description:      `Rent payment – ${reference}`,
+        amount: Math.ceil(amount), // M-Pesa requires integer KES
+        reference: reference ?? "Rent Payment",
+        description: `Rent payment – ${reference}`,
       }),
     });
 
     if (!res.ok) {
       const err = await res.json().catch(() => ({ detail: res.statusText }));
-      return { data: null, error: { message: err.detail ?? "STK Push failed" } };
+      return {
+        data: null,
+        error: { message: err.detail ?? "STK Push failed" },
+      };
     }
 
     const data = await res.json();
@@ -254,12 +281,13 @@ export async function getPaymentSummary(tenantId) {
 
   const summary = (data ?? []).reduce(
     (acc, p) => {
-      acc.total       += Number(p.amount);
+      acc.total += Number(p.amount);
       acc.count++;
-      acc.byMethod[p.payment_method] = (acc.byMethod[p.payment_method] ?? 0) + Number(p.amount);
+      acc.byMethod[p.payment_method] =
+        (acc.byMethod[p.payment_method] ?? 0) + Number(p.amount);
       return acc;
     },
-    { total: 0, count: 0, byMethod: {} }
+    { total: 0, count: 0, byMethod: {} },
   );
 
   return { data: summary, error: null };

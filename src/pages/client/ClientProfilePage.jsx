@@ -29,8 +29,29 @@ export default function ClientProfilePage() {
   const profile = useAuthStore((s) => s.profile);
   const user = useAuthStore((s) => s.user);
   const refreshProfile = useAuthStore((s) => s.refreshProfile);
+  const loading = useAuthStore((s) => s.loading);
   const toast = useToast();
   const avatarInput = useRef(null);
+
+  if (loading || !profile) {
+    return (
+      <DashboardLayout pageTitle="My Profile">
+        <PageHeader
+          title="My Profile"
+          subtitle="Manage your account details and security"
+        />
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "center",
+            padding: "80px 20px",
+          }}
+        >
+          <Alert type="info" message="Loading your profile..." />
+        </div>
+      </DashboardLayout>
+    );
+  }
 
   // ── Profile form ──────────────────────────────────────────────────────────
   const [fullName, setFullName] = useState(profile?.full_name ?? "");
