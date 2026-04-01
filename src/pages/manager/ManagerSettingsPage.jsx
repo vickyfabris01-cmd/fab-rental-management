@@ -97,7 +97,8 @@ export default function ManagerSettingsPage() {
   const [propAddr, setPropAddr] = useState("");
   const [propCounty, setPropCounty] = useState("");
   const [propTagline, setPropTagline] = useState("");
-  const [propSaving, setPropSaving] = useState(false);
+  const [brandingSaving, setBrandingSaving] = useState(false);
+  const [propInfoSaving, setPropInfoSaving] = useState(false);
 
   // ── Logo ──────────────────────────────────────────────────────────────────
   const [logoPreview, setLogoPreview] = useState(null);
@@ -161,11 +162,10 @@ export default function ManagerSettingsPage() {
     e.target.value = "";
   };
 
-  // ── Save property info + logo ─────────────────────────────────────────────
-  const handleSaveProperty = async () => {
+  // ── Save branding (logo, name, tagline) ──────────────────────────────────
+  const handleSaveBranding = async () => {
     if (!tenant?.id) return;
-    setPropSaving(true);
-    setLogoUploading(false);
+    setBrandingSaving(true);
     try {
       let logoUrl = branding?.logo_url ?? tenant.logo_url ?? null;
 
@@ -188,14 +188,10 @@ export default function ManagerSettingsPage() {
         }
       }
 
-      // Run tenant + branding updates in parallel for speed
+      // Update branding and tenant name/logo
       const [tenantResult, brandingResult] = await Promise.all([
         updateTenant(tenant.id, {
           name: propName.trim() || tenant.name,
-          phone: propPhone.trim() || null,
-          email: propEmail.trim() || null,
-          address: propAddr.trim() || null,
-          county: propCounty.trim() || null,
           logo_url: logoUrl,
         }),
         db
@@ -211,14 +207,51 @@ export default function ManagerSettingsPage() {
       if (tenantResult.error) throw new Error(tenantResult.error.message);
       if (brandingResult.error) throw new Error(brandingResult.error.message);
 
-      // Refresh store in background — don't block the success toast on it
+      toast.success("Branding saved.");
+      refresh(tenant.id).catch(() => {});
+    } catch (err) {
+      toast.error(err.message ?? "Failed to save branding.");
+    } finally {
+      setBrandingSaving(false);
+    }
+  };
+
+  // ── Save property info (phone, email, address, county) ────────────────────
+  const handleSavePropertyInfo = async () => {
+    if (!tenant?.id) return;
+
+    // Validate: at least one field must have a value
+    const validFields = {
+      phone: propPhone.trim(),
+      email: propEmail.trim(),
+      address: propAddr.trim(),
+      county: propCounty.trim(),
+    };
+
+    const hasAnyValue = Object.values(validFields).some((v) => v.length > 0);
+    if (!hasAnyValue) {
+      toast.error("Please enter at least one field.");
+      return;
+    }
+
+    setPropInfoSaving(true);
+    try {
+      const updates = {};
+      if (validFields.phone) updates.phone = validFields.phone;
+      if (validFields.email) updates.email = validFields.email;
+      if (validFields.address) updates.address = validFields.address;
+      if (validFields.county) updates.county = validFields.county;
+
+      const { error } = await updateTenant(tenant.id, updates);
+
+      if (error) throw new Error(error.message);
+
       toast.success("Property info saved.");
       refresh(tenant.id).catch(() => {});
     } catch (err) {
-      toast.error(err.message ?? "Failed to save. Please try again.");
+      toast.error(err.message ?? "Failed to save property info.");
     } finally {
-      setPropSaving(false);
-      setLogoUploading(false);
+      setPropInfoSaving(false);
     }
   };
 
@@ -436,12 +469,12 @@ export default function ManagerSettingsPage() {
           >
             <Button
               variant="primary"
-              loading={propSaving || logoUploading}
-              onClick={handleSaveProperty}
+              loading={brandingSaving || logoUploading}
+              onClick={handleSaveBranding}
             >
               {logoUploading
                 ? "Uploading logo…"
-                : propSaving
+                : brandingSaving
                   ? "Saving…"
                   : "Save Branding"}
             </Button>
@@ -491,10 +524,10 @@ export default function ManagerSettingsPage() {
             <div style={{ display: "flex", justifyContent: "flex-end" }}>
               <Button
                 variant="primary"
-                loading={propSaving || logoUploading}
-                onClick={handleSaveProperty}
+                loading={propInfoSaving}
+                onClick={handleSavePropertyInfo}
               >
-                {logoUploading ? "Uploading logo…" : "Save Property Info"}
+                {propInfoSaving ? "Saving…" : "Save Property Info"}
               </Button>
             </div>
           </div>
