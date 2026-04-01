@@ -1,0 +1,694 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 2000 2600" width="2000" height="2600" style="background:#0F172A; font-family: 'Arial', sans-serif;">
+
+  <defs>
+    <!-- Arrow marker -->
+    <marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M1 2L8 5L1 8" fill="none" stroke="#64748B" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+    </marker>
+    <marker id="arr-hot" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M1 2L8 5L1 8" fill="none" stroke="#6366F1" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+    </marker>
+    <marker id="arr-green" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M1 2L8 5L1 8" fill="none" stroke="#10B981" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+    </marker>
+    <marker id="arr-amber" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M1 2L8 5L1 8" fill="none" stroke="#F59E0B" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+    </marker>
+    <marker id="arr-red" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M1 2L8 5L1 8" fill="none" stroke="#EF4444" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+    </marker>
+    <!-- Glows -->
+    <filter id="glow-indigo"><feGaussianBlur stdDeviation="3" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+    <filter id="glow-green"><feGaussianBlur stdDeviation="3" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+  </defs>
+
+  <!-- ═══════════════════════════════════════════════════════ -->
+  <!-- BACKGROUND GRID                                         -->
+  <!-- ═══════════════════════════════════════════════════════ -->
+  <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
+    <path d="M 40 0 L 0 0 0 40" fill="none" stroke="#1E293B" stroke-width="0.5"/>
+  </pattern>
+  <rect width="2000" height="2600" fill="url(#grid)"/>
+
+  <!-- ═══════════════════════════════════════════════════════ -->
+  <!-- TIER BAND LABELS                                         -->
+  <!-- ═══════════════════════════════════════════════════════ -->
+  <!-- Tier labels on the far left -->
+  <rect x="10" y="60" width="8" height="300" rx="4" fill="#6366F1" opacity="0.7"/>
+  <text x="30" y="220" fill="#6366F1" font-size="13" font-weight="700" font-family="Arial" letter-spacing="2" transform="rotate(-90,30,220)">IDENTITY &amp; CONFIG</text>
+
+  <rect x="10" y="410" width="8" height="260" rx="4" fill="#10B981" opacity="0.7"/>
+  <text x="30" y="545" fill="#10B981" font-size="13" font-weight="700" font-family="Arial" letter-spacing="2" transform="rotate(-90,30,545)">PROPERTY</text>
+
+  <rect x="10" y="720" width="8" height="340" rx="4" fill="#F59E0B" opacity="0.7"/>
+  <text x="30" y="900" fill="#F59E0B" font-size="13" font-weight="700" font-family="Arial" letter-spacing="2" transform="rotate(-90,30,900)">TENANCY LIFECYCLE</text>
+
+  <rect x="10" y="1110" width="8" height="300" rx="4" fill="#EF4444" opacity="0.7"/>
+  <text x="30" y="1265" fill="#EF4444" font-size="13" font-weight="700" font-family="Arial" letter-spacing="2" transform="rotate(-90,30,1265)">FINANCE</text>
+
+  <rect x="10" y="1460" width="8" height="1060" rx="4" fill="#8B5CF6" opacity="0.7"/>
+  <text x="30" y="2000" fill="#8B5CF6" font-size="13" font-weight="700" font-family="Arial" letter-spacing="2" transform="rotate(-90,30,2000)">OPERATIONS</text>
+
+  <!-- ═══════════════════════════════════════════════════════ -->
+  <!-- TITLE BLOCK                                             -->
+  <!-- ═══════════════════════════════════════════════════════ -->
+  <rect x="60" y="18" width="1900" height="52" rx="6" fill="#1E293B" stroke="#334155" stroke-width="1"/>
+  <text x="80" y="50" fill="#F8FAFC" font-size="22" font-weight="700" font-family="Arial">fabrentals-dev</text>
+  <text x="255" y="50" fill="#64748B" font-size="22" font-weight="400" font-family="Arial">  ·  Entity Relationship Diagram</text>
+  <text x="1860" y="50" fill="#64748B" font-size="13" font-family="Arial" text-anchor="end">22 tables  ·  vhjptjbonpzpohdqydrt  ·  eu-west-1</text>
+
+  <!-- ═══════════════════════════════════════════════════════ -->
+  <!-- HELPER: Table box macro (done manually below)          -->
+  <!-- Color scheme:                                          -->
+  <!--   Indigo  #6366F1  bg:#1E1B4B  border:#4338CA  Tier1  -->
+  <!--   Green   #10B981  bg:#064E3B  border:#047857  Tier2  -->
+  <!--   Amber   #F59E0B  bg:#451A03  border:#B45309  Tier3  -->
+  <!--   Red     #EF4444  bg:#450A0A  border:#B91C1C  Tier4  -->
+  <!--   Purple  #8B5CF6  bg:#2E1065  border:#6D28D9  Tier5  -->
+  <!-- ═══════════════════════════════════════════════════════ -->
+
+  <!-- ╔══════════════════════════════════════════════════╗ -->
+  <!-- ║  TIER 1 — IDENTITY & CONFIG                       ║ -->
+  <!-- ╚══════════════════════════════════════════════════╝ -->
+
+  <!-- auth.users  x=80 y=80 w=220 -->
+  <g id="auth_users">
+    <rect x="80" y="80" width="220" height="110" rx="8" fill="#1E1B4B" stroke="#6366F1" stroke-width="2"/>
+    <rect x="80" y="80" width="220" height="32" rx="8" fill="#4338CA"/>
+    <rect x="80" y="104" width="220" height="8" fill="#4338CA"/>
+    <text x="190" y="102" text-anchor="middle" fill="#EEF2FF" font-size="13" font-weight="700" font-family="Arial">auth.users</text>
+    <text x="90" y="128" fill="#A5B4FC" font-size="11" font-family="Arial">🔑 id</text>
+    <text x="90" y="145" fill="#818CF8" font-size="11" font-family="Arial">email</text>
+    <text x="90" y="162" fill="#818CF8" font-size="11" font-family="Arial">created_at</text>
+    <text x="190" y="182" text-anchor="middle" fill="#4F46E5" font-size="10" font-family="Arial">SUPABASE AUTH</text>
+  </g>
+
+  <!-- tenants  x=360 y=80 w=240 -->
+  <g id="tenants">
+    <rect x="360" y="80" width="240" height="218" rx="8" fill="#1E1B4B" stroke="#6366F1" stroke-width="2"/>
+    <rect x="360" y="80" width="240" height="32" rx="8" fill="#4338CA"/>
+    <rect x="360" y="104" width="240" height="8" fill="#4338CA"/>
+    <text x="480" y="102" text-anchor="middle" fill="#EEF2FF" font-size="13" font-weight="700" font-family="Arial">tenants</text>
+    <text x="370" y="128" fill="#A5B4FC" font-size="11" font-family="Arial">🔑 id  uuid</text>
+    <text x="370" y="145" fill="#818CF8" font-size="11" font-family="Arial">name  text</text>
+    <text x="370" y="162" fill="#818CF8" font-size="11" font-family="Arial">slug  text  UNIQUE</text>
+    <text x="370" y="179" fill="#818CF8" font-size="11" font-family="Arial">status  pending|active|suspended</text>
+    <text x="370" y="196" fill="#818CF8" font-size="11" font-family="Arial">plan  basic|pro|enterprise</text>
+    <text x="370" y="213" fill="#93C5FD" font-size="11" font-family="Arial">🔗 owner_user_id → auth.users</text>
+    <text x="370" y="230" fill="#818CF8" font-size="11" font-family="Arial">email  phone  address</text>
+    <text x="370" y="247" fill="#818CF8" font-size="11" font-family="Arial">county  country  logo_url</text>
+    <text x="370" y="264" fill="#818CF8" font-size="11" font-family="Arial">created_at  updated_at</text>
+    <text x="480" y="291" text-anchor="middle" fill="#4F46E5" font-size="10" font-family="Arial">2 rows</text>
+  </g>
+
+  <!-- profiles  x=670 y=80 w=240 -->
+  <g id="profiles">
+    <rect x="670" y="80" width="240" height="218" rx="8" fill="#1E1B4B" stroke="#6366F1" stroke-width="2"/>
+    <rect x="670" y="80" width="240" height="32" rx="8" fill="#4338CA"/>
+    <rect x="670" y="104" width="240" height="8" fill="#4338CA"/>
+    <text x="790" y="102" text-anchor="middle" fill="#EEF2FF" font-size="13" font-weight="700" font-family="Arial">profiles</text>
+    <text x="680" y="128" fill="#A5B4FC" font-size="11" font-family="Arial">🔑 id  uuid → auth.users</text>
+    <text x="680" y="145" fill="#93C5FD" font-size="11" font-family="Arial">🔗 tenant_id → tenants</text>
+    <text x="680" y="162" fill="#818CF8" font-size="11" font-family="Arial">role  super_admin|owner|manager</text>
+    <text x="680" y="179" fill="#818CF8" font-size="11" font-family="Arial">     client|worker|visitor</text>
+    <text x="680" y="196" fill="#818CF8" font-size="11" font-family="Arial">full_name  text</text>
+    <text x="680" y="213" fill="#818CF8" font-size="11" font-family="Arial">phone  email  avatar_url</text>
+    <text x="680" y="230" fill="#818CF8" font-size="11" font-family="Arial">is_active  boolean</text>
+    <text x="680" y="247" fill="#818CF8" font-size="11" font-family="Arial">created_at  updated_at</text>
+    <text x="790" y="291" text-anchor="middle" fill="#4F46E5" font-size="10" font-family="Arial">7 rows</text>
+  </g>
+
+  <!-- tenant_branding  x=980 y=80 w=240 -->
+  <g id="tenant_branding">
+    <rect x="980" y="80" width="240" height="184" rx="8" fill="#1E1B4B" stroke="#6366F1" stroke-width="2"/>
+    <rect x="980" y="80" width="240" height="32" rx="8" fill="#4338CA"/>
+    <rect x="980" y="104" width="240" height="8" fill="#4338CA"/>
+    <text x="1100" y="102" text-anchor="middle" fill="#EEF2FF" font-size="13" font-weight="700" font-family="Arial">tenant_branding</text>
+    <text x="990" y="128" fill="#A5B4FC" font-size="11" font-family="Arial">🔑 id  uuid</text>
+    <text x="990" y="145" fill="#93C5FD" font-size="11" font-family="Arial">🔗 tenant_id → tenants  UNIQUE</text>
+    <text x="990" y="162" fill="#818CF8" font-size="11" font-family="Arial">logo_url  text</text>
+    <text x="990" y="179" fill="#818CF8" font-size="11" font-family="Arial">primary_color  #C5612C</text>
+    <text x="990" y="196" fill="#818CF8" font-size="11" font-family="Arial">secondary_color  font_family</text>
+    <text x="990" y="213" fill="#818CF8" font-size="11" font-family="Arial">tagline  text</text>
+    <text x="990" y="230" fill="#818CF8" font-size="11" font-family="Arial">updated_at</text>
+    <text x="1100" y="257" text-anchor="middle" fill="#4F46E5" font-size="10" font-family="Arial">2 rows · 1:1 with tenants</text>
+  </g>
+
+  <!-- tenant_settings  x=1290 y=80 w=260 -->
+  <g id="tenant_settings">
+    <rect x="1290" y="80" width="260" height="218" rx="8" fill="#1E1B4B" stroke="#6366F1" stroke-width="2"/>
+    <rect x="1290" y="80" width="260" height="32" rx="8" fill="#4338CA"/>
+    <rect x="1290" y="104" width="260" height="8" fill="#4338CA"/>
+    <text x="1420" y="102" text-anchor="middle" fill="#EEF2FF" font-size="13" font-weight="700" font-family="Arial">tenant_settings</text>
+    <text x="1300" y="128" fill="#A5B4FC" font-size="11" font-family="Arial">🔑 id  uuid</text>
+    <text x="1300" y="145" fill="#93C5FD" font-size="11" font-family="Arial">🔗 tenant_id → tenants  UNIQUE</text>
+    <text x="1300" y="162" fill="#818CF8" font-size="11" font-family="Arial">billing_type  monthly|semester</text>
+    <text x="1300" y="179" fill="#818CF8" font-size="11" font-family="Arial">billing_due_day  integer</text>
+    <text x="1300" y="196" fill="#818CF8" font-size="11" font-family="Arial">grace_period_days  integer</text>
+    <text x="1300" y="213" fill="#818CF8" font-size="11" font-family="Arial">late_fee_amount  numeric</text>
+    <text x="1300" y="230" fill="#818CF8" font-size="11" font-family="Arial">currency  KES</text>
+    <text x="1300" y="247" fill="#818CF8" font-size="11" font-family="Arial">mpesa_shortcode  passkey</text>
+    <text x="1300" y="264" fill="#818CF8" font-size="11" font-family="Arial">sms_enabled  email_enabled</text>
+    <text x="1420" y="291" text-anchor="middle" fill="#4F46E5" font-size="10" font-family="Arial">2 rows · 1:1 with tenants</text>
+  </g>
+
+  <!-- manager_invites  x=1620 y=80 w=240 -->
+  <g id="manager_invites">
+    <rect x="1620" y="80" width="240" height="201" rx="8" fill="#1E1B4B" stroke="#6366F1" stroke-width="2"/>
+    <rect x="1620" y="80" width="240" height="32" rx="8" fill="#4338CA"/>
+    <rect x="1620" y="104" width="240" height="8" fill="#4338CA"/>
+    <text x="1740" y="102" text-anchor="middle" fill="#EEF2FF" font-size="13" font-weight="700" font-family="Arial">manager_invites</text>
+    <text x="1630" y="128" fill="#A5B4FC" font-size="11" font-family="Arial">🔑 id  uuid</text>
+    <text x="1630" y="145" fill="#93C5FD" font-size="11" font-family="Arial">🔗 tenant_id → tenants</text>
+    <text x="1630" y="162" fill="#93C5FD" font-size="11" font-family="Arial">🔗 invited_by → profiles</text>
+    <text x="1630" y="179" fill="#818CF8" font-size="11" font-family="Arial">email  text</text>
+    <text x="1630" y="196" fill="#818CF8" font-size="11" font-family="Arial">token  text  UNIQUE</text>
+    <text x="1630" y="213" fill="#818CF8" font-size="11" font-family="Arial">status  pending|accepted|expired</text>
+    <text x="1630" y="230" fill="#818CF8" font-size="11" font-family="Arial">expires_at  now()+48h</text>
+    <text x="1630" y="247" fill="#818CF8" font-size="11" font-family="Arial">created_at</text>
+    <text x="1740" y="274" text-anchor="middle" fill="#4F46E5" font-size="10" font-family="Arial">1 row</text>
+  </g>
+
+  <!-- ╔══════════════════════════════════════════════════╗ -->
+  <!-- ║  TIER 2 — PROPERTY                               ║ -->
+  <!-- ╚══════════════════════════════════════════════════╝ -->
+
+  <!-- buildings  x=80 y=430 w=240 -->
+  <g id="buildings">
+    <rect x="80" y="430" width="240" height="201" rx="8" fill="#064E3B" stroke="#10B981" stroke-width="2"/>
+    <rect x="80" y="430" width="240" height="32" rx="8" fill="#047857"/>
+    <rect x="80" y="454" width="240" height="8" fill="#047857"/>
+    <text x="200" y="452" text-anchor="middle" fill="#ECFDF5" font-size="13" font-weight="700" font-family="Arial">buildings</text>
+    <text x="90" y="478" fill="#6EE7B7" font-size="11" font-family="Arial">🔑 id  uuid</text>
+    <text x="90" y="495" fill="#34D399" font-size="11" font-family="Arial">🔗 tenant_id → tenants</text>
+    <text x="90" y="512" fill="#A7F3D0" font-size="11" font-family="Arial">name  text</text>
+    <text x="90" y="529" fill="#A7F3D0" font-size="11" font-family="Arial">address  description</text>
+    <text x="90" y="546" fill="#A7F3D0" font-size="11" font-family="Arial">total_floors  integer</text>
+    <text x="90" y="563" fill="#A7F3D0" font-size="11" font-family="Arial">images  jsonb  [ ]</text>
+    <text x="90" y="580" fill="#A7F3D0" font-size="11" font-family="Arial">created_at  updated_at</text>
+    <text x="200" y="624" text-anchor="middle" fill="#065F46" font-size="10" font-family="Arial">4 rows</text>
+  </g>
+
+  <!-- floors  x=390 y=430 w=220 -->
+  <g id="floors">
+    <rect x="390" y="430" width="220" height="184" rx="8" fill="#064E3B" stroke="#10B981" stroke-width="2"/>
+    <rect x="390" y="430" width="220" height="32" rx="8" fill="#047857"/>
+    <rect x="390" y="454" width="220" height="8" fill="#047857"/>
+    <text x="500" y="452" text-anchor="middle" fill="#ECFDF5" font-size="13" font-weight="700" font-family="Arial">floors</text>
+    <text x="400" y="478" fill="#6EE7B7" font-size="11" font-family="Arial">🔑 id  uuid</text>
+    <text x="400" y="495" fill="#34D399" font-size="11" font-family="Arial">🔗 tenant_id → tenants</text>
+    <text x="400" y="512" fill="#34D399" font-size="11" font-family="Arial">🔗 building_id → buildings</text>
+    <text x="400" y="529" fill="#A7F3D0" font-size="11" font-family="Arial">floor_number  integer</text>
+    <text x="400" y="546" fill="#A7F3D0" font-size="11" font-family="Arial">floor_name  text</text>
+    <text x="400" y="563" fill="#A7F3D0" font-size="11" font-family="Arial">created_at</text>
+    <text x="500" y="607" text-anchor="middle" fill="#065F46" font-size="10" font-family="Arial">0 rows (optional)</text>
+  </g>
+
+  <!-- rooms  x=680 y=430 w=250 -->
+  <g id="rooms">
+    <rect x="680" y="430" width="250" height="252" rx="8" fill="#064E3B" stroke="#10B981" stroke-width="2"/>
+    <rect x="680" y="430" width="250" height="32" rx="8" fill="#047857"/>
+    <rect x="680" y="454" width="250" height="8" fill="#047857"/>
+    <text x="805" y="452" text-anchor="middle" fill="#ECFDF5" font-size="13" font-weight="700" font-family="Arial">rooms</text>
+    <text x="690" y="478" fill="#6EE7B7" font-size="11" font-family="Arial">🔑 id  uuid</text>
+    <text x="690" y="495" fill="#34D399" font-size="11" font-family="Arial">🔗 tenant_id → tenants</text>
+    <text x="690" y="512" fill="#34D399" font-size="11" font-family="Arial">🔗 building_id → buildings</text>
+    <text x="690" y="529" fill="#34D399" font-size="11" font-family="Arial">🔗 floor_id → floors (optional)</text>
+    <text x="690" y="546" fill="#A7F3D0" font-size="11" font-family="Arial">room_number  text</text>
+    <text x="690" y="563" fill="#A7F3D0" font-size="11" font-family="Arial">room_type  single|double|dorm</text>
+    <text x="690" y="580" fill="#A7F3D0" font-size="11" font-family="Arial">           suite|bedsitter|studio</text>
+    <text x="690" y="597" fill="#A7F3D0" font-size="11" font-family="Arial">capacity  integer</text>
+    <text x="690" y="614" fill="#A7F3D0" font-size="11" font-family="Arial">monthly_price  semester_price</text>
+    <text x="690" y="631" fill="#A7F3D0" font-size="11" font-family="Arial">status  avail|occupied|maint</text>
+    <text x="690" y="648" fill="#A7F3D0" font-size="11" font-family="Arial">amenities  images  jsonb</text>
+    <text x="805" y="675" text-anchor="middle" fill="#065F46" font-size="10" font-family="Arial">8 rows</text>
+  </g>
+
+  <!-- beds  x=1000 y=430 w=220 -->
+  <g id="beds">
+    <rect x="1000" y="430" width="220" height="184" rx="8" fill="#064E3B" stroke="#10B981" stroke-width="2"/>
+    <rect x="1000" y="430" width="220" height="32" rx="8" fill="#047857"/>
+    <rect x="1000" y="454" width="220" height="8" fill="#047857"/>
+    <text x="1110" y="452" text-anchor="middle" fill="#ECFDF5" font-size="13" font-weight="700" font-family="Arial">beds</text>
+    <text x="1010" y="478" fill="#6EE7B7" font-size="11" font-family="Arial">🔑 id  uuid</text>
+    <text x="1010" y="495" fill="#34D399" font-size="11" font-family="Arial">🔗 tenant_id → tenants</text>
+    <text x="1010" y="512" fill="#34D399" font-size="11" font-family="Arial">🔗 room_id → rooms</text>
+    <text x="1010" y="529" fill="#A7F3D0" font-size="11" font-family="Arial">bed_number  text</text>
+    <text x="1010" y="546" fill="#A7F3D0" font-size="11" font-family="Arial">status  avail|occupied|maint</text>
+    <text x="1010" y="563" fill="#A7F3D0" font-size="11" font-family="Arial">created_at</text>
+    <text x="1110" y="607" text-anchor="middle" fill="#065F46" font-size="10" font-family="Arial">0 rows (dormitory use)</text>
+  </g>
+
+  <!-- ╔══════════════════════════════════════════════════╗ -->
+  <!-- ║  TIER 3 — TENANCY LIFECYCLE                      ║ -->
+  <!-- ╚══════════════════════════════════════════════════╝ -->
+
+  <!-- rental_requests  x=80 y=740 w=260 -->
+  <g id="rental_requests">
+    <rect x="80" y="740" width="260" height="218" rx="8" fill="#451A03" stroke="#D97706" stroke-width="2"/>
+    <rect x="80" y="740" width="260" height="32" rx="8" fill="#B45309"/>
+    <rect x="80" y="764" width="260" height="8" fill="#B45309"/>
+    <text x="210" y="762" text-anchor="middle" fill="#FFFBEB" font-size="13" font-weight="700" font-family="Arial">rental_requests</text>
+    <text x="90" y="788" fill="#FCD34D" font-size="11" font-family="Arial">🔑 id  uuid</text>
+    <text x="90" y="805" fill="#FCA5A5" font-size="11" font-family="Arial">🔗 tenant_id → tenants</text>
+    <text x="90" y="822" fill="#FCA5A5" font-size="11" font-family="Arial">🔗 room_id → rooms</text>
+    <text x="90" y="839" fill="#FCA5A5" font-size="11" font-family="Arial">🔗 requester_id → profiles</text>
+    <text x="90" y="856" fill="#FCA5A5" font-size="11" font-family="Arial">🔗 reviewed_by → profiles</text>
+    <text x="90" y="873" fill="#FDE68A" font-size="11" font-family="Arial">status  pending|offered|accepted</text>
+    <text x="90" y="890" fill="#FDE68A" font-size="11" font-family="Arial">       rejected|expired|cancelled</text>
+    <text x="90" y="907" fill="#FDE68A" font-size="11" font-family="Arial">message  preferred_move_in</text>
+    <text x="90" y="924" fill="#FDE68A" font-size="11" font-family="Arial">offer_expires_at  reviewed_at</text>
+    <text x="210" y="951" text-anchor="middle" fill="#92400E" font-size="10" font-family="Arial">3 rows (all accepted)</text>
+  </g>
+
+  <!-- tenancies  x=420 y=740 w=270 -->
+  <g id="tenancies">
+    <rect x="420" y="740" width="270" height="252" rx="8" fill="#451A03" stroke="#D97706" stroke-width="2"/>
+    <rect x="420" y="740" width="270" height="32" rx="8" fill="#B45309"/>
+    <rect x="420" y="764" width="270" height="8" fill="#B45309"/>
+    <text x="555" y="762" text-anchor="middle" fill="#FFFBEB" font-size="13" font-weight="700" font-family="Arial">tenancies</text>
+    <text x="430" y="788" fill="#FCD34D" font-size="11" font-family="Arial">🔑 id  uuid</text>
+    <text x="430" y="805" fill="#FCA5A5" font-size="11" font-family="Arial">🔗 tenant_id → tenants</text>
+    <text x="430" y="822" fill="#FCA5A5" font-size="11" font-family="Arial">🔗 client_id → profiles</text>
+    <text x="430" y="839" fill="#FCA5A5" font-size="11" font-family="Arial">🔗 room_id → rooms</text>
+    <text x="430" y="856" fill="#FCA5A5" font-size="11" font-family="Arial">🔗 bed_id → beds (optional)</text>
+    <text x="430" y="873" fill="#FCA5A5" font-size="11" font-family="Arial">🔗 request_id → rental_requests</text>
+    <text x="430" y="890" fill="#FCA5A5" font-size="11" font-family="Arial">🔗 approved_by → profiles</text>
+    <text x="430" y="907" fill="#FDE68A" font-size="11" font-family="Arial">billing_type  monthly|semester</text>
+    <text x="430" y="924" fill="#FDE68A" font-size="11" font-family="Arial">agreed_price  numeric</text>
+    <text x="430" y="941" fill="#FDE68A" font-size="11" font-family="Arial">move_in_date  move_out_date</text>
+    <text x="430" y="958" fill="#FDE68A" font-size="11" font-family="Arial">status  active|completed|term</text>
+    <text x="430" y="975" fill="#FDE68A" font-size="11" font-family="Arial">notes</text>
+    <text x="555" y="985" text-anchor="middle" fill="#92400E" font-size="10" font-family="Arial">3 rows (2 active, 1 completed)</text>
+  </g>
+
+  <!-- room_transfers  x=770 y=740 w=250 -->
+  <g id="room_transfers">
+    <rect x="770" y="740" width="250" height="235" rx="8" fill="#451A03" stroke="#D97706" stroke-width="2"/>
+    <rect x="770" y="740" width="250" height="32" rx="8" fill="#B45309"/>
+    <rect x="770" y="764" width="250" height="8" fill="#B45309"/>
+    <text x="895" y="762" text-anchor="middle" fill="#FFFBEB" font-size="13" font-weight="700" font-family="Arial">room_transfers</text>
+    <text x="780" y="788" fill="#FCD34D" font-size="11" font-family="Arial">🔑 id  uuid</text>
+    <text x="780" y="805" fill="#FCA5A5" font-size="11" font-family="Arial">🔗 tenant_id → tenants</text>
+    <text x="780" y="822" fill="#FCA5A5" font-size="11" font-family="Arial">🔗 tenancy_id → tenancies</text>
+    <text x="780" y="839" fill="#FCA5A5" font-size="11" font-family="Arial">🔗 from_room_id → rooms</text>
+    <text x="780" y="856" fill="#FCA5A5" font-size="11" font-family="Arial">🔗 to_room_id → rooms</text>
+    <text x="780" y="873" fill="#FCA5A5" font-size="11" font-family="Arial">🔗 requested_by → profiles</text>
+    <text x="780" y="890" fill="#FCA5A5" font-size="11" font-family="Arial">🔗 approved_by → profiles</text>
+    <text x="780" y="907" fill="#FDE68A" font-size="11" font-family="Arial">reason  text</text>
+    <text x="780" y="924" fill="#FDE68A" font-size="11" font-family="Arial">status  pending|approved|done</text>
+    <text x="780" y="941" fill="#FDE68A" font-size="11" font-family="Arial">effective_date  date</text>
+    <text x="895" y="968" text-anchor="middle" fill="#92400E" font-size="10" font-family="Arial">0 rows</text>
+  </g>
+
+  <!-- ╔══════════════════════════════════════════════════╗ -->
+  <!-- ║  TIER 4 — FINANCE                                ║ -->
+  <!-- ╚══════════════════════════════════════════════════╝ -->
+
+  <!-- billing_cycles  x=80 y=1130 w=270 -->
+  <g id="billing_cycles">
+    <rect x="80" y="1130" width="270" height="252" rx="8" fill="#450A0A" stroke="#EF4444" stroke-width="2"/>
+    <rect x="80" y="1130" width="270" height="32" rx="8" fill="#B91C1C"/>
+    <rect x="80" y="1154" width="270" height="8" fill="#B91C1C"/>
+    <text x="215" y="1152" text-anchor="middle" fill="#FFF1F2" font-size="13" font-weight="700" font-family="Arial">billing_cycles</text>
+    <text x="90" y="1178" fill="#FCA5A5" font-size="11" font-family="Arial">🔑 id  uuid</text>
+    <text x="90" y="1195" fill="#F87171" font-size="11" font-family="Arial">🔗 tenant_id → tenants</text>
+    <text x="90" y="1212" fill="#F87171" font-size="11" font-family="Arial">🔗 tenancy_id → tenancies</text>
+    <text x="90" y="1229" fill="#F87171" font-size="11" font-family="Arial">🔗 client_id → profiles</text>
+    <text x="90" y="1246" fill="#F87171" font-size="11" font-family="Arial">🔗 room_id → rooms</text>
+    <text x="90" y="1263" fill="#FECACA" font-size="11" font-family="Arial">billing_type  period_start  end</text>
+    <text x="90" y="1280" fill="#FECACA" font-size="11" font-family="Arial">amount_due  late_fee</text>
+    <text x="90" y="1297" fill="#FECACA" font-size="11" font-family="Arial">amount_paid  balance</text>
+    <text x="90" y="1314" fill="#FECACA" font-size="11" font-family="Arial">status  unpaid|partial|paid|overdue</text>
+    <text x="90" y="1331" fill="#FECACA" font-size="11" font-family="Arial">due_date  invoice_number  UNIQUE</text>
+    <text x="90" y="1348" fill="#FECACA" font-size="11" font-family="Arial">notes</text>
+    <text x="215" y="1375" text-anchor="middle" fill="#7F1D1D" font-size="10" font-family="Arial">2 rows (1 paid, 1 partial)</text>
+  </g>
+
+  <!-- payments  x=420 y=1130 w=260 -->
+  <g id="payments">
+    <rect x="420" y="1130" width="260" height="235" rx="8" fill="#450A0A" stroke="#EF4444" stroke-width="2"/>
+    <rect x="420" y="1130" width="260" height="32" rx="8" fill="#B91C1C"/>
+    <rect x="420" y="1154" width="260" height="8" fill="#B91C1C"/>
+    <text x="550" y="1152" text-anchor="middle" fill="#FFF1F2" font-size="13" font-weight="700" font-family="Arial">payments</text>
+    <text x="430" y="1178" fill="#FCA5A5" font-size="11" font-family="Arial">🔑 id  uuid</text>
+    <text x="430" y="1195" fill="#F87171" font-size="11" font-family="Arial">🔗 tenant_id → tenants</text>
+    <text x="430" y="1212" fill="#F87171" font-size="11" font-family="Arial">🔗 billing_cycle_id → billing_cycles</text>
+    <text x="430" y="1229" fill="#F87171" font-size="11" font-family="Arial">🔗 client_id → profiles</text>
+    <text x="430" y="1246" fill="#F87171" font-size="11" font-family="Arial">🔗 recorded_by → profiles</text>
+    <text x="430" y="1263" fill="#FECACA" font-size="11" font-family="Arial">amount  numeric</text>
+    <text x="430" y="1280" fill="#FECACA" font-size="11" font-family="Arial">payment_method  mpesa|cash|bank</text>
+    <text x="430" y="1297" fill="#FECACA" font-size="11" font-family="Arial">payment_status  confirmed|pending</text>
+    <text x="430" y="1314" fill="#FECACA" font-size="11" font-family="Arial">mpesa_receipt  transaction_id</text>
+    <text x="430" y="1331" fill="#FECACA" font-size="11" font-family="Arial">paid_at  notes</text>
+    <text x="550" y="1358" text-anchor="middle" fill="#7F1D1D" font-size="10" font-family="Arial">5 rows (all cash, confirmed)</text>
+  </g>
+
+  <!-- invoices  x=760 y=1130 w=240 -->
+  <g id="invoices">
+    <rect x="760" y="1130" width="240" height="201" rx="8" fill="#450A0A" stroke="#EF4444" stroke-width="2"/>
+    <rect x="760" y="1130" width="240" height="32" rx="8" fill="#B91C1C"/>
+    <rect x="760" y="1154" width="240" height="8" fill="#B91C1C"/>
+    <text x="880" y="1152" text-anchor="middle" fill="#FFF1F2" font-size="13" font-weight="700" font-family="Arial">invoices</text>
+    <text x="770" y="1178" fill="#FCA5A5" font-size="11" font-family="Arial">🔑 id  uuid</text>
+    <text x="770" y="1195" fill="#F87171" font-size="11" font-family="Arial">🔗 tenant_id → tenants</text>
+    <text x="770" y="1212" fill="#F87171" font-size="11" font-family="Arial">🔗 billing_cycle_id → billing_cycles</text>
+    <text x="770" y="1229" fill="#F87171" font-size="11" font-family="Arial">🔗 client_id → profiles</text>
+    <text x="770" y="1246" fill="#FECACA" font-size="11" font-family="Arial">invoice_number  UNIQUE</text>
+    <text x="770" y="1263" fill="#FECACA" font-size="11" font-family="Arial">total_amount  numeric</text>
+    <text x="770" y="1280" fill="#FECACA" font-size="11" font-family="Arial">pdf_url  text (Storage)</text>
+    <text x="770" y="1297" fill="#FECACA" font-size="11" font-family="Arial">issued_at  created_at</text>
+    <text x="880" y="1324" text-anchor="middle" fill="#7F1D1D" font-size="10" font-family="Arial">0 rows (PDF gen pending)</text>
+  </g>
+
+  <!-- ╔══════════════════════════════════════════════════╗ -->
+  <!-- ║  TIER 5 — OPERATIONS                             ║ -->
+  <!-- ╚══════════════════════════════════════════════════╝ -->
+
+  <!-- workers  x=80 y=1490 w=240 -->
+  <g id="workers">
+    <rect x="80" y="1490" width="240" height="235" rx="8" fill="#2E1065" stroke="#8B5CF6" stroke-width="2"/>
+    <rect x="80" y="1490" width="240" height="32" rx="8" fill="#6D28D9"/>
+    <rect x="80" y="1514" width="240" height="8" fill="#6D28D9"/>
+    <text x="200" y="1512" text-anchor="middle" fill="#FAF5FF" font-size="13" font-weight="700" font-family="Arial">workers</text>
+    <text x="90" y="1538" fill="#C4B5FD" font-size="11" font-family="Arial">🔑 id  uuid</text>
+    <text x="90" y="1555" fill="#A78BFA" font-size="11" font-family="Arial">🔗 tenant_id → tenants</text>
+    <text x="90" y="1572" fill="#A78BFA" font-size="11" font-family="Arial">🔗 user_id → profiles (optional)</text>
+    <text x="90" y="1589" fill="#DDD6FE" font-size="11" font-family="Arial">full_name  phone  id_number</text>
+    <text x="90" y="1606" fill="#DDD6FE" font-size="11" font-family="Arial">role  security|cleaner|maint</text>
+    <text x="90" y="1623" fill="#DDD6FE" font-size="11" font-family="Arial">     gardener|reception|driver</text>
+    <text x="90" y="1640" fill="#DDD6FE" font-size="11" font-family="Arial">salary  pay_cycle  status</text>
+    <text x="90" y="1657" fill="#DDD6FE" font-size="11" font-family="Arial">start_date  end_date</text>
+    <text x="200" y="1718" text-anchor="middle" fill="#4C1D95" font-size="10" font-family="Arial">0 rows</text>
+  </g>
+
+  <!-- worker_payments  x=390 y=1490 w=250 -->
+  <g id="worker_payments">
+    <rect x="390" y="1490" width="250" height="218" rx="8" fill="#2E1065" stroke="#8B5CF6" stroke-width="2"/>
+    <rect x="390" y="1490" width="250" height="32" rx="8" fill="#6D28D9"/>
+    <rect x="390" y="1514" width="250" height="8" fill="#6D28D9"/>
+    <text x="515" y="1512" text-anchor="middle" fill="#FAF5FF" font-size="13" font-weight="700" font-family="Arial">worker_payments</text>
+    <text x="400" y="1538" fill="#C4B5FD" font-size="11" font-family="Arial">🔑 id  uuid</text>
+    <text x="400" y="1555" fill="#A78BFA" font-size="11" font-family="Arial">🔗 tenant_id → tenants</text>
+    <text x="400" y="1572" fill="#A78BFA" font-size="11" font-family="Arial">🔗 worker_id → workers</text>
+    <text x="400" y="1589" fill="#A78BFA" font-size="11" font-family="Arial">🔗 recorded_by → profiles</text>
+    <text x="400" y="1606" fill="#DDD6FE" font-size="11" font-family="Arial">amount  numeric</text>
+    <text x="400" y="1623" fill="#DDD6FE" font-size="11" font-family="Arial">period_start  period_end</text>
+    <text x="400" y="1640" fill="#DDD6FE" font-size="11" font-family="Arial">payment_method  mpesa|cash</text>
+    <text x="400" y="1657" fill="#DDD6FE" font-size="11" font-family="Arial">payment_status  paid_at</text>
+    <text x="400" y="1674" fill="#DDD6FE" font-size="11" font-family="Arial">notes</text>
+    <text x="515" y="1701" text-anchor="middle" fill="#4C1D95" font-size="10" font-family="Arial">0 rows</text>
+  </g>
+
+  <!-- attendance  x=710 y=1490 w=230 -->
+  <g id="attendance">
+    <rect x="710" y="1490" width="230" height="201" rx="8" fill="#2E1065" stroke="#8B5CF6" stroke-width="2"/>
+    <rect x="710" y="1490" width="230" height="32" rx="8" fill="#6D28D9"/>
+    <rect x="710" y="1514" width="230" height="8" fill="#6D28D9"/>
+    <text x="825" y="1512" text-anchor="middle" fill="#FAF5FF" font-size="13" font-weight="700" font-family="Arial">attendance</text>
+    <text x="720" y="1538" fill="#C4B5FD" font-size="11" font-family="Arial">🔑 id  uuid</text>
+    <text x="720" y="1555" fill="#A78BFA" font-size="11" font-family="Arial">🔗 tenant_id → tenants</text>
+    <text x="720" y="1572" fill="#A78BFA" font-size="11" font-family="Arial">🔗 worker_id → workers</text>
+    <text x="720" y="1589" fill="#A78BFA" font-size="11" font-family="Arial">🔗 recorded_by → profiles</text>
+    <text x="720" y="1606" fill="#DDD6FE" font-size="11" font-family="Arial">date  date</text>
+    <text x="720" y="1623" fill="#DDD6FE" font-size="11" font-family="Arial">status  present|absent|half|leave</text>
+    <text x="720" y="1640" fill="#DDD6FE" font-size="11" font-family="Arial">notes  created_at</text>
+    <text x="825" y="1684" text-anchor="middle" fill="#4C1D95" font-size="10" font-family="Arial">0 rows</text>
+  </g>
+
+  <!-- complaints  x=80 y=1790 w=250 -->
+  <g id="complaints">
+    <rect x="80" y="1790" width="250" height="252" rx="8" fill="#2E1065" stroke="#8B5CF6" stroke-width="2"/>
+    <rect x="80" y="1790" width="250" height="32" rx="8" fill="#6D28D9"/>
+    <rect x="80" y="1814" width="250" height="8" fill="#6D28D9"/>
+    <text x="205" y="1812" text-anchor="middle" fill="#FAF5FF" font-size="13" font-weight="700" font-family="Arial">complaints</text>
+    <text x="90" y="1838" fill="#C4B5FD" font-size="11" font-family="Arial">🔑 id  uuid</text>
+    <text x="90" y="1855" fill="#A78BFA" font-size="11" font-family="Arial">🔗 tenant_id → tenants</text>
+    <text x="90" y="1872" fill="#A78BFA" font-size="11" font-family="Arial">🔗 tenancy_id → tenancies</text>
+    <text x="90" y="1889" fill="#A78BFA" font-size="11" font-family="Arial">🔗 submitted_by → profiles</text>
+    <text x="90" y="1906" fill="#A78BFA" font-size="11" font-family="Arial">🔗 assigned_to → profiles</text>
+    <text x="90" y="1923" fill="#DDD6FE" font-size="11" font-family="Arial">title  body  text</text>
+    <text x="90" y="1940" fill="#DDD6FE" font-size="11" font-family="Arial">category  maint|noise|billing</text>
+    <text x="90" y="1957" fill="#DDD6FE" font-size="11" font-family="Arial">          security|general|other</text>
+    <text x="90" y="1974" fill="#DDD6FE" font-size="11" font-family="Arial">priority  low|normal|high|urgent</text>
+    <text x="90" y="1991" fill="#DDD6FE" font-size="11" font-family="Arial">status  open|in_progress|resolved</text>
+    <text x="90" y="2008" fill="#DDD6FE" font-size="11" font-family="Arial">resolved_at</text>
+    <text x="205" y="2035" text-anchor="middle" fill="#4C1D95" font-size="10" font-family="Arial">2 rows (1 resolved, 1 in_progress)</text>
+  </g>
+
+  <!-- complaint_messages  x=400 y=1790 w=250 -->
+  <g id="complaint_messages">
+    <rect x="400" y="1790" width="250" height="184" rx="8" fill="#2E1065" stroke="#8B5CF6" stroke-width="2"/>
+    <rect x="400" y="1790" width="250" height="32" rx="8" fill="#6D28D9"/>
+    <rect x="400" y="1814" width="250" height="8" fill="#6D28D9"/>
+    <text x="525" y="1812" text-anchor="middle" fill="#FAF5FF" font-size="13" font-weight="700" font-family="Arial">complaint_messages</text>
+    <text x="410" y="1838" fill="#C4B5FD" font-size="11" font-family="Arial">🔑 id  uuid</text>
+    <text x="410" y="1855" fill="#A78BFA" font-size="11" font-family="Arial">🔗 tenant_id → tenants</text>
+    <text x="410" y="1872" fill="#A78BFA" font-size="11" font-family="Arial">🔗 complaint_id → complaints</text>
+    <text x="410" y="1889" fill="#A78BFA" font-size="11" font-family="Arial">🔗 sender_id → profiles</text>
+    <text x="410" y="1906" fill="#DDD6FE" font-size="11" font-family="Arial">body  text</text>
+    <text x="410" y="1923" fill="#DDD6FE" font-size="11" font-family="Arial">attachments  jsonb  [ ]</text>
+    <text x="410" y="1940" fill="#DDD6FE" font-size="11" font-family="Arial">created_at</text>
+    <text x="525" y="1967" text-anchor="middle" fill="#4C1D95" font-size="10" font-family="Arial">0 rows (thread messages)</text>
+  </g>
+
+  <!-- notifications  x=720 y=1790 w=240 -->
+  <g id="notifications">
+    <rect x="720" y="1790" width="240" height="201" rx="8" fill="#2E1065" stroke="#8B5CF6" stroke-width="2"/>
+    <rect x="720" y="1790" width="240" height="32" rx="8" fill="#6D28D9"/>
+    <rect x="720" y="1814" width="240" height="8" fill="#6D28D9"/>
+    <text x="840" y="1812" text-anchor="middle" fill="#FAF5FF" font-size="13" font-weight="700" font-family="Arial">notifications</text>
+    <text x="730" y="1838" fill="#C4B5FD" font-size="11" font-family="Arial">🔑 id  uuid</text>
+    <text x="730" y="1855" fill="#A78BFA" font-size="11" font-family="Arial">🔗 tenant_id → tenants</text>
+    <text x="730" y="1872" fill="#A78BFA" font-size="11" font-family="Arial">🔗 user_id → profiles</text>
+    <text x="730" y="1889" fill="#DDD6FE" font-size="11" font-family="Arial">type  billing|payment|complaint</text>
+    <text x="730" y="1906" fill="#DDD6FE" font-size="11" font-family="Arial">     announcement|invite|system</text>
+    <text x="730" y="1923" fill="#DDD6FE" font-size="11" font-family="Arial">title  body  data  jsonb</text>
+    <text x="730" y="1940" fill="#DDD6FE" font-size="11" font-family="Arial">is_read  boolean  false</text>
+    <text x="730" y="1957" fill="#DDD6FE" font-size="11" font-family="Arial">created_at</text>
+    <text x="840" y="1984" text-anchor="middle" fill="#4C1D95" font-size="10" font-family="Arial">2 rows</text>
+  </g>
+
+  <!-- notification_log  x=1030 y=1790 w=250 -->
+  <g id="notification_log">
+    <rect x="1030" y="1790" width="250" height="218" rx="8" fill="#2E1065" stroke="#8B5CF6" stroke-width="2"/>
+    <rect x="1030" y="1790" width="250" height="32" rx="8" fill="#6D28D9"/>
+    <rect x="1030" y="1814" width="250" height="8" fill="#6D28D9"/>
+    <text x="1155" y="1812" text-anchor="middle" fill="#FAF5FF" font-size="13" font-weight="700" font-family="Arial">notification_log</text>
+    <text x="1040" y="1838" fill="#C4B5FD" font-size="11" font-family="Arial">🔑 id  uuid</text>
+    <text x="1040" y="1855" fill="#A78BFA" font-size="11" font-family="Arial">🔗 tenant_id → tenants</text>
+    <text x="1040" y="1872" fill="#A78BFA" font-size="11" font-family="Arial">🔗 user_id → profiles</text>
+    <text x="1040" y="1889" fill="#DDD6FE" font-size="11" font-family="Arial">channel  sms|email|push</text>
+    <text x="1040" y="1906" fill="#DDD6FE" font-size="11" font-family="Arial">recipient  text</text>
+    <text x="1040" y="1923" fill="#DDD6FE" font-size="11" font-family="Arial">subject  body  text</text>
+    <text x="1040" y="1940" fill="#DDD6FE" font-size="11" font-family="Arial">status  sent|failed|bounced</text>
+    <text x="1040" y="1957" fill="#DDD6FE" font-size="11" font-family="Arial">external_id  created_at</text>
+    <text x="1155" y="1301" text-anchor="middle" fill="#4C1D95" font-size="10" font-family="Arial"></text>
+    <text x="1155" y="2001" text-anchor="middle" fill="#4C1D95" font-size="10" font-family="Arial">0 rows</text>
+  </g>
+
+  <!-- ═══════════════════════════════════════════════════════ -->
+  <!-- RELATIONSHIP LINES                                       -->
+  <!-- ═══════════════════════════════════════════════════════ -->
+
+  <!-- auth.users → tenants (owner_user_id) -->
+  <path d="M300 135 L360 135" stroke="#6366F1" stroke-width="1.5" fill="none" marker-end="url(#arr-hot)" stroke-dasharray="5,3"/>
+  <!-- auth.users → profiles -->
+  <path d="M300 165 L630 165 L630 190 L670 190" stroke="#6366F1" stroke-width="1.5" fill="none" marker-end="url(#arr-hot)" stroke-dasharray="5,3"/>
+
+  <!-- tenants → tenant_branding -->
+  <path d="M600 140 L950 140 L950 140 L980 140" stroke="#6366F1" stroke-width="1" fill="none" marker-end="url(#arr-hot)" opacity="0.6"/>
+  <!-- tenants → tenant_settings -->
+  <path d="M600 155 L920 155 L920 113 L1290 113" stroke="#6366F1" stroke-width="1" fill="none" marker-end="url(#arr-hot)" opacity="0.6"/>
+  <!-- tenants → manager_invites -->
+  <path d="M600 165 L1580 165 L1580 155 L1620 155" stroke="#6366F1" stroke-width="1" fill="none" marker-end="url(#arr-hot)" opacity="0.6"/>
+
+  <!-- tenants → buildings -->
+  <path d="M480 298 L480 390 L200 390 L200 430" stroke="#10B981" stroke-width="1.5" fill="none" marker-end="url(#arr-green)"/>
+  <!-- tenants → rooms -->
+  <path d="M480 298 L480 410 L805 410 L805 430" stroke="#10B981" stroke-width="1" fill="none" marker-end="url(#arr-green)" opacity="0.7"/>
+  <!-- tenants → floors -->
+  <path d="M480 298 L480 400 L500 400 L500 430" stroke="#10B981" stroke-width="1" fill="none" marker-end="url(#arr-green)" opacity="0.5"/>
+  <!-- tenants → beds -->
+  <path d="M600 175 L1100 175 L1100 400 L1110 400 L1110 430" stroke="#10B981" stroke-width="1" fill="none" marker-end="url(#arr-green)" opacity="0.5"/>
+
+  <!-- buildings → floors -->
+  <path d="M320 540 L390 540" stroke="#10B981" stroke-width="1.5" fill="none" marker-end="url(#arr-green)"/>
+  <!-- buildings → rooms -->
+  <path d="M320 560 L620 560 L620 540 L680 540" stroke="#10B981" stroke-width="1.5" fill="none" marker-end="url(#arr-green)"/>
+  <!-- floors → rooms -->
+  <path d="M610 540 L680 540" stroke="#10B981" stroke-width="1.5" fill="none" marker-end="url(#arr-green)"/>
+  <!-- rooms → beds -->
+  <path d="M930 560 L1000 560" stroke="#10B981" stroke-width="1.5" fill="none" marker-end="url(#arr-green)"/>
+
+  <!-- tenants → rental_requests -->
+  <path d="M420 270 L60 270 L60 855 L80 855" stroke="#F59E0B" stroke-width="1.5" fill="none" marker-end="url(#arr-amber)" opacity="0.8"/>
+  <!-- tenants → tenancies -->
+  <path d="M420 280 L50 280 L50 875 L420 875" stroke="#F59E0B" stroke-width="1.5" fill="none" marker-end="url(#arr-amber)" opacity="0.7"/>
+  <!-- rooms → rental_requests -->
+  <path d="M805 682 L805 720 L210 720 L210 740" stroke="#F59E0B" stroke-width="1.5" fill="none" marker-end="url(#arr-amber)"/>
+  <!-- profiles → rental_requests -->
+  <path d="M790 298 L790 710 L170 710 L170 740" stroke="#F59E0B" stroke-width="1" fill="none" marker-end="url(#arr-amber)" opacity="0.6"/>
+  <!-- rental_requests → tenancies -->
+  <path d="M340 855 L420 855" stroke="#F59E0B" stroke-width="1.5" fill="none" marker-end="url(#arr-amber)"/>
+  <!-- tenancies → room_transfers -->
+  <path d="M690 870 L770 870" stroke="#F59E0B" stroke-width="1.5" fill="none" marker-end="url(#arr-amber)"/>
+  <!-- rooms → tenancies -->
+  <path d="M805 682 L805 700 L555 700 L555 740" stroke="#F59E0B" stroke-width="1" fill="none" marker-end="url(#arr-amber)" opacity="0.5"/>
+  <!-- beds → tenancies -->
+  <path d="M1110 614 L1110 700 L680 700 L680 740" stroke="#F59E0B" stroke-width="1" fill="none" marker-end="url(#arr-amber)" opacity="0.5"/>
+  <!-- profiles → tenancies (client, approved_by) -->
+  <path d="M790 298 L790 695 L530 695 L530 740" stroke="#F59E0B" stroke-width="1" fill="none" marker-end="url(#arr-amber)" opacity="0.4"/>
+
+  <!-- tenancies → billing_cycles -->
+  <path d="M420 992 L420 1110 L215 1110 L215 1130" stroke="#EF4444" stroke-width="1.5" fill="none" marker-end="url(#arr-red)"/>
+  <!-- billing_cycles → payments -->
+  <path d="M350 1246 L420 1246" stroke="#EF4444" stroke-width="1.5" fill="none" marker-end="url(#arr-red)"/>
+  <!-- billing_cycles → invoices -->
+  <path d="M350 1263 L680 1263 L680 1212 L760 1212" stroke="#EF4444" stroke-width="1.5" fill="none" marker-end="url(#arr-red)"/>
+  <!-- profiles → payments -->
+  <path d="M790 298 L1800 298 L1800 1400 L750 1400 L750 1360 L680 1360" stroke="#EF4444" stroke-width="1" fill="none" marker-end="url(#arr-red)" opacity="0.4"/>
+  <!-- profiles → billing_cycles (client) -->
+  <path d="M670 200 L630 200 L630 1100 L215 1100 L215 1130" stroke="#EF4444" stroke-width="1" fill="none" marker-end="url(#arr-red)" opacity="0.3"/>
+
+  <!-- tenancies → complaints -->
+  <path d="M420 992 L420 1080 L40 1080 L40 1905 L80 1905" stroke="#8B5CF6" stroke-width="1.5" fill="none" marker-end="url(#arr)" opacity="0.7"/>
+  <!-- workers → worker_payments -->
+  <path d="M320 1605 L390 1605" stroke="#8B5CF6" stroke-width="1.5" fill="none" marker-end="url(#arr)"/>
+  <!-- workers → attendance -->
+  <path d="M320 1625 L660 1625 L660 1590 L710 1590" stroke="#8B5CF6" stroke-width="1.5" fill="none" marker-end="url(#arr)"/>
+  <!-- complaints → complaint_messages -->
+  <path d="M330 1905 L400 1905" stroke="#8B5CF6" stroke-width="1.5" fill="none" marker-end="url(#arr)"/>
+  <!-- profiles → complaints (submitted_by, assigned_to) -->
+  <path d="M790 298 L1800 298 L1800 1905 L1030 1905 L1030 1905" stroke="#8B5CF6" stroke-width="1" fill="none" marker-end="url(#arr)" opacity="0.3"/>
+  <!-- profiles → workers (user_id) -->
+  <path d="M790 298 L1830 298 L1830 1610 L1290 1610 L1290 1610" stroke="#8B5CF6" stroke-width="1" fill="none" marker-end="url(#arr)" opacity="0.3"/>
+  <!-- profiles → notifications (user_id) -->
+  <path d="M790 298 L1850 298 L1850 1910 L1100 1910 L1100 1872 L960 1872" stroke="#8B5CF6" stroke-width="1" fill="none" marker-end="url(#arr)" opacity="0.3"/>
+  <!-- tenants → workers / complaints / notifications broad scoping (shown via band) -->
+
+  <!-- ═══════════════════════════════════════════════════════ -->
+  <!-- LEGEND                                                  -->
+  <!-- ═══════════════════════════════════════════════════════ -->
+  <rect x="1350" y="430" width="610" height="660" rx="12" fill="#1E293B" stroke="#334155" stroke-width="1"/>
+  <text x="1655" y="462" text-anchor="middle" fill="#F8FAFC" font-size="15" font-weight="700" font-family="Arial">Legend</text>
+  <line x1="1370" y1="472" x2="1940" y2="472" stroke="#334155" stroke-width="0.5"/>
+
+  <!-- Tier colors -->
+  <text x="1370" y="496" fill="#94A3B8" font-size="11" font-weight="700" font-family="Arial" letter-spacing="1">TIERS</text>
+  <rect x="1370" y="506" width="14" height="14" rx="3" fill="#4338CA" stroke="#6366F1" stroke-width="1.5"/>
+  <text x="1392" y="518" fill="#A5B4FC" font-size="12" font-family="Arial">Tier 1 — Identity &amp; Config</text>
+  <rect x="1370" y="526" width="14" height="14" rx="3" fill="#047857" stroke="#10B981" stroke-width="1.5"/>
+  <text x="1392" y="538" fill="#6EE7B7" font-size="12" font-family="Arial">Tier 2 — Property</text>
+  <rect x="1370" y="546" width="14" height="14" rx="3" fill="#B45309" stroke="#F59E0B" stroke-width="1.5"/>
+  <text x="1392" y="558" fill="#FCD34D" font-size="12" font-family="Arial">Tier 3 — Tenancy Lifecycle</text>
+  <rect x="1370" y="566" width="14" height="14" rx="3" fill="#B91C1C" stroke="#EF4444" stroke-width="1.5"/>
+  <text x="1392" y="578" fill="#FCA5A5" font-size="12" font-family="Arial">Tier 4 — Finance</text>
+  <rect x="1370" y="586" width="14" height="14" rx="3" fill="#6D28D9" stroke="#8B5CF6" stroke-width="1.5"/>
+  <text x="1392" y="598" fill="#C4B5FD" font-size="12" font-family="Arial">Tier 5 — Operations</text>
+
+  <!-- Relationship types -->
+  <text x="1370" y="626" fill="#94A3B8" font-size="11" font-weight="700" font-family="Arial" letter-spacing="1">RELATIONSHIPS</text>
+  <line x1="1370" y1="642" x2="1430" y2="642" stroke="#6366F1" stroke-width="1.5" stroke-dasharray="5,3" marker-end="url(#arr-hot)"/>
+  <text x="1440" y="646" fill="#94A3B8" font-size="12" font-family="Arial">Identity / auth link</text>
+  <line x1="1370" y1="662" x2="1430" y2="662" stroke="#10B981" stroke-width="1.5" marker-end="url(#arr-green)"/>
+  <text x="1440" y="666" fill="#94A3B8" font-size="12" font-family="Arial">Property hierarchy</text>
+  <line x1="1370" y1="682" x2="1430" y2="682" stroke="#F59E0B" stroke-width="1.5" marker-end="url(#arr-amber)"/>
+  <text x="1440" y="686" fill="#94A3B8" font-size="12" font-family="Arial">Tenancy lifecycle</text>
+  <line x1="1370" y1="702" x2="1430" y2="702" stroke="#EF4444" stroke-width="1.5" marker-end="url(#arr-red)"/>
+  <text x="1440" y="706" fill="#94A3B8" font-size="12" font-family="Arial">Financial link</text>
+  <line x1="1370" y1="722" x2="1430" y2="722" stroke="#64748B" stroke-width="1.5" marker-end="url(#arr)"/>
+  <text x="1440" y="726" fill="#94A3B8" font-size="12" font-family="Arial">Operations link</text>
+
+  <!-- Column icons -->
+  <text x="1370" y="756" fill="#94A3B8" font-size="11" font-weight="700" font-family="Arial" letter-spacing="1">COLUMN ICONS</text>
+  <text x="1370" y="776" fill="#94A3B8" font-size="12" font-family="Arial">🔑  Primary key (PK)</text>
+  <text x="1370" y="796" fill="#94A3B8" font-size="12" font-family="Arial">🔗  Foreign key (FK) → referenced table</text>
+
+  <!-- RLS note -->
+  <text x="1370" y="830" fill="#94A3B8" font-size="11" font-weight="700" font-family="Arial" letter-spacing="1">RLS HELPER FUNCTIONS</text>
+  <rect x="1370" y="838" width="570" height="90" rx="6" fill="#0F172A" stroke="#1E293B" stroke-width="1"/>
+  <text x="1382" y="856" fill="#6EE7B7" font-size="11" font-family="'Courier New', monospace">is_super_admin()</text>
+  <text x="1510" y="856" fill="#64748B" font-size="11" font-family="Arial">  Role = 'super_admin'</text>
+  <text x="1382" y="874" fill="#6EE7B7" font-size="11" font-family="'Courier New', monospace">my_tenant_id()</text>
+  <text x="1510" y="874" fill="#64748B" font-size="11" font-family="Arial">  Caller's tenant_id</text>
+  <text x="1382" y="892" fill="#6EE7B7" font-size="11" font-family="'Courier New', monospace">my_role()</text>
+  <text x="1510" y="892" fill="#64748B" font-size="11" font-family="Arial">  Caller's role</text>
+  <text x="1382" y="910" fill="#6EE7B7" font-size="11" font-family="'Courier New', monospace">same_tenant(tid)</text>
+  <text x="1510" y="910" fill="#64748B" font-size="11" font-family="Arial">  my_tenant_id() = tid</text>
+
+  <!-- Stats -->
+  <text x="1370" y="950" fill="#94A3B8" font-size="11" font-weight="700" font-family="Arial" letter-spacing="1">DATABASE STATS</text>
+  <text x="1370" y="970" fill="#94A3B8" font-size="12" font-family="Arial">Tables: 22  ·  All RLS enabled</text>
+  <text x="1370" y="988" fill="#94A3B8" font-size="12" font-family="Arial">Tenants: 2  (Sunrise, TULUMBA HOSTELS)</text>
+  <text x="1370" y="1006" fill="#94A3B8" font-size="12" font-family="Arial">Profiles: 7  ·  Rooms: 8  ·  Payments: 5</text>
+  <text x="1370" y="1024" fill="#94A3B8" font-size="12" font-family="Arial">Active tenancies: 2  ·  Complaints: 2</text>
+  <text x="1370" y="1042" fill="#94A3B8" font-size="12" font-family="Arial">Total rows: ~40 across live tables</text>
+  <text x="1370" y="1078" fill="#334155" font-size="11" font-family="Arial">Project: vhjptjbonpzpohdqydrt  ·  eu-west-1</text>
+
+  <!-- ═══════════════════════════════════════════════════════ -->
+  <!-- FLOW ANNOTATION CALLOUTS                               -->
+  <!-- ═══════════════════════════════════════════════════════ -->
+  <rect x="1350" y="1150" width="610" height="460" rx="12" fill="#1E293B" stroke="#334155" stroke-width="1"/>
+  <text x="1655" y="1182" text-anchor="middle" fill="#F8FAFC" font-size="15" font-weight="700" font-family="Arial">Core Data Flow</text>
+  <line x1="1370" y1="1192" x2="1940" y2="1192" stroke="#334155" stroke-width="0.5"/>
+
+  <text x="1380" y="1215" fill="#64748B" font-size="11" font-family="Arial">Step 1</text>
+  <rect x="1430" y="1200" width="480" height="22" rx="4" fill="#1E1B4B" stroke="#4338CA" stroke-width="1"/>
+  <text x="1670" y="1215" text-anchor="middle" fill="#A5B4FC" font-size="11" font-family="Arial">tenant registered → branding + settings auto-created</text>
+
+  <text x="1380" y="1242" fill="#64748B" font-size="11" font-family="Arial">Step 2</text>
+  <rect x="1430" y="1227" width="480" height="22" rx="4" fill="#064E3B" stroke="#047857" stroke-width="1"/>
+  <text x="1670" y="1242" text-anchor="middle" fill="#6EE7B7" font-size="11" font-family="Arial">buildings → floors → rooms → beds created</text>
+
+  <text x="1380" y="1269" fill="#64748B" font-size="11" font-family="Arial">Step 3</text>
+  <rect x="1430" y="1254" width="480" height="22" rx="4" fill="#451A03" stroke="#B45309" stroke-width="1"/>
+  <text x="1670" y="1269" text-anchor="middle" fill="#FCD34D" font-size="11" font-family="Arial">client submits rental_request for a room</text>
+
+  <text x="1380" y="1296" fill="#64748B" font-size="11" font-family="Arial">Step 4</text>
+  <rect x="1430" y="1281" width="480" height="22" rx="4" fill="#451A03" stroke="#B45309" stroke-width="1"/>
+  <text x="1670" y="1296" text-anchor="middle" fill="#FCD34D" font-size="11" font-family="Arial">manager accepts → tenancy created, room = occupied</text>
+
+  <text x="1380" y="1323" fill="#64748B" font-size="11" font-family="Arial">Step 5</text>
+  <rect x="1430" y="1308" width="480" height="22" rx="4" fill="#450A0A" stroke="#B91C1C" stroke-width="1"/>
+  <text x="1670" y="1323" text-anchor="middle" fill="#FCA5A5" font-size="11" font-family="Arial">billing_cycle auto-created on tenancy activation</text>
+
+  <text x="1380" y="1350" fill="#64748B" font-size="11" font-family="Arial">Step 6</text>
+  <rect x="1430" y="1335" width="480" height="22" rx="4" fill="#450A0A" stroke="#B91C1C" stroke-width="1"/>
+  <text x="1670" y="1350" text-anchor="middle" fill="#FCA5A5" font-size="11" font-family="Arial">payments recorded → billing_cycle status updated</text>
+
+  <text x="1380" y="1377" fill="#64748B" font-size="11" font-family="Arial">Step 7</text>
+  <rect x="1430" y="1362" width="480" height="22" rx="4" fill="#450A0A" stroke="#B91C1C" stroke-width="1"/>
+  <text x="1670" y="1377" text-anchor="middle" fill="#FCA5A5" font-size="11" font-family="Arial">invoice generated → pdf_url stored in Storage</text>
+
+  <text x="1380" y="1404" fill="#64748B" font-size="11" font-family="Arial">Side A</text>
+  <rect x="1430" y="1389" width="480" height="22" rx="4" fill="#2E1065" stroke="#6D28D9" stroke-width="1"/>
+  <text x="1670" y="1404" text-anchor="middle" fill="#C4B5FD" font-size="11" font-family="Arial">client raises complaint → messages thread builds</text>
+
+  <text x="1380" y="1431" fill="#64748B" font-size="11" font-family="Arial">Side B</text>
+  <rect x="1430" y="1416" width="480" height="22" rx="4" fill="#2E1065" stroke="#6D28D9" stroke-width="1"/>
+  <text x="1670" y="1431" text-anchor="middle" fill="#C4B5FD" font-size="11" font-family="Arial">manager sends notification → log recorded</text>
+
+  <text x="1380" y="1458" fill="#64748B" font-size="11" font-family="Arial">Side C</text>
+  <rect x="1430" y="1443" width="480" height="22" rx="4" fill="#2E1065" stroke="#6D28D9" stroke-width="1"/>
+  <text x="1670" y="1458" text-anchor="middle" fill="#C4B5FD" font-size="11" font-family="Arial">workers tracked → payroll + attendance managed</text>
+
+  <text x="1380" y="1485" fill="#64748B" font-size="11" font-family="Arial">Xfer</text>
+  <rect x="1430" y="1470" width="480" height="22" rx="4" fill="#451A03" stroke="#B45309" stroke-width="1"/>
+  <text x="1670" y="1485" text-anchor="middle" fill="#FCD34D" font-size="11" font-family="Arial">room_transfer request → approval → tenancy updated</text>
+
+  <text x="1380" y="1512" fill="#64748B" font-size="11" font-family="Arial">Invite</text>
+  <rect x="1430" y="1497" width="480" height="22" rx="4" fill="#1E1B4B" stroke="#4338CA" stroke-width="1"/>
+  <text x="1670" y="1512" text-anchor="middle" fill="#A5B4FC" font-size="11" font-family="Arial">owner sends manager_invite → token link → accepted</text>
+
+  <line x1="1370" y1="1525" x2="1940" y2="1525" stroke="#334155" stroke-width="0.5"/>
+  <text x="1655" y="1543" text-anchor="middle" fill="#475569" font-size="11" font-family="Arial">Every table is scoped by tenant_id — multi-tenant isolation enforced at DB level via RLS</text>
+  <text x="1655" y="1560" text-anchor="middle" fill="#475569" font-size="11" font-family="Arial">profiles.role drives all access control: super_admin &gt; owner &gt; manager &gt; client &gt; worker</text>
+
+  <!-- ═══════════════════════════════════════════════════════ -->
+  <!-- FOOTER                                                  -->
+  <!-- ═══════════════════════════════════════════════════════ -->
+  <rect x="60" y="2540" width="1900" height="38" rx="6" fill="#1E293B" stroke="#334155" stroke-width="1"/>
+  <text x="80" y="2563" fill="#475569" font-size="11" font-family="Arial">fabrentals-dev  ·  Supabase Schema ERD  ·  Project: vhjptjbonpzpohdqydrt  ·  Region: eu-west-1  ·  Generated 2026-03-31</text>
+  <text x="1940" y="2563" text-anchor="end" fill="#475569" font-size="11" font-family="Arial">22 tables  ·  All RLS enabled  ·  Postgres 17.6</text>
+</svg>
