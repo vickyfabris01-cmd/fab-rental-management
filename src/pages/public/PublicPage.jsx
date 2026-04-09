@@ -343,7 +343,7 @@ export default function PublicPage() {
       </section>
 
       {/* ── How It Works ── */}
-      <section style={{ background:"#1A1412",padding:"88px 28px" }}>
+      <section id="how-it-works" style={{ background:"#1A1412",padding:"88px 28px" }}>
         <div style={{ maxWidth:1280,margin:"0 auto" }}>
           <div style={{ textAlign:"center",marginBottom:60 }}>
             <p style={{ fontSize:11,fontWeight:700,color:"#C5612C",textTransform:"uppercase",letterSpacing:"0.1em",marginBottom:12 }}>Simple Process</p>

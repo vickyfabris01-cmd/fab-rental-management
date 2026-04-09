@@ -35,6 +35,21 @@ export default function WorkerProfilePage() {
   const toast = useToast();
   const avatarRef = useRef(null);
 
+  // ── All state must be declared before any early return (Rules of Hooks) ──
+  // Personal info state
+  const [fullName, setFullName] = useState(profile?.full_name ?? "");
+  const [phone, setPhone] = useState(profile?.phone ?? "");
+  const [profSaving, setProfSaving] = useState(false);
+  const [profError, setProfError] = useState(null);
+  const [avatarLoading, setAvatarLoading] = useState(false);
+
+  // Password state
+  const [newPw, setNewPw] = useState("");
+  const [confirmPw, setConfirmPw] = useState("");
+  const [pwErrors, setPwErrors] = useState({});
+  const [pwSaving, setPwSaving] = useState(false);
+
+  // Loading guard — declared after all hooks
   if (loading || !profile) {
     return (
       <DashboardLayout pageTitle="My Profile">
@@ -54,19 +69,6 @@ export default function WorkerProfilePage() {
       </DashboardLayout>
     );
   }
-
-  // Personal info state
-  const [fullName, setFullName] = useState(profile?.full_name ?? "");
-  const [phone, setPhone] = useState(profile?.phone ?? "");
-  const [profSaving, setProfSaving] = useState(false);
-  const [profError, setProfError] = useState(null);
-  const [avatarLoading, setAvatarLoading] = useState(false);
-
-  // Password state
-  const [newPw, setNewPw] = useState("");
-  const [confirmPw, setConfirmPw] = useState("");
-  const [pwErrors, setPwErrors] = useState({});
-  const [pwSaving, setPwSaving] = useState(false);
 
   const handleSaveProfile = async () => {
     setProfError(null);

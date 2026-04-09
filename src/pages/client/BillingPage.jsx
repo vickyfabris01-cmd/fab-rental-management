@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useLocation } from "react-router-dom";
 
 import DashboardLayout    from "../../layouts/DashboardLayout.jsx";
 import PageHeader         from "../../components/layout/PageHeader.jsx";
@@ -80,6 +81,7 @@ function CycleRow({ cycle, onPay }) {
 
 export default function BillingPage() {
   const profile  = useAuthStore(s => s.profile);
+  const location = useLocation();
 
   const [cycles,      setCycles]      = useState([]);
   const [current,     setCurrent]     = useState(null);
@@ -96,7 +98,7 @@ export default function BillingPage() {
       setCycles(allCycles ?? []);
       setCurrent(cur);
     }).finally(() => setLoading(false));
-  }, [profile?.id]);
+  }, [profile?.id, location.key]);
 
   const filtered = tab === "all" ? cycles : cycles.filter(c => c.status === tab);
 

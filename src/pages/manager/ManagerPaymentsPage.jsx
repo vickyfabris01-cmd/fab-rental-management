@@ -17,6 +17,7 @@ import { getPayments, getPaymentSummary } from "../../lib/api/payments.js";
 import { getBillingCycles }               from "../../lib/api/billing.js";
 import { formatCurrency, formatDate, formatRelativeTime } from "../../lib/formatters.js";
 import { useDebounce }    from "../../hooks/useDebounce.js";
+import { useLocation } from "react-router-dom";
 
 // =============================================================================
 // ManagerPaymentsPage  /manage/billing/payments

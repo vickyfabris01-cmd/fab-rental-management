@@ -16,7 +16,7 @@ import { db } from "../../config/supabase";
 const CYCLE_SELECT = `
   id, tenant_id, tenancy_id, client_id, room_id,
   billing_type, period_start, period_end,
-  amount_due, late_fee, status, due_date,
+  amount_due, amount_paid, balance, late_fee, status, due_date,
   invoice_number, notes, created_at,
   rooms(id, room_number, buildings(name)),
   profiles!client_id(id, full_name, avatar_url)

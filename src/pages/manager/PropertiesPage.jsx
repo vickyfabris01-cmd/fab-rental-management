@@ -15,6 +15,7 @@ import useAuthStore       from "../../store/authStore.js";
 import { getBuildings, getRooms, deleteRoom } from "../../lib/api/rooms.js";
 import { formatCurrency } from "../../lib/formatters.js";
 import { useToast }       from "../../hooks/useNotifications.js";
+import { useLocation } from "react-router-dom";
 
 // =============================================================================
 // PropertiesPage  /manage/properties
@@ -103,7 +104,7 @@ export default function PropertiesPage() {
     { key:"room_number",   label:"Room",     sortable:true,
       render:(v) => <strong style={{ color:"#1A1412" }}>Room {v}</strong> },
     { key:"room_type",     label:"Type",
-      render:(v) => <span style={{ textTransform:"capitalize" }}>{v?.replace(/_/g," ")}</span> },
+      render:(v) => <span>{formatRoomType(v)}</span> },
     { key:"status",        label:"Status",   render:(v) => <Badge variant={v} size="sm" /> },
     { key:"building_id",   label:"Building",
       render:(_, row) => (
@@ -279,6 +280,7 @@ export default function PropertiesPage() {
         room={editRoom}
         buildings={buildings}
         buildingId={editRoom ? editRoom.building_id : roomModalBuildingId}
+        existingRooms={rooms}
         onSuccess={() => { closeRoomModal(); load(); }}
       />
       <BuildingFormModal

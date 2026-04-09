@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { useNavigate } from "react-router-dom";
+import {  useNavigate, useLocation } from "react-router-dom";
 
 import DashboardLayout from "../../layouts/DashboardLayout.jsx";
 import PageHeader from "../../components/layout/PageHeader.jsx";
@@ -180,6 +180,7 @@ function ComplaintRow({ complaint, onStatusChange }) {
 
 export default function ManagerComplaintsPage() {
   const profile = useAuthStore((s) => s.profile);
+  const location = useLocation();
   const tenantId = profile?.tenant_id;
   const toast = useToast();
 
@@ -193,6 +194,18 @@ export default function ManagerComplaintsPage() {
   const [counts, setCounts] = useState({});
 
   const debouncedSearch = useDebounce(search, 300);
+
+  // Refresh only the counts (tab badges) without re-fetching the full list
+  const loadCounts = useCallback(() => {
+    if (!tenantId) return;
+    getComplaints(tenantId, { limit: 200 }).then(({ data: all }) => {
+      const ct = {};
+      (all ?? []).forEach((x) => {
+        ct[x.status] = (ct[x.status] ?? 0) + 1;
+      });
+      setCounts(ct);
+    });
+  }, [tenantId]);
 
   const load = useCallback(() => {
     if (!tenantId) return;
@@ -221,7 +234,7 @@ export default function ManagerComplaintsPage() {
   }, [load]);
 
   const handleStatusChange = async (id, newStatus) => {
-    // Optimistic UI update - update local state immediately
+    // Optimistic update — reflect change in UI immediately
     setComplaints((prev) =>
       prev.map((c) => (c.id === id ? { ...c, status: newStatus } : c)),
     );
@@ -229,13 +242,15 @@ export default function ManagerComplaintsPage() {
     const { error } = await updateComplaintStatus(id, { status: newStatus });
     if (error) {
       toast.error("Failed to update status.");
-      // Revert optimistic update on error
+      // Revert optimistic update and reload on error
       load();
       return;
     }
     toast.success("Status updated.");
-    // Reload to update counts and tabs
-    load();
+    // Only refresh counts (tab badges) — don't reload the list, which
+    // would overwrite the optimistic update or drop the row from the
+    // current tab before the user sees the change.
+    loadCounts();
   };
 
   const filtered = debouncedSearch

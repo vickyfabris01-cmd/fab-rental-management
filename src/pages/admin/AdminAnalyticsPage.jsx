@@ -8,6 +8,7 @@ import { GrowthLineChart }      from "../../components/charts/GrowthLineChart.js
 import useAuthStore             from "../../store/authStore.js";
 import { getPlatformStats }     from "../../lib/api/tenants.js";
 import { getPlatformAnalytics } from "../../lib/api/analytics.js";
+import { useLocation } from "react-router-dom";
 
 // =============================================================================
 // AdminAnalyticsPage  /admin/analytics

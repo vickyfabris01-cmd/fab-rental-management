@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate, Link } from "react-router-dom";
+import {  useNavigate, Link, useLocation } from "react-router-dom";
 
 // ── Layout ────────────────────────────────────────────────────────────────────
 import DashboardLayout from "../../layouts/DashboardLayout.jsx";
@@ -35,7 +35,7 @@ import { getBillingCycles } from "../../lib/api/billing.js";
 
 // ── Utils ─────────────────────────────────────────────────────────────────────
 import { formatCurrency, formatDate } from "../../lib/formatters.js";
-import InviteManagerModal from "../../components/modals/InviteManagerModal.jsx";
+import AssignRoleModal from "../../components/modals/AssignRoleModal.jsx";
 import {
   fetchManagerInvites,
   fetchTenantProfiles,
@@ -171,6 +171,7 @@ export default function OwnerDashboard() {
   const [inviteOpen, setInviteOpen] = useState(false);
   const [invites, setInvites] = useState([]);
   const profile = useAuthStore((s) => s.profile);
+  const location = useLocation();
   const tenant = useTenantStore((s) => s.tenant);
   const tenantId = profile?.tenant_id;
 
@@ -862,7 +863,7 @@ export default function OwnerDashboard() {
             </h3>
           </div>
           <Button variant="primary" onClick={() => setInviteOpen(true)}>
-            + Invite Manager
+            + Assign Manager
           </Button>
         </div>
         <div style={{ padding: "16px 22px" }}>
@@ -913,7 +914,7 @@ export default function OwnerDashboard() {
                 residents, payments, complaints and workforce.
               </p>
               <Button variant="secondary" onClick={() => setInviteOpen(true)}>
-                Send First Invite
+                Assign First Manager
               </Button>
             </div>
           ) : (
@@ -1010,12 +1011,13 @@ export default function OwnerDashboard() {
         </div>
       </Card>
 
-      <InviteManagerModal
+      <AssignRoleModal
         isOpen={inviteOpen}
         onClose={() => setInviteOpen(false)}
-        onSuccess={(inv) => {
+        targetRole="manager"
+        onSuccess={(assigned) => {
           setInviteOpen(false);
-          setInvites((p) => [inv, ...p]);
+          if (assigned) setInvites((p) => [{ ...assigned, role: "manager" }, ...p]);
         }}
       />
     </DashboardLayout>

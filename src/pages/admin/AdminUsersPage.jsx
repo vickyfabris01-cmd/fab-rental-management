@@ -4,8 +4,11 @@ import AdminLayout             from "../../layouts/AdminLayout.jsx";
 import { Spinner }             from "../../components/ui/Spinner.jsx";
 import { Pagination }          from "../../components/navigation/TabBar.jsx";
 import { fetchTenantProfiles } from "../../lib/api/profile.js";
+import AssignRoleModal from "../../components/modals/AssignRoleModal.jsx";
+import { getTenants } from "../../lib/api/tenants.js";
 import { formatDate }          from "../../lib/formatters.js";
 import { useDebounce }         from "../../hooks/useDebounce.js";
+import { useLocation } from "react-router-dom";
 
 // =============================================================================
 // AdminUsersPage  /admin/users
@@ -30,6 +33,17 @@ export default function AdminUsersPage() {
   const [page,       setPage]       = useState(1);
   const [total,      setTotal]      = useState(0);
   const dq = useDebounce(search, 300);
+  const [assignOpen,  setAssignOpen]  = useState(false);
+  const [assignTenant, setAssignTenant] = useState(null);
+  const [tenants,     setTenants]     = useState([]);
+
+
+  // Load tenants for owner assignment
+  useEffect(() => {
+    import("../../lib/api/tenants.js").then(({ getTenants }) =>
+      getTenants().then(({ data }) => setTenants(data ?? []))
+    );
+  }, []);
 
   useEffect(() => {
     setLoading(true);
@@ -47,6 +61,12 @@ export default function AdminUsersPage() {
       <div style={{ marginBottom:20 }}>
         <p style={{ fontSize:10,fontWeight:700,color:AC,textTransform:"uppercase",letterSpacing:"0.1em",margin:"0 0 3px" }}>Management</p>
         <h1 style={{ fontFamily:"'Playfair Display',serif",fontWeight:900,fontSize:24,color:TX,margin:0 }}>All Users</h1>
+      </div>
+      <button onClick={() => setAssignOpen(true)}
+        style={{ background:AC,color:"#fff",border:"none",borderRadius:10,padding:"9px 18px",fontSize:13,fontWeight:600,cursor:"pointer",flexShrink:0 }}>
+        + Assign Owner
+      </button>
+      <div style={{ display:"none" }}>
       </div>
 
       {/* Role tabs + search */}

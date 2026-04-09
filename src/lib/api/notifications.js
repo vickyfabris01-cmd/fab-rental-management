@@ -1,4 +1,4 @@
-import { db } from "../../config/supabase";
+import { db, supabase } from "../../config/supabase";
 
 // =============================================================================
 // lib/api/notifications.js
@@ -135,21 +135,20 @@ export async function broadcastNotification(
 ) {
   if (!userIds.length) return { data: [], error: null };
 
-  const rows = userIds.map((userId) => ({
-    tenant_id: tenantId,
-    user_id: userId,
-    type,
-    title: title.trim(),
-    body: body?.trim() ?? null,
-    data: metadata ?? {},
-    is_read: false,
-  }));
+  // Use SECURITY DEFINER RPC to bypass RLS — direct bulk insert is blocked
+  // when inserting notifications for other users (user_id !== auth.uid()).
+  const { data, error } = await supabase
+    .rpc("broadcast_notification", {
+      p_tenant_id: tenantId,
+      p_user_ids:  userIds,
+      p_type:      type,
+      p_title:     title.trim(),
+      p_body:      body?.trim() ?? null,
+      p_data:      metadata ?? {},
+    });
 
-  const { data, error } = await db
-    .notifications()
-    .insert(rows)
-    .select(NOTIF_SELECT);
-  return { data: data ?? [], error };
+  if (error) return { data: null, error };
+  return { data: { inserted: data }, error: null };
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

@@ -14,6 +14,7 @@ import useAuthStore         from "../../store/authStore.js";
 import { getInvoices }      from "../../lib/api/billing.js";
 import { formatCurrency, formatDate, formatBillingPeriod } from "../../lib/formatters.js";
 import { useDebounce }      from "../../hooks/useDebounce.js";
+import { useLocation } from "react-router-dom";
 
 // =============================================================================
 // InvoicesPage  /manage/billing/invoices

@@ -11,6 +11,7 @@ import AnnouncementModal from "../../components/modals/AnnouncementModal.jsx";
 import useAuthStore from "../../store/authStore.js";
 import { getAnnouncementsByTenant } from "../../lib/api/notifications.js";
 import { formatDate, formatRelativeTime } from "../../lib/formatters.js";
+import { useLocation } from "react-router-dom";
 
 // =============================================================================
 // AnnouncementsPage  /manage/announcements
@@ -123,6 +124,7 @@ function AnnouncementCard({ notif }) {
 
 export default function AnnouncementsPage() {
   const profile = useAuthStore((s) => s.profile);
+  const location = useLocation();
   const tenantId = profile?.tenant_id;
 
   const [announcements, setAnnouncements] = useState([]);

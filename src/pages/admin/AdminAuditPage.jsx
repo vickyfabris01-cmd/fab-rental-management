@@ -7,6 +7,7 @@ import { TabBar }   from "../../components/navigation/TabBar.jsx";
 import useAuthStore from "../../store/authStore.js";
 import { db }       from "../../config/supabase.js";
 import { formatRelativeTime, formatDate } from "../../lib/formatters.js";
+import { useLocation } from "react-router-dom";
 
 // =============================================================================
 // AdminAuditPage  /admin/audit
@@ -221,6 +222,7 @@ const LEVEL_FILTERS = ["all", "info", "success", "warning", "error"];
 
 export default function AdminAuditPage() {
   const user = useAuthStore(s => s.user);
+  const location = useLocation();
 
   const [logs,     setLogs]     = useState([]);
   const [loading,  setLoading]  = useState(true);

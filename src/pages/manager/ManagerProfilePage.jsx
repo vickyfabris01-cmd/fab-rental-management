@@ -34,6 +34,19 @@ export default function ManagerProfilePage() {
   const toast = useToast();
   const avatarInput = useRef(null);
 
+  // ── All state must be declared before any early return (Rules of Hooks) ──
+  const [fullName, setFullName] = useState(profile?.full_name ?? "");
+  const [phone, setPhone] = useState(profile?.phone ?? "");
+  const [profSaving, setProfSaving] = useState(false);
+  const [profError, setProfError] = useState(null);
+  const [avatarLoading, setAvatarLoading] = useState(false);
+
+  const [newPw, setNewPw] = useState("");
+  const [confirmPw, setConfirmPw] = useState("");
+  const [pwErrors, setPwErrors] = useState({});
+  const [pwSaving, setPwSaving] = useState(false);
+
+  // Loading / unauthenticated guard — shown after all hooks are declared
   if (loading || !profile) {
     return (
       <DashboardLayout pageTitle="My Profile">
@@ -53,17 +66,6 @@ export default function ManagerProfilePage() {
       </DashboardLayout>
     );
   }
-
-  const [fullName, setFullName] = useState(profile?.full_name ?? "");
-  const [phone, setPhone] = useState(profile?.phone ?? "");
-  const [profSaving, setProfSaving] = useState(false);
-  const [profError, setProfError] = useState(null);
-  const [avatarLoading, setAvatarLoading] = useState(false);
-
-  const [newPw, setNewPw] = useState("");
-  const [confirmPw, setConfirmPw] = useState("");
-  const [pwErrors, setPwErrors] = useState({});
-  const [pwSaving, setPwSaving] = useState(false);
 
   const handleSave = async () => {
     setProfError(null);

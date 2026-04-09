@@ -754,7 +754,19 @@ export default function SignupPage() {
             animation: "fadeUp 0.4s ease both",
           }}
         >
-          {/* Back link */}
+          {/* P-7: Back to public home */}
+          <a href="/" style={{
+            display: "inline-flex", alignItems: "center", gap: 6,
+            fontSize: 13, color: "#8B7355", textDecoration: "none",
+            marginBottom: 24, fontWeight: 500,
+          }}
+            onMouseOver={e => e.currentTarget.style.color = "#C5612C"}
+            onMouseOut={e => e.currentTarget.style.color = "#8B7355"}
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
+            Back to home
+          </a>
+          {/* k link */}
           <Link
             to="/"
             style={{

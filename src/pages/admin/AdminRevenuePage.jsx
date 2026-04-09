@@ -9,6 +9,7 @@ import useAuthStore          from "../../store/authStore.js";
 import { getPlatformAnalytics } from "../../lib/api/analytics.js";
 import { getTenants }        from "../../lib/api/tenants.js";
 import { formatCurrency }    from "../../lib/formatters.js";
+import { useLocation } from "react-router-dom";
 
 // =============================================================================
 // AdminRevenuePage  /admin/revenue

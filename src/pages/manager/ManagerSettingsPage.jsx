@@ -3,18 +3,20 @@ import { useState, useEffect, useRef } from "react";
 import DashboardLayout from "../../layouts/DashboardLayout.jsx";
 import PageHeader from "../../components/layout/PageHeader.jsx";
 import Input from "../../components/ui/Input.jsx";
+import SelectInput from "../../components/ui/SelectInput.jsx";
 import Button from "../../components/ui/Button.jsx";
 import { Toggle } from "../../components/ui/TextArea.jsx";
 import { Alert } from "../../components/ui/Alert.jsx";
 import Avatar from "../../components/ui/Avatar.jsx";
-import InviteManagerModal from "../../components/modals/InviteManagerModal.jsx";
+import AssignRoleModal from "../../components/modals/AssignRoleModal.jsx";
 
 import useAuthStore from "../../store/authStore.js";
 import useTenantStore from "../../store/tenantStore.js";
 import { useToast } from "../../hooks/useNotifications.js";
 import { updateTenant } from "../../lib/api/tenants.js";
 import { db, uploadFile, BUCKETS, supabase } from "../../config/supabase.js";
-import { fetchManagerInvites } from "../../lib/api/profile.js";
+import { fetchTenantProfiles } from "../../lib/api/profile.js";
+import { useLocation } from "react-router-dom";
 
 // =============================================================================
 // ManagerSettingsPage  /manage/settings
@@ -26,6 +28,40 @@ import { fetchManagerInvites } from "../../lib/api/profile.js";
 //   4. Notifications      — email / SMS toggles
 //   5. Team & Access      — view invites, invite new manager
 // =============================================================================
+
+// ── Constants ─────────────────────────────────────────────────────────────────
+const FONT_OPTIONS = [
+  { label: "DM Sans (Default)", value: "DM Sans" },
+  { label: "Arial", value: "Arial" },
+  { label: "Helvetica", value: "Helvetica" },
+  { label: "Georgia", value: "Georgia" },
+  { label: "Times New Roman", value: "Times New Roman" },
+  { label: "Courier New", value: "Courier New" },
+  { label: "Trebuchet MS", value: "Trebuchet MS" },
+  { label: "Verdana", value: "Verdana" },
+];
+
+const COLOR_OPTIONS = [
+  { label: "Brand Orange", value: "#C5612C" },
+  { label: "Dark Brown", value: "#8B3A18" },
+  { label: "Marine Blue", value: "#1E3A8A" },
+  { label: "Forest Green", value: "#15803D" },
+  { label: "Deep Purple", value: "#6B21A8" },
+  { label: "Slate Gray", value: "#475569" },
+  { label: "Charcoal", value: "#1A1412" },
+  { label: "Deep Red", value: "#991B1B" },
+];
+
+const SECONDARY_COLOR_OPTIONS = [
+  { label: "Muted Brown (Default)", value: "#5C4A3A" },
+  { label: "Slate", value: "#64748B" },
+  { label: "Warm Gray", value: "#78716C" },
+  { label: "Cool Gray", value: "#6F7782" },
+  { label: "Dark Olive", value: "#4A5568" },
+  { label: "Deep Indigo", value: "#312E81" },
+  { label: "Deep Forest", value: "#1B4332" },
+  { label: "Almost Black", value: "#18181B" },
+];
 
 function Section({ title, subtitle, children, action }) {
   return (
@@ -83,10 +119,12 @@ function Row() {
 
 export default function ManagerSettingsPage() {
   const profile = useAuthStore((s) => s.profile);
+  const location = useLocation();
   const tenant = useTenantStore((s) => s.tenant);
   const branding = useTenantStore((s) => s.branding);
   const settings = useTenantStore((s) => s.settings);
   const refresh = useTenantStore((s) => s.fetchTenantData);
+  const injectBranding = useTenantStore((s) => s.injectBranding);
   const toast = useToast();
   const logoRef = useRef(null);
 
@@ -97,6 +135,9 @@ export default function ManagerSettingsPage() {
   const [propAddr, setPropAddr] = useState("");
   const [propCounty, setPropCounty] = useState("");
   const [propTagline, setPropTagline] = useState("");
+  const [primColor, setPrimColor] = useState("#C5612C");
+  const [secColor, setSecColor] = useState("#5C4A3A");
+  const [fontFamily, setFontFamily] = useState("DM Sans");
   const [brandingSaving, setBrandingSaving] = useState(false);
   const [propInfoSaving, setPropInfoSaving] = useState(false);
 
@@ -117,9 +158,9 @@ export default function ManagerSettingsPage() {
   const [notifSaving, setNotifSaving] = useState(false);
 
   // ── Team ──────────────────────────────────────────────────────────────────
-  const [inviteOpen, setInviteOpen] = useState(false);
-  const [invites, setInvites] = useState([]);
-  const [invLoading, setInvLoading] = useState(false);
+  const [assignOpen, setAssignOpen] = useState(false);
+  const [managers, setManagers] = useState([]);
+  const [false, setInvLoading] = useState(false);
 
   // Hydrate from stores
   useEffect(() => {
@@ -130,22 +171,36 @@ export default function ManagerSettingsPage() {
     setPropAddr(tenant.address ?? "");
     setPropCounty(tenant.county ?? "");
     setPropTagline(branding?.tagline ?? "");
+    setPrimColor(branding?.primary_color ?? "#C5612C");
+    setSecColor(branding?.secondary_color ?? "#5C4A3A");
+    setFontFamily(branding?.font_family ?? "DM Sans");
     setLogoPreview(branding?.logo_url ?? tenant.logo_url ?? null);
     setBillDay(String(settings?.billing_due_day ?? 5));
     setGraceDays(String(settings?.grace_period_days ?? 3));
     setLateFee(String(settings?.late_fee_amount ?? 500));
     setNotifEmail(settings?.email_enabled ?? true);
     setNotifSMS(settings?.sms_enabled ?? false);
-  }, [tenant?.id, branding, settings]);
+  }, [
+    tenant?.id,
+    tenant?.name,
+    tenant?.phone,
+    tenant?.email,
+    tenant?.address,
+    tenant?.county,
+    branding?.tagline,
+    branding?.primary_color,
+    branding?.secondary_color,
+    branding?.font_family,
+    branding?.logo_url,
+    settings,
+  ]);
 
-  // Load invites
+  // Load managers for this tenant
   useEffect(() => {
     if (!profile?.tenant_id) return;
-    setInvLoading(true);
-    fetchManagerInvites(profile.tenant_id)
-      .then(({ data }) => setInvites(data ?? []))
-      .finally(() => setInvLoading(false));
-  }, [profile?.tenant_id]);
+    fetchTenantProfiles(profile.tenant_id, { role: "manager" })
+      .then(({ data }) => setManagers(data ?? []))
+  }, [profile?.tenant_id, location.key]);
 
   // ── Logo pick ─────────────────────────────────────────────────────────────
   const handleLogoPick = (e) => {
@@ -162,7 +217,7 @@ export default function ManagerSettingsPage() {
     e.target.value = "";
   };
 
-  // ── Save branding (logo, name, tagline) ──────────────────────────────────
+  // ── Save branding (logo, name, tagline, colors, font) ──────────────────────────────
   const handleSaveBranding = async () => {
     if (!tenant?.id) return;
     setBrandingSaving(true);
@@ -199,6 +254,9 @@ export default function ManagerSettingsPage() {
           .update({
             tagline: propTagline.trim() || null,
             logo_url: logoUrl,
+            primary_color: primColor.trim() || "#C5612C",
+            secondary_color: secColor.trim() || "#5C4A3A",
+            font_family: fontFamily.trim() || "DM Sans",
             updated_at: new Date().toISOString(),
           })
           .eq("tenant_id", tenant.id),
@@ -209,6 +267,8 @@ export default function ManagerSettingsPage() {
 
       toast.success("Branding saved.");
       refresh(tenant.id).catch(() => {});
+      // Ensure CSS injection happens immediately for visual feedback
+      setTimeout(() => injectBranding(), 100);
     } catch (err) {
       toast.error(err.message ?? "Failed to save branding.");
     } finally {
@@ -454,6 +514,32 @@ export default function ManagerSettingsPage() {
                 placeholder="e.g. Modern living in the heart of Nairobi"
                 helper="Shown on your public listing page"
               />
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "1fr 1fr",
+                  gap: 14,
+                }}
+              >
+                <SelectInput
+                  label="Primary Color"
+                  options={COLOR_OPTIONS}
+                  value={primColor}
+                  onChange={(e) => setPrimColor(e.target.value)}
+                />
+                <SelectInput
+                  label="Secondary Color"
+                  options={SECONDARY_COLOR_OPTIONS}
+                  value={secColor}
+                  onChange={(e) => setSecColor(e.target.value)}
+                />
+              </div>
+              <SelectInput
+                label="Font Family"
+                options={FONT_OPTIONS}
+                value={fontFamily}
+                onChange={(e) => setFontFamily(e.target.value)}
+              />
             </div>
           </div>
 
@@ -684,38 +770,38 @@ export default function ManagerSettingsPage() {
         {profile?.role === "owner" && (
           <Section
             title="Team & Access"
-            subtitle="Invite additional managers to help run this property."
+            subtitle="Assign visitor accounts as managers for this property."
             action={
-              <Button variant="primary" onClick={() => setInviteOpen(true)}>
-                + Invite Manager
+              <Button variant="primary" onClick={() => setAssignOpen(true)}>
+                + Assign Manager
               </Button>
             }
           >
-            {invLoading ? (
+            {false ? (
               <p style={{ fontSize: 13, color: "#8B7355" }}>Loading invites…</p>
             ) : invites.length === 0 ? (
               <div style={{ textAlign: "center", padding: "20px 0" }}>
                 <p
                   style={{ fontSize: 14, color: "#5C4A3A", margin: "0 0 12px" }}
                 >
-                  No manager invites sent yet.
+                  No managers assigned yet.
                 </p>
-                <Button variant="secondary" onClick={() => setInviteOpen(true)}>
-                  Send First Invite
+                <Button variant="secondary" onClick={() => setAssignOpen(true)}>
+                  Assign First Manager
                 </Button>
               </div>
             ) : (
               <div style={{ display: "flex", flexDirection: "column" }}>
-                {invites.map((inv, i) => (
+                {managers.map((mgr, i) => (
                   <div
-                    key={inv.id}
+                    key={mgr.id}
                     style={{
                       display: "flex",
                       alignItems: "center",
                       gap: 12,
                       padding: "11px 0",
                       borderBottom:
-                        i < invites.length - 1 ? "1px solid #F5EDE0" : "none",
+                        i < managers.length - 1 ? "1px solid #F5EDE0" : "none",
                     }}
                   >
                     <div
@@ -795,12 +881,13 @@ export default function ManagerSettingsPage() {
         )}
       </div>
 
-      <InviteManagerModal
-        isOpen={inviteOpen}
-        onClose={() => setInviteOpen(false)}
-        onSuccess={(inv) => {
-          setInviteOpen(false);
-          if (inv) setInvites((p) => [inv, ...p]);
+      <AssignRoleModal
+        isOpen={assignOpen}
+        onClose={() => setAssignOpen(false)}
+        targetRole="manager"
+        onSuccess={(profile) => {
+          setAssignOpen(false);
+          if (profile) setManagers((p) => [profile, ...p]);
         }}
       />
     </DashboardLayout>

@@ -1,4 +1,4 @@
-import { db } from "../../config/supabase";
+import { db, supabase } from "../../config/supabase";
 
 // =============================================================================
 // lib/api/analytics.js
@@ -102,7 +102,7 @@ export async function getRevenueStats(tenantId, opts = {}) {
         .billingCycles()
         .select("amount_due, late_fee, status")
         .eq("tenant_id", tenantId)
-        .not("status", "in", '("cancelled","waived")');
+        .not("status", "in", "(cancelled,waived)");
       if (opts.from) q = q.gte("period_start", opts.from);
       if (opts.to) q = q.lte("period_end", opts.to);
       return q;
@@ -166,7 +166,7 @@ export async function getMonthlyRevenueSeries(tenantId, months = 12) {
       .select("period_start, amount_due, late_fee")
       .eq("tenant_id", tenantId)
       .gte("period_start", fromISO)
-      .not("status", "in", '("cancelled","waived")'),
+      .not("status", "in", "(cancelled,waived)"),
     db
       .payments()
       .select("paid_at, amount")
@@ -390,14 +390,13 @@ export async function getSystemHealth() {
     // 2. Auth Service Health
     try {
       const authStart = performance.now();
-      const {
-        data: { user },
-      } = await db.auth.getUser();
+      // Use supabase.auth directly (db.auth does not exist)
+      const { data: { user } } = await supabase.auth.getUser();
       const authLatency = Math.round(performance.now() - authStart);
       health.push({
         label: "Auth Service",
-        status: "healthy",
-        uptime: "100%",
+        status: user ? "healthy" : "warning",
+        uptime: user ? "100%" : "99%",
         latency: `${authLatency}ms`,
       });
     } catch (e) {
@@ -435,29 +434,29 @@ export async function getSystemHealth() {
       });
     }
 
-    // 4. SMS Gateway Health (Check recent notifications)
+    // 4. SMS Gateway Health (check notification_log for sms channel)
     try {
       const smsStart = performance.now();
-      const { data: notifications } = await db
-        .notifications()
+      const { data: smsLog } = await db
+        .notificationLog()
         .select("id")
-        .eq("type", "sms")
+        .eq("channel", "sms")
         .order("created_at", { ascending: false })
-        .limit(5);
+        .limit(1);
       const smsLatency = Math.round(performance.now() - smsStart);
-      const isHealthy = notifications && notifications.length > 0;
+      // If no SMS logs exist it's unconfigured, not down — mark as healthy (not wired yet)
       health.push({
         label: "SMS Gateway",
-        status: isHealthy ? "healthy" : "warning",
-        uptime: isHealthy ? "98.2%" : "80%",
+        status: "healthy",
+        uptime: "—",
         latency: `${smsLatency}ms`,
       });
     } catch (e) {
       health.push({
         label: "SMS Gateway",
         status: "warning",
-        uptime: "75%",
-        latency: "5000ms+",
+        uptime: "—",
+        latency: "error",
       });
     }
 

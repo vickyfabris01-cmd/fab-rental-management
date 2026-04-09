@@ -63,6 +63,7 @@ export default function RoomFormModal({
   room,
   buildingId,
   buildings = [],
+  existingRooms = [],   // P-6: list of rooms in same building for photo sharing
   onSuccess,
 }) {
   const profile = useAuthStore((s) => s.profile);
@@ -381,7 +382,7 @@ export default function RoomFormModal({
             required
             options={ROOM_TYPES}
             value={form.roomType}
-            onChange={(e) => set("roomType", e.target.value)}
+            onChange={(v) => set("roomType", v)}
             disabled={noBuildingsYet}
           />
         </div>
@@ -456,19 +457,34 @@ export default function RoomFormModal({
 
         {/* Room Photos */}
         <div>
-          <p
-            style={{
-              fontSize: 13,
-              fontWeight: 600,
-              color: "#1A1412",
-              marginBottom: 8,
-            }}
-          >
-            Room Photos{" "}
-            <span style={{ fontSize: 11, fontWeight: 400, color: "#8B7355" }}>
-              (up to 6)
-            </span>
-          </p>
+          <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:8 }}>
+            <p style={{ fontSize:13, fontWeight:600, color:"#1A1412", margin:0 }}>
+              Room Photos{" "}
+              <span style={{ fontSize:11, fontWeight:400, color:"#8B7355" }}>(up to 6)</span>
+            </p>
+            {/* P-6: Copy photos from another room of the same type in this building */}
+            {(() => {
+              const sameType = existingRooms.filter(r =>
+                r.id !== room?.id &&
+                r.room_type === form.roomType &&
+                (r.building_id === form.buildingId) &&
+                (r.images ?? []).length > 0
+              );
+              if (!sameType.length || roomImages.length > 0) return null;
+              return (
+                <button
+                  type="button"
+                  onClick={() => {
+                    const src = sameType[0];
+                    setRoomImages((src.images ?? []).map(url => ({ url, isExisting: true })));
+                  }}
+                  style={{ fontSize:11, fontWeight:600, color:"#C5612C", background:"rgba(197,97,44,0.08)", border:"1px solid rgba(197,97,44,0.25)", borderRadius:999, padding:"4px 10px", cursor:"pointer" }}
+                >
+                  Copy from Room {sameType[0].room_number}
+                </button>
+              );
+            })()}
+          </div>
           <div
             style={{
               display: "grid",

@@ -169,10 +169,10 @@ export default function PropertyDetailPage() {
           // Merge real tenant data with seed shape (seed provides amenities, reviews, rules etc.)
           const seed = SEED_PROPERTIES[slug] ?? {};
           setProperty({ ...seed, ...tenant,
-            // Use tenant branding logo if available
-            images: tenant.logo_url
-              ? [tenant.logo_url, ...(seed.images ?? []).slice(1)]
-              : seed.images ?? [],
+            // Keep logo separate from room photos (P-5)
+            // logo_url goes to property.logo_url, images stays as room photos
+            logo_url: tenant.logo_url ?? seed.logo_url ?? null,
+            images: seed.images ?? [],
           });
           return getRooms(tenant.id, { limit: 50 });
         }
@@ -312,6 +312,16 @@ export default function PropertyDetailPage() {
                   <Badge variant="neutral" size="sm">{property.type}</Badge>
                 </div>
 
+                {/* P-5: Logo shown before property name, clearly distinct from room photos */}
+                {property.logo_url && (
+                  <div style={{ display:"flex", alignItems:"center", gap:12, marginBottom:12 }}>
+                    <img
+                      src={property.logo_url}
+                      alt={`${property.name} logo`}
+                      style={{ height:40, maxWidth:120, objectFit:"contain", borderRadius:8, border:"1px solid #EDE4D8", background:"#fff", padding:4 }}
+                    />
+                  </div>
+                )}
                 <h1 style={{ fontFamily:"'Playfair Display',serif",fontWeight:900,fontSize:"clamp(26px,4vw,40px)",color:"#1A1412",margin:"0 0 6px",lineHeight:1.1 }}>
                   {property.name}
                 </h1>

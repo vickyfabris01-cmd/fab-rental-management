@@ -78,43 +78,44 @@ function DarkTooltip({ active, payload, valueType, currency }) {
 
 // Centre label rendered inside the donut hole
 function CentreLabel({ cx, cy, total, currency, valueType }) {
+  // Guard against NaN when data is empty
+  const safeTotal = isNaN(total) ? 0 : total;
   const label =
     valueType === "amount"
-      ? total >= 1_000_000
-        ? `${(total / 1_000_000).toFixed(1)}M`
-        : total >= 1_000
-          ? `${(total / 1_000).toFixed(0)}k`
-          : String(total)
-      : String(total);
+      ? safeTotal >= 1_000_000
+        ? `${(safeTotal / 1_000_000).toFixed(1)}M`
+        : safeTotal >= 1_000
+          ? `${(safeTotal / 1_000).toFixed(0)}k`
+          : String(safeTotal)
+      : String(safeTotal);
 
+  // Use a single <text> with <tspan> children to avoid the "42%-8" / "42%12"
+  // SVG attribute concatenation bug that occurs when dy is applied to a
+  // percentage-based y value in some renderers.
   return (
-    <g>
-      <text
+    <text x={cx} textAnchor="middle" fontFamily="'DM Sans', system-ui">
+      <tspan
         x={cx}
         y={cy}
         dy="-8"
-        textAnchor="middle"
         dominantBaseline="central"
         fill="#1A1412"
         fontWeight={900}
         fontSize={18}
         fontFamily="'Playfair Display', serif"
       >
-        {valueType === "amount" ? currency : ""} {label}
-      </text>
-      <text
+        {valueType === "amount" ? `${currency} ` : ""}{label}
+      </tspan>
+      <tspan
         x={cx}
-        y={cy}
-        dy="12"
-        textAnchor="middle"
+        dy={22}
         dominantBaseline="central"
         fill="#8B7355"
         fontSize={11}
-        fontFamily="'DM Sans', system-ui"
       >
         total {valueType === "amount" ? "collected" : "payments"}
-      </text>
-    </g>
+      </tspan>
+    </text>
   );
 }
 
@@ -154,16 +155,14 @@ export default function PaymentMethodPie({
             ))}
           </Pie>
 
-          {/* Custom centre label */}
-          <text>
-            <CentreLabel
-              cx="50%"
-              cy={showLegend ? "42%" : "50%"}
-              total={total}
-              currency={currency}
-              valueType={valueType}
-            />
-          </text>
+          {/* Custom centre label — rendered directly (no wrapper <text> to avoid nested SVG error) */}
+          <CentreLabel
+            cx="50%"
+            cy={showLegend ? "42%" : "50%"}
+            total={total}
+            currency={currency}
+            valueType={valueType}
+          />
 
           <Tooltip
             content={<DarkTooltip valueType={valueType} currency={currency} />}

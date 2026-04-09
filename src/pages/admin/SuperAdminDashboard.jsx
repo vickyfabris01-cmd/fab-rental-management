@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate, Link } from "react-router-dom";
+import {  useNavigate, Link, useLocation } from "react-router-dom";
 
 // ── Layout ────────────────────────────────────────────────────────────────────
 import AdminLayout from "../../layouts/AdminLayout.jsx";
@@ -234,6 +234,7 @@ function THead({ cols }) {
 export default function SuperAdminDashboard() {
   const navigate = useNavigate();
   const profile = useAuthStore((s) => s.profile);
+  const location = useLocation();
   const toast = useToast();
   const [newTenantOpen, setNewTenantOpen] = useState(false);
 

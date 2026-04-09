@@ -102,7 +102,9 @@ function PropertyCardGrid({ room, onRequest }) {
     >
       <div style={{ display:"block", textDecoration:"none", cursor: slug ? "pointer" : "default" }} onClick={() => slug && window.location.assign(`/property/${slug}`)}>
         <div style={{ position:"relative", height:200, overflow:"hidden" }}>
-          {img && <img src={img} alt={name} style={{ width:"100%",height:"100%",objectFit:"cover",display:"block", transform:hovered?"scale(1.06)":"scale(1)", transition:"transform 0.5s ease" }}/>}
+          {img
+            ? <img src={img} alt={name} style={{ width:"100%",height:"100%",objectFit:"cover",display:"block", transform:hovered?"scale(1.06)":"scale(1)", transition:"transform 0.5s ease" }}/>
+            : <div style={{ width:"100%",height:"100%",background:"linear-gradient(135deg,#F5EDE0,#EDE4D8)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:40 }}>🏠</div>}}
           <div style={{ position:"absolute",inset:0,background:"linear-gradient(to top,rgba(0,0,0,0.28) 0%,transparent 50%)" }}/>
           {room.badge && <span style={{ position:"absolute",top:12,left:12,background:room.badgeColor,color:"#fff",fontSize:11,fontWeight:700,padding:"3px 10px",borderRadius:999 }}>{room.badge}</span>}
           {room.verified && (
@@ -112,7 +114,7 @@ function PropertyCardGrid({ room, onRequest }) {
             </span>
           )}
           <span style={{ position:"absolute",bottom:12,left:12,background:"rgba(26,20,18,0.75)",backdropFilter:"blur(4px)",color:"#fff",fontSize:11,fontWeight:600,padding:"3px 9px",borderRadius:999,textTransform:"capitalize" }}>
-            {room.type ?? room.room_type}
+            {room.type ?? (room.room_type ? room.room_type.replace(/_/g," ") : "")}
           </span>
         </div>
       </div>
@@ -188,7 +190,9 @@ function PropertyCardList({ room, onRequest }) {
     >
       <Link to={`/property/${slug}`} style={{ display:"block",textDecoration:"none",width:220,flexShrink:0 }}>
         <div style={{ position:"relative",height:"100%",minHeight:140,overflow:"hidden" }}>
-          {img && <img src={img} alt={name} style={{ width:"100%",height:"100%",objectFit:"cover", transform:hovered?"scale(1.05)":"scale(1)", transition:"transform 0.5s ease" }}/>}
+          {img
+            ? <img src={img} alt={name} style={{ width:"100%",height:"100%",objectFit:"cover", transform:hovered?"scale(1.05)":"scale(1)", transition:"transform 0.5s ease" }}/>
+            : <div style={{ width:"100%",height:"100%",background:"linear-gradient(135deg,#F5EDE0,#EDE4D8)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:32 }}>🏠</div>}}
           {room.badge && <span style={{ position:"absolute",top:10,left:10,background:room.badgeColor,color:"#fff",fontSize:10,fontWeight:700,padding:"2px 8px",borderRadius:999 }}>{room.badge}</span>}
         </div>
       </Link>
@@ -255,12 +259,22 @@ export default function BrowsePage() {
 
   const debouncedSearch = useDebounce(search, 300);
 
-  // Fetch real rooms — fall back to seed data for demo if none exist
+  // Auth state for P-4 gating
+  const [authUser, setAuthUser] = useState(null);
+  useEffect(() => {
+    import("../../config/supabase.js").then(({ supabase }) => {
+      supabase.auth.getSession().then(({ data: { session } }) => {
+        setAuthUser(session?.user ?? null);
+      });
+    });
+  }, []);
+
+  // Fetch real available rooms from DB
   useEffect(() => {
     setLoading(true);
-    getAvailableRooms({ limit: 30 })
-      .then(({ data }) => { setRooms(data?.length ? data : SEED); })
-      .catch(() => { setRooms(SEED); })
+    getAvailableRooms({ limit: 50 })
+      .then(({ data }) => { setRooms(data ?? []); })
+      .catch(() => { setRooms([]); })
       .finally(() => setLoading(false));
   }, []);
 
@@ -496,8 +510,39 @@ export default function BrowsePage() {
       </div>
 
       {/* ── Rental Request Modal ── */}
+      {/* P-4: Auth gate — show message if unauthenticated user tries to request */}
+      {requestRoom && !authUser && (
+        <div style={{
+          position:"fixed", inset:0, background:"rgba(0,0,0,0.5)", zIndex:1000,
+          display:"flex", alignItems:"center", justifyContent:"center", padding:24,
+        }} onClick={() => setRequestRoom(null)}>
+          <div style={{
+            background:"#fff", borderRadius:20, padding:"32px 28px", maxWidth:380, width:"100%",
+            textAlign:"center", boxShadow:"0 24px 60px rgba(0,0,0,0.18)",
+          }} onClick={e => e.stopPropagation()}>
+            <div style={{ fontSize:40, marginBottom:12 }}>🔑</div>
+            <h3 style={{ fontFamily:"'Playfair Display',serif", fontWeight:700, fontSize:20, color:"#1A1412", margin:"0 0 10px" }}>
+              Create an account to request a room
+            </h3>
+            <p style={{ fontSize:14, color:"#8B7355", margin:"0 0 22px", lineHeight:1.6 }}>
+              Sign up for free to submit a rental request and connect with property managers.
+            </p>
+            <div style={{ display:"flex", gap:10, justifyContent:"center" }}>
+              <a href="/signup" style={{ background:"#C5612C", color:"#fff", textDecoration:"none", padding:"11px 22px", borderRadius:999, fontSize:13, fontWeight:600 }}>
+                Create Account
+              </a>
+              <a href="/login" style={{ background:"#FAF7F2", color:"#1A1412", textDecoration:"none", padding:"11px 22px", borderRadius:999, fontSize:13, fontWeight:600, border:"1.5px solid #EDE4D8" }}>
+                Sign In
+              </a>
+            </div>
+            <button onClick={() => setRequestRoom(null)} style={{ marginTop:14, background:"none", border:"none", color:"#8B7355", fontSize:13, cursor:"pointer" }}>
+              Maybe later
+            </button>
+          </div>
+        </div>
+      )}
       <RentalRequestModal
-        isOpen={!!requestRoom}
+        isOpen={!!requestRoom && !!authUser}
         onClose={() => setRequestRoom(null)}
         room={requestRoom}
         tenantName={requestRoom?.tenants?.name ?? requestRoom?.name ?? ""}

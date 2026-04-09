@@ -555,6 +555,45 @@ function Sidebar({
           }}
           collapsed={collapsed}
         />
+        {/* P-8: View public site link */}
+        <a
+          href="/"
+          title={collapsed ? "View public site" : undefined}
+          style={{
+            width: "100%",
+            display: "flex",
+            alignItems: "center",
+            gap: 10,
+            padding: "9px 14px",
+            borderRadius: 10,
+            background: "transparent",
+            border: "none",
+            cursor: "pointer",
+            color: "rgba(255,255,255,0.35)",
+            fontSize: 13.5,
+            fontWeight: 500,
+            marginTop: 4,
+            textDecoration: "none",
+            transition: "all 0.15s",
+          }}
+          onMouseOver={(e) => {
+            e.currentTarget.style.background = "rgba(255,255,255,0.06)";
+            e.currentTarget.style.color = "rgba(255,255,255,0.75)";
+          }}
+          onMouseOut={(e) => {
+            e.currentTarget.style.background = "transparent";
+            e.currentTarget.style.color = "rgba(255,255,255,0.35)";
+          }}
+        >
+          <span style={{ flexShrink: 0 }}>
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/>
+              <path d="M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z"/>
+            </svg>
+          </span>
+          {!collapsed && <span>Public Site</span>}
+        </a>
+
         <button
           onClick={onSignOut}
           title={collapsed ? "Sign out" : undefined}

@@ -12,6 +12,7 @@ import useAuthStore       from "../../store/authStore.js";
 import { getWorkers, getAttendance, bulkRecordAttendance } from "../../lib/api/workers.js";
 import { formatDate }     from "../../lib/formatters.js";
 import { useToast }       from "../../hooks/useNotifications.js";
+import { useLocation } from "react-router-dom";
 
 // =============================================================================
 // AttendancePage  /manage/workforce/attendance

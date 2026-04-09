@@ -64,12 +64,13 @@ export function TransferRequestModal({ isOpen, onClose, tenancy, onSuccess }) {
     setLoading(true);
     try {
       const { data, error } = await requestTransfer({
-        tenantId:     profile.tenant_id,
-        tenancyId:    tenancy.id,
-        fromRoomId:   tenancy.room_id,
-        toRoomId:     selectedRoom.id,
-        transferDate,
-        reason:       reason.trim(),
+        tenantId:      profile.tenant_id,
+        tenancyId:     tenancy.id,
+        fromRoomId:    tenancy.room_id,
+        toRoomId:      selectedRoom.id,
+        requestedBy:   profile.id,
+        effectiveDate: transferDate,
+        reason:        reason.trim(),
       });
       if (error) throw new Error(error.message);
       toast.success("Transfer request submitted. The manager will review it shortly.");
@@ -218,7 +219,7 @@ export function ApproveTransferModal({ isOpen, onClose, transfer, onSuccess }) {
         <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
           <div style={{ display: "flex", justifyContent: "space-between" }}>
             <span style={{ fontSize: 13, color: "#8B7355" }}>Transfer Date</span>
-            <span style={{ fontSize: 13, fontWeight: 600, color: "#1A1412" }}>{formatDate(transfer.transfer_date)}</span>
+            <span style={{ fontSize: 13, fontWeight: 600, color: "#1A1412" }}>{formatDate(transfer.effective_date)}</span>
           </div>
           {transfer.reason && (
             <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>

@@ -172,3 +172,44 @@ export async function fetchInviteByToken(token) {
     .single();
   return { data, error };
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// lookupVisitorByEmail
+// Searches for a visitor-role profile by email address.
+// Used by the role assignment UI before confirming assignment.
+// Only returns a result if the user exists AND has role = 'visitor'.
+//
+// @param {string} email
+// @returns {Promise<{ data: object | null, error }>}
+// ─────────────────────────────────────────────────────────────────────────────
+export async function lookupVisitorByEmail(email) {
+  const { data, error } = await supabase
+    .rpc("lookup_visitor_by_email", { p_email: email.trim().toLowerCase() });
+  // RPC returns an array (table-valued); get first row
+  const found = Array.isArray(data) && data.length > 0 ? data[0] : null;
+  return { data: found, error };
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// assignRole
+// Assigns a role to a visitor profile. No email invite needed — the user
+// must already have an account.
+//
+// Permission matrix (enforced server-side):
+//   super_admin → owner  (requires tenantId)
+//   owner       → manager
+//   manager     → worker
+//
+// @param {string} targetUserId   UUID of the profile to assign
+// @param {string} newRole        'owner' | 'manager' | 'worker'
+// @param {string} [tenantId]     Required for owner assignment
+// @returns {Promise<{ error: string | null }>}
+// ─────────────────────────────────────────────────────────────────────────────
+export async function assignRole(targetUserId, newRole, tenantId = null) {
+  const { error } = await supabase.rpc("assign_role", {
+    p_target_user_id: targetUserId,
+    p_new_role:       newRole,
+    p_tenant_id:      tenantId,
+  });
+  return { error: error ? error.message : null };
+}

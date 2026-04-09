@@ -119,41 +119,39 @@ export default function BillingStatusDonut({
             ))}
           </Pie>
 
-          {/* Centre stat */}
-          <text>
-            <text
-              x={cx}
-              y={cy}
-              textAnchor="middle"
-              dominantBaseline="central"
-              style={{
-                fontFamily: "'Playfair Display', serif",
-                fontWeight: 900,
-                fontSize: 20,
-                fill: "#1A1412",
-              }}
-            >
-              {valueKey === "count"
-                ? total
-                : total >= 1_000_000
-                  ? `${(total / 1_000_000).toFixed(1)}M`
-                  : total >= 1_000
-                    ? `${(total / 1_000).toFixed(0)}k`
-                    : total}
-            </text>
-            <text
-              x={cx}
-              y={cy}
-              dy="18px"
-              textAnchor="middle"
-              style={{
-                fontFamily: "'DM Sans', system-ui",
-                fontSize: 11,
-                fill: "#8B7355",
-              }}
-            >
-              {valueKey === "count" ? "total cycles" : `${currency} total`}
-            </text>
+          {/* Centre stat — rendered via customized prop to avoid invalid nested <text> */}
+          <text
+            x={cx}
+            y={cy}
+            textAnchor="middle"
+            dominantBaseline="central"
+            style={{
+              fontFamily: "'Playfair Display', serif",
+              fontWeight: 900,
+              fontSize: 20,
+              fill: "#1A1412",
+            }}
+          >
+            {valueKey === "count"
+              ? total
+              : total >= 1_000_000
+                ? `${(total / 1_000_000).toFixed(1)}M`
+                : total >= 1_000
+                  ? `${(total / 1_000).toFixed(0)}k`
+                  : total}
+          </text>
+          <text
+            x={cx}
+            y={cy}
+            dy={22}
+            textAnchor="middle"
+            style={{
+              fontFamily: "'DM Sans', system-ui",
+              fontSize: 11,
+              fill: "#8B7355",
+            }}
+          >
+            {valueKey === "count" ? "total cycles" : `${currency} total`}
           </text>
 
           <Tooltip

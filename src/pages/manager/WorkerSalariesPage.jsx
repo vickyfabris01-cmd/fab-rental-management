@@ -16,6 +16,7 @@ import useAuthStore       from "../../store/authStore.js";
 import { getWorkers, getWorkerPayments, recordSalaryPayment } from "../../lib/api/workers.js";
 import { formatCurrency, formatDate } from "../../lib/formatters.js";
 import { useToast }       from "../../hooks/useNotifications.js";
+import { useLocation } from "react-router-dom";
 
 // =============================================================================
 // WorkerSalariesPage  /manage/workforce/salaries

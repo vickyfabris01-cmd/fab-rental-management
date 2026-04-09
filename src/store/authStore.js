@@ -268,12 +268,14 @@ const useAuthStore = create((set, get) => ({
 
   /**
    * Sign out and clear all local state.
+   * Note: we do NOT set loading:true here — doing so causes the dashboard
+   * layout to unmount before signOut resolves, making the button feel frozen.
    */
   signOut: async () => {
-    set({ loading: true });
-    await supabase.auth.signOut();
-    // Explicitly clear state immediately — don't wait for listener
+    // Clear local state first so the UI reacts immediately
     set({ user: null, profile: null, error: null, loading: false });
+    // Then call Supabase (invalidates the server session / JWT)
+    await supabase.auth.signOut();
   },
 
   /**

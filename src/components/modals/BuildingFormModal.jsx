@@ -461,7 +461,9 @@ export function WorkerFormModal({ isOpen, onClose, worker, onSuccess }) {
         : await createWorker(profile.tenant_id, payload);
       if (error) throw new Error(error.message);
       toast.success(
-        isEdit ? "Worker profile updated." : "Worker added successfully.",
+        isEdit
+          ? "Worker profile updated."
+          : "Worker record saved. To give them dashboard access, ask them to create a fabRentals account, then assign the Worker role from the Workforce page.",
       );
       onSuccess?.(data);
       onClose();

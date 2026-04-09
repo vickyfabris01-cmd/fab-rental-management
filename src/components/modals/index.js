@@ -34,3 +34,4 @@ export { TenantFormModal } from "./TenantFormModal.jsx";
 export { default as InviteManagerModal } from "./InviteManagerModal.jsx";
 export { default as AnnouncementModal } from "./AnnouncementModal.jsx";
 export { default as GenerateInvoiceModal } from "./GenerateInvoiceModal.jsx";
+export { default as AssignRoleModal } from "./AssignRoleModal.jsx";

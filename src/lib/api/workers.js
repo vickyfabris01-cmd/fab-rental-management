@@ -1,4 +1,4 @@
-import { db } from "../../config/supabase";
+import { db, supabase } from "../../config/supabase";
 
 // =============================================================================
 // lib/api/workers.js
@@ -303,4 +303,15 @@ export async function bulkRecordAttendance(tenantId, date, records) {
     .upsert(rows, { onConflict: "worker_id,date" })
     .select(ATTENDANCE_SELECT);
   return { data: data ?? [], error };
+}
+
+export async function inviteWorker(tenantId, workerId, email, fullName) {
+  const { data, error } = await supabase.rpc("invite_worker", {
+    p_tenant_id: tenantId,
+    p_worker_id: workerId,
+    p_email:     email.trim().toLowerCase(),
+    p_full_name: fullName.trim(),
+  });
+  if (error) return { data: null, error };
+  return { data: { userId: data }, error: null };
 }

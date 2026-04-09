@@ -18,7 +18,7 @@ const TENANCY_SELECT = `
 
 const TRANSFER_SELECT = `
   id, tenant_id, tenancy_id, from_room_id, to_room_id,
-  transfer_date, reason, approved_by, created_at,
+  effective_date, reason, status, requested_by, approved_by, created_at,
   from_room:rooms!from_room_id(id, room_number, buildings(name)),
   to_room:rooms!to_room_id(id, room_number, buildings(name))
 `;
@@ -184,9 +184,8 @@ export async function terminateTenancy(tenancyId, notes) {
  * @param {string} payload.tenancyId
  * @param {string} payload.fromRoomId
  * @param {string} payload.toRoomId
- * @param {string} [payload.fromBedId]
- * @param {string} [payload.toBedId]
- * @param {string} payload.transferDate   ISO date
+ * @param {string} payload.requestedBy    Client's profile UUID
+ * @param {string} [payload.effectiveDate] ISO date (defaults to today)
  * @param {string} [payload.reason]
  */
 export async function requestTransfer({
@@ -194,9 +193,8 @@ export async function requestTransfer({
   tenancyId,
   fromRoomId,
   toRoomId,
-  fromBedId,
-  toBedId,
-  transferDate,
+  requestedBy,
+  effectiveDate,
   reason,
 }) {
   const { data, error } = await db
@@ -206,9 +204,8 @@ export async function requestTransfer({
       tenancy_id: tenancyId,
       from_room_id: fromRoomId,
       to_room_id: toRoomId,
-      from_bed_id: fromBedId ?? null,
-      to_bed_id: toBedId ?? null,
-      transfer_date: transferDate,
+      requested_by: requestedBy,
+      effective_date: effectiveDate ?? new Date().toISOString().slice(0, 10),
       reason: reason?.trim() ?? null,
     })
     .select(TRANSFER_SELECT)

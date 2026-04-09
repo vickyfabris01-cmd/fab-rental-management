@@ -12,6 +12,7 @@ import useAuthStore from "../../store/authStore.js";
 import { updateProfile } from "../../lib/api/profile.js";
 import { useToast } from "../../hooks/useNotifications.js";
 import { uploadFile, BUCKETS } from "../../config/supabase.js";
+import { useLocation } from "react-router-dom";
 
 // =============================================================================
 // OwnerProfilePage  /owner/profile
@@ -20,6 +21,7 @@ import { uploadFile, BUCKETS } from "../../config/supabase.js";
 
 export default function OwnerProfilePage() {
   const profile = useAuthStore((s) => s.profile);
+  const location = useLocation();
   const loading = useAuthStore((s) => s.loading);
   const toast = useToast();
   const avatarRef = useRef(null);

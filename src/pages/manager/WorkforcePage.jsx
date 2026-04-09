@@ -10,12 +10,14 @@ import { Spinner }        from "../../components/ui/Spinner.jsx";
 import { EmptyState }     from "../../components/ui/Spinner.jsx";
 import { ConfirmDialog }  from "../../components/modals/Modal.jsx";
 import { WorkerFormModal } from "../../components/modals/BuildingFormModal.jsx";
+import AssignRoleModal from "../../components/modals/AssignRoleModal.jsx";
 
 import useAuthStore       from "../../store/authStore.js";
 import { getWorkers, terminateWorker } from "../../lib/api/workers.js";
 import { formatCurrency, formatDate }  from "../../lib/formatters.js";
 import { useToast }       from "../../hooks/useNotifications.js";
 import { useDebounce }    from "../../hooks/useDebounce.js";
+import { useLocation } from "react-router-dom";
 
 // =============================================================================
 // WorkforcePage  /manage/workforce/workers
@@ -72,6 +74,7 @@ export default function WorkforcePage() {
   const [addOpen,      setAddOpen]      = useState(false);
   const [termTarget,   setTermTarget]   = useState(null);
   const [termLoading,  setTermLoading]  = useState(false);
+  const [assignOpen,   setAssignOpen]   = useState(false);
 
   const debouncedSearch = useDebounce(search, 300);
 
@@ -112,7 +115,12 @@ export default function WorkforcePage() {
   return (
     <DashboardLayout pageTitle="Workforce">
       <PageHeader title="Workforce" subtitle="Manage staff, roles, and salaries"
-        actions={<Button variant="primary" onClick={() => setAddOpen(true)}>+ Add Worker</Button>}
+        actions={
+          <div style={{ display:"flex", gap:8 }}>
+            <Button variant="secondary" onClick={() => setAssignOpen(true)}>+ Assign Dashboard Access</Button>
+            <Button variant="primary" onClick={() => setAddOpen(true)}>+ Add Worker Record</Button>
+          </div>
+        }
       />
 
       {/* Summary banner */}
@@ -165,6 +173,12 @@ export default function WorkforcePage() {
 
       <WorkerFormModal isOpen={addOpen || !!editTarget} onClose={() => { setAddOpen(false); setEditTarget(null); }}
         worker={editTarget} onSuccess={() => { setAddOpen(false); setEditTarget(null); load(); }} />
+      <AssignRoleModal
+        isOpen={assignOpen}
+        onClose={() => setAssignOpen(false)}
+        targetRole="worker"
+        onSuccess={() => { setAssignOpen(false); load(); }}
+      />
 
       <ConfirmDialog isOpen={!!termTarget} title="Terminate Worker?" variant="danger" loading={termLoading}
         message={`This will mark ${termTarget?.full_name} as terminated. Their records will be preserved.`}

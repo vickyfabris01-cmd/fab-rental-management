@@ -106,8 +106,8 @@ export default function GrowthLineChart({
   showGrid = true,
 }) {
   return (
-    <div style={{ width: "100%", height, minWidth: 300, minHeight: height }}>
-      <ResponsiveContainer width="100%" height="100%">
+    <div style={{ width: "100%", height, minWidth: 300, minHeight: height, position: "relative" }}>
+      <ResponsiveContainer width="100%" height="100%" debounce={50}>
         <LineChart
           data={data}
           margin={{ top: 8, right: 12, left: 0, bottom: 0 }}
