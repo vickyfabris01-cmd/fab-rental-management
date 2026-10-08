@@ -13,10 +13,12 @@ import { createClient } from "@supabase/supabase-js";
 const SUPABASE_URL     = import.meta.env.VITE_SUPABASE_URL;
 const SUPABASE_ANON_KEY= import.meta.env.VITE_SUPABASE_ANON_KEY;
 
-if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
-  throw new Error(
-    "[supabase.js] Missing VITE_SUPABASE_URL or VITE_SUPABASE_ANON_KEY.\n" +
-    "Copy .env.example to .env and fill in your project credentials."
+export const isSupabaseConfigured = Boolean(SUPABASE_URL && SUPABASE_ANON_KEY);
+
+if (!isSupabaseConfigured) {
+  console.warn(
+    "[supabase.js] Missing VITE_SUPABASE_URL or VITE_SUPABASE_ANON_KEY. " +
+    "The app is running without Supabase. Copy .env.example to .env to enable authentication and data."
   );
 }
 
@@ -27,7 +29,8 @@ if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
 // auth.autoRefreshToken: true — silently refreshes the JWT before expiry.
 // realtime.params.eventsPerSecond — throttle realtime broadcast rate.
 // ─────────────────────────────────────────────────────────────────────────────
-export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+export const supabase = isSupabaseConfigured
+  ? createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
   auth: {
     persistSession:   true,
     autoRefreshToken: true,
@@ -43,7 +46,8 @@ export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
       "x-application-name": "fabrentals",
     },
   },
-});
+  })
+  : null;
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Storage bucket names

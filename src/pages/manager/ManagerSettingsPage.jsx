@@ -160,7 +160,7 @@ export default function ManagerSettingsPage() {
   // ── Team ──────────────────────────────────────────────────────────────────
   const [assignOpen, setAssignOpen] = useState(false);
   const [managers, setManagers] = useState([]);
-  const [false, setInvLoading] = useState(false);
+  const [invLoading, setInvLoading] = useState(false);
 
   // Hydrate from stores
   useEffect(() => {

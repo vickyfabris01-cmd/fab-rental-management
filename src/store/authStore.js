@@ -85,6 +85,11 @@ const useAuthStore = create((set, get) => ({
   init: async () => {
     set({ loading: true, error: null });
 
+    if (!supabase) {
+      set({ user: null, profile: null, loading: false });
+      return () => {};
+    }
+
     // 1. Get persisted session from localStorage
     const {
       data: { session },

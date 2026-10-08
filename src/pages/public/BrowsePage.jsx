@@ -263,6 +263,7 @@ export default function BrowsePage() {
   const [authUser, setAuthUser] = useState(null);
   useEffect(() => {
     import("../../config/supabase.js").then(({ supabase }) => {
+      if (!supabase) return;
       supabase.auth.getSession().then(({ data: { session } }) => {
         setAuthUser(session?.user ?? null);
       });
