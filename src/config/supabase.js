@@ -23,6 +23,24 @@ if (!isSupabaseConfigured) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// Password-recovery landing fix
+// A recovery email link can land on any page (e.g. "/") when the redirect URL
+// is not allow-listed in Supabase. The recovery token arrives in the URL hash
+// (#access_token=...&type=recovery). If we see it, move the browser to the
+// reset page BEFORE the client is created, keeping the hash so Supabase can
+// still read the token and sign the user in for the password change.
+// ─────────────────────────────────────────────────────────────────────────────
+if (typeof window !== "undefined") {
+  const { pathname, hash, search } = window.location;
+  const isRecovery =
+    hash.includes("type=recovery") || search.includes("type=recovery");
+
+  if (isRecovery && pathname !== "/reset-password") {
+    window.history.replaceState(null, "", "/reset-password?type=recovery" + hash);
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // Client singleton
 // auth.persistSession: true  — stores the JWT in localStorage so the user
 //   stays logged in across page refreshes (Supabase default behaviour).

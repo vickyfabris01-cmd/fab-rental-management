@@ -76,7 +76,6 @@ const useAuthStore = create((set, get) => ({
   // ── Actions ───────────────────────────────────────────────────────────────
 
   /**
-   * Bootstrap: called once on app mount (inside AppLoader).
    * Checks for an existing session, loads the profile, then starts listening
    * for auth-state changes from Supabase.
    *
@@ -103,12 +102,21 @@ const useAuthStore = create((set, get) => ({
     }
 
     // 2. Subscribe to future auth events (tab sync, token refresh, sign-out)
+    //
+    // IMPORTANT: this callback must NOT await any Supabase call. Supabase holds
+    // its internal auth lock while running listeners, and any query needs that
+    // same lock to read the session — awaiting one here deadlocks, which made
+    // updateUser() (and so the password reset) hang forever. Profile fetches
+    // are deferred with setTimeout so they run after the callback returns.
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange(async (event, session) => {
+    } = supabase.auth.onAuthStateChange((event, session) => {
       if (event === "SIGNED_IN" && session?.user) {
-        const profile = await fetchProfile(session.user.id);
-        set({ user: session.user, profile, error: null });
+        const nextUser = session.user;
+        setTimeout(async () => {
+          const profile = await fetchProfile(nextUser.id);
+          set({ user: nextUser, profile, error: null });
+        }, 0);
       }
 
       if (event === "SIGNED_OUT") {
@@ -121,9 +129,12 @@ const useAuthStore = create((set, get) => ({
       }
 
       if (event === "USER_UPDATED" && session?.user) {
-        // Email / password changed — re-fetch profile
-        const profile = await fetchProfile(session.user.id);
-        set({ user: session.user, profile });
+        // Email / password changed — re-fetch profile (deferred, see above)
+        const nextUser = session.user;
+        setTimeout(async () => {
+          const profile = await fetchProfile(nextUser.id);
+          set({ user: nextUser, profile });
+        }, 0);
       }
     });
 

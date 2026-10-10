@@ -17,6 +17,9 @@ export default defineConfig({
 
   server: {
     port: 5173,
+    // Listen on all network interfaces so a phone on the same Wi-Fi/hotspot
+    // can open the dev server via the laptop's IP (Local + Network URLs).
+    host: true,
     // Proxy API requests to the FastAPI backend in development so we avoid
     // CORS issues when running both locally.
     proxy: {

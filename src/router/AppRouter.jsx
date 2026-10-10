@@ -176,6 +176,10 @@ const AdminSettingsPage = lazy(
   () => import("../pages/admin/AdminSettingsPage.jsx"),
 );
 const AdminAuditPage = lazy(() => import("../pages/admin/AdminAuditPage.jsx"));
+// NEW: super admin's own profile page
+const AdminProfilePage = lazy(
+  () => import("../pages/admin/AdminProfilePage.jsx"),
+);
 
 // =============================================================================
 // Full-screen lazy fallback — same minimal spinner as RequireAuth
@@ -561,6 +565,8 @@ export default function AppRouter() {
                 />
                 <Route path="/admin/settings" element={<AdminSettingsPage />} />
                 <Route path="/admin/audit" element={<AdminAuditPage />} />
+                {/* NEW: super admin's own profile */}
+                <Route path="/admin/profile" element={<AdminProfilePage />} />
               </Route>
 
               {/* ── Visitor fallback: any authenticated visitor → browse ── */}
