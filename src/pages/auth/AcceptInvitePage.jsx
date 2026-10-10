@@ -2,20 +2,22 @@ import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 
 import { supabase } from "../../config/supabase.js";
-import { db }       from "../../config/supabase.js";
+import { fetchInviteByToken, acceptManagerInvite } from "../../lib/api/profile.js";
 
 // =============================================================================
 // AcceptInvitePage  /invite/:token
 //
 // Flow:
-//   1. Token arrives in URL → look up manager_invites row (public RLS allows this)
+//   1. Token arrives in URL → look up the invite via the get_invite_by_token
+//      database function (the invites table is not publicly readable)
 //   2. Validate: token exists, not expired, status = 'pending'
 //   3. Step 1 — show invite details (who invited you, which property, your email)
 //   4. Step 2 — set full name + password
 //   5. handleAccept:
 //      a. supabase.auth.signUp() — creates auth.users + auth.identities correctly
-//      b. UPDATE profiles SET role='manager', full_name=... (trigger created visitor row)
-//      c. UPDATE manager_invites SET status='accepted'
+//      b. accept_manager_invite() — database function that validates the token,
+//         checks the signed-in email matches, promotes the profile to manager
+//         and marks the invite accepted (all server-side, in one transaction)
 //   6. Step 3 — success → navigate to /manage
 // =============================================================================
 
@@ -183,10 +185,7 @@ export default function AcceptInvitePage() {
   useEffect(() => {
     if (!token) { setState("invalid"); return; }
 
-    db.managerInvites()
-      .select("id, email, status, expires_at, tenant_id, tenants(name, slug), profiles!invited_by(full_name)")
-      .eq("token", token)
-      .single()
+    fetchInviteByToken(token)
       .then(({ data, error }) => {
         if (error || !data) { setState("invalid"); return; }
         if (data.status === "accepted")               { setState("accepted"); setInvite(data); return; }
@@ -216,7 +215,7 @@ export default function AcceptInvitePage() {
 
     try {
       // 1. Create Supabase auth user (handles auth.users + auth.identities correctly)
-      const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
+      const { error: signUpError } = await supabase.auth.signUp({
         email:    invite.email,
         password: password,
         options: {
@@ -238,29 +237,14 @@ export default function AcceptInvitePage() {
         }
       }
 
-      // 2. Get the user ID (either newly created or signed in)
+      // 2. Make sure we have a session (either newly created or signed in)
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Could not establish session. Please try again.");
 
-      // 3. Elevate profile to manager and set name + tenant
-      const { error: profileError } = await db
-        .profiles()
-        .upsert({
-          id:        user.id,
-          role:      "manager",
-          full_name: fullName.trim(),
-          email:     invite.email,
-          tenant_id: invite.tenant_id,
-          is_active: true,
-          updated_at: new Date().toISOString(),
-        }, { onConflict: "id" });
-
-      if (profileError) throw new Error(profileError.message);
-
-      // 4. Mark invite as accepted
-      await db.managerInvites()
-        .update({ status: "accepted" })
-        .eq("token", token);
+      // 3. Server-side: validate the token + email, promote to manager,
+      //    set the name, and mark the invite accepted — all in one transaction.
+      const { error: acceptError } = await acceptManagerInvite(token, fullName.trim());
+      if (acceptError) throw new Error(acceptError);
 
       setStep(3);
     } catch (err) {

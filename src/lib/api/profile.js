@@ -158,19 +158,56 @@ export async function sendManagerInvite(tenantId, email, invitedBy) {
 
 // ─────────────────────────────────────────────────────────────────────────────
 // fetchInviteByToken
-// Loads an invite row by its token. Used on the /invite/:token page.
-// The invites_token_lookup RLS policy allows this without authentication.
+// Loads an invite by its token. Used on the /invite/:token page.
+// Calls the get_invite_by_token database function (the manager_invites table
+// itself is no longer publicly readable) and returns the same shape the page
+// always used: { id, tenant_id, email, status, expires_at,
+//                tenants: { name, slug }, profiles: { full_name } | null }
 //
 // @param {string} token
 // @returns {Promise<{ data: object | null, error }>}
 // ─────────────────────────────────────────────────────────────────────────────
 export async function fetchInviteByToken(token) {
-  const { data, error } = await db
-    .managerInvites()
-    .select("id, tenant_id, email, status, expires_at, token, tenants(name, slug), profiles!invited_by(full_name)")
-    .eq("token", token)
-    .single();
-  return { data, error };
+  const { data, error } = await supabase.rpc("get_invite_by_token", {
+    p_token: token,
+  });
+
+  const row = Array.isArray(data) && data.length > 0 ? data[0] : null;
+  if (error || !row) {
+    return { data: null, error: error ?? { message: "Invite not found" } };
+  }
+
+  return {
+    data: {
+      id:         row.id,
+      tenant_id:  row.tenant_id,
+      email:      row.email,
+      status:     row.status,
+      expires_at: row.expires_at,
+      tenants:    { name: row.tenant_name, slug: row.tenant_slug },
+      profiles:   row.invited_by_name ? { full_name: row.invited_by_name } : null,
+    },
+    error: null,
+  };
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// acceptManagerInvite
+// Called after the invitee has signed up / signed in. The database function
+// checks the token, expiry and that the signed-in email matches the invite,
+// then promotes the profile to manager and marks the invite accepted.
+//
+// @param {string} token
+// @param {string} fullName
+// @returns {Promise<{ data: string | null, error: string | null }>}
+//          data = the tenant_id the user joined
+// ─────────────────────────────────────────────────────────────────────────────
+export async function acceptManagerInvite(token, fullName) {
+  const { data, error } = await supabase.rpc("accept_manager_invite", {
+    p_token:     token,
+    p_full_name: fullName ?? null,
+  });
+  return { data: data ?? null, error: error ? error.message : null };
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
