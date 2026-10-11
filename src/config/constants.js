@@ -1,8 +1,11 @@
+// src/config/constants.js — MODIFIED FILE (adds BRAND import; identity block now reads from brand.js)
 // =============================================================================
 // src/config/constants.js
 // App-wide constants for fab-rental-management.
 // Import what you need — nothing here has side effects.
 // =============================================================================
+
+import { BRAND } from "./brand.js";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // API
@@ -17,11 +20,12 @@ export const MPESA_STK_ENDPOINT = "/payments/mpesa/stk-push";
 // ─────────────────────────────────────────────────────────────────────────────
 // Application identity
 // ─────────────────────────────────────────────────────────────────────────────
-export const APP_NAME        = "fabrentals";
-export const APP_DISPLAY_NAME= "fabRentals";
-export const APP_TAGLINE     = "Kenya's Rental Management Platform";
-export const APP_SUPPORT_EMAIL = "support@fabrentals.co.ke";
-export const APP_WEBSITE     = "https://fabrentals.co.ke";
+// Values come from config/brand.js, the single place that holds the product name.
+export const APP_NAME          = BRAND.name.toLowerCase();
+export const APP_DISPLAY_NAME  = BRAND.name;
+export const APP_TAGLINE       = BRAND.tagline;
+export const APP_SUPPORT_EMAIL = BRAND.supportEmail;
+export const APP_WEBSITE       = BRAND.website;
 
 // ─────────────────────────────────────────────────────────────────────────────
 // User roles

@@ -1,190 +1,167 @@
-import { useState, forwardRef } from "react";
-import { validatePassword }     from "../../lib/validators";
+// src/components/ui/PasswordInput.jsx — MODIFIED FILE (rebuilt on design tokens; old props still work)
+//
+// AIM
+// A password field with a show/hide button and an optional strength meter.
+//
+// PROPS
+//   label         default "Password"
+//   showStrength  show the 4-segment meter and the requirement ticks under the field
+//   error, helper, required, disabled, id, value, onChange, ...rest   as in Input
+//
+// USAGE
+//   <PasswordInput label="New password" showStrength value={pw} onChange={(e) => setPw(e.target.value)} />
 
-// =============================================================================
-// PasswordInput
-//
-// Extends Input with:
-//   - Show / hide toggle (eye icon)
-//   - Optional password strength meter (4 segments)
-//
-// Props:
-//   label         — string (default "Password")
-//   showStrength  — boolean — show strength bar below input
-//   error         — string | null
-//   helper        — string
-//   ...rest       — any <input> props
-//
-// Usage:
-//   <PasswordInput label="New Password" showStrength value={pw} onChange={e => setPw(e.target.value)} />
-// =============================================================================
+import { forwardRef, useState } from "react";
+import { validatePassword } from "../../lib/validators";
+import Field, { describedBy, useFieldId } from "./Field.jsx";
+import "./PasswordInput.css";
 
-const STRENGTH_META = [
-  { label: "Weak",        color: "#EF4444" },
-  { label: "Fair",        color: "#F59E0B" },
-  { label: "Good",        color: "#3B82F6" },
-  { label: "Strong",      color: "#10B981" },
+const STRENGTH_LEVELS = [
+  { label: "Weak", tone: "weak" },
+  { label: "Fair", tone: "fair" },
+  { label: "Good", tone: "good" },
+  { label: "Strong", tone: "strong" },
 ];
 
-// Eye icons
+const REQUIREMENTS = [
+  { key: "length", label: "8+ characters" },
+  { key: "uppercase", label: "Uppercase" },
+  { key: "number", label: "Number" },
+  { key: "special", label: "Symbol" },
+];
+
+const ICON = {
+  width: 18,
+  height: 18,
+  viewBox: "0 0 24 24",
+  fill: "none",
+  stroke: "currentColor",
+  strokeWidth: 2,
+  strokeLinecap: "round",
+  strokeLinejoin: "round",
+  "aria-hidden": "true",
+  focusable: "false",
+};
+
 function EyeOpen() {
   return (
-    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
-      <circle cx="12" cy="12" r="3"/>
+    <svg {...ICON}>
+      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+      <circle cx="12" cy="12" r="3" />
     </svg>
   );
 }
+
 function EyeOff() {
   return (
-    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19m-6.72-1.07a3 3 0 11-4.24-4.24"/>
-      <line x1="1" y1="1" x2="23" y2="23"/>
+    <svg {...ICON}>
+      <path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19m-6.72-1.07a3 3 0 11-4.24-4.24" />
+      <path d="M1 1l22 22" />
     </svg>
   );
 }
 
 const PasswordInput = forwardRef(function PasswordInput(
   {
-    label        = "Password",
+    label = "Password",
     showStrength = false,
     error,
     helper,
-    required     = false,
-    disabled     = false,
-    value        = "",
+    required = false,
+    disabled = false,
+    value = "",
     onChange,
     id,
+    style,
+    className = "",
     ...rest
   },
-  ref
+  ref,
 ) {
-  const [visible,  setVisible]  = useState(false);
-  const [focused,  setFocused]  = useState(false);
+  const [visible, setVisible] = useState(false);
+  const inputId = useFieldId(id);
 
-  // Guard against null/undefined label (some pages omit it or pass null explicitly)
-  const inputId  = id ?? (label ? label.toLowerCase().replace(/\s+/g, "-") : "password-input");
-  const strength = showStrength && value ? validatePassword(value) : null;
+  // Drop props that are not real <input> attributes if a parent passed them by mistake
+  // eslint-disable-next-line no-unused-vars
+  const { leftAdornment, rightAdornment, ...domProps } = rest;
 
-  const borderColor = error ? "#EF4444" : focused ? "#C5612C" : "#E8DDD4";
-  const boxShadow   = error
-    ? "0 0 0 3px rgba(239,68,68,0.10)"
-    : focused ? "0 0 0 3px rgba(197,97,44,0.14)" : "none";
+  const result = showStrength && value ? validatePassword(value) : null;
+  const level = result && result.strength > 0 ? STRENGTH_LEVELS[result.strength - 1] : null;
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 6, width: "100%" }}>
-      {/* Label */}
-      {label && (
-        <label htmlFor={inputId} style={{ fontSize: 13, fontWeight: 600, color: "#1A1412", lineHeight: 1, userSelect: "none" }}>
-          {label}{required && <span style={{ color: "#EF4444", marginLeft: 3 }}>*</span>}
-        </label>
-      )}
-
-      {/* Input + toggle */}
-      <div style={{ position: "relative", display: "flex", alignItems: "center" }}>
+    <Field
+      id={inputId}
+      label={label}
+      required={required}
+      error={error}
+      helper={helper}
+      className={className}
+      style={style}
+    >
+      <div className="ui-control-wrap">
         <input
+          {...domProps}
           ref={ref}
           id={inputId}
           type={visible ? "text" : "password"}
           value={value}
           onChange={onChange}
           disabled={disabled}
-          aria-invalid={!!error}
-          onFocus={(e) => { setFocused(true);  rest.onFocus?.(e); }}
-          onBlur={(e)  => { setFocused(false); rest.onBlur?.(e);  }}
-          style={{
-            width:        "100%",
-            padding:      "11px 44px 11px 14px",
-            border:       `1.5px solid ${borderColor}`,
-            borderRadius: 12,
-            background:   disabled ? "#FAF7F2" : "#fff",
-            color:        "#1A1412",
-            fontSize:     14,
-            fontFamily:   "'DM Sans', system-ui, sans-serif",
-            outline:      "none",
-            boxShadow,
-            transition:   "border-color 0.18s, box-shadow 0.18s",
-            cursor:       disabled ? "not-allowed" : "text",
-          }}
-          {...(() => {
-            // Strip any non-DOM props that may have been passed by a parent
-            // before spreading onto the native <input> element.
-            const { showStrength: _ss, error: _e, helper: _h, ...domProps } = rest;
-            return domProps;
-          })()}
+          className="ui-control ui-control--pad-right"
+          aria-invalid={error ? true : undefined}
+          aria-required={required || undefined}
+          aria-describedby={describedBy(inputId, { error, helper })}
         />
         <button
           type="button"
-          onClick={() => setVisible(v => !v)}
+          className="ui-password__toggle"
+          onClick={() => setVisible((v) => !v)}
           aria-label={visible ? "Hide password" : "Show password"}
-          style={{
-            position:   "absolute", right: 12,
-            background: "none", border: "none",
-            cursor:     "pointer", padding: 2,
-            color:      focused ? "#C5612C" : "#8B7355",
-            display:    "flex", alignItems: "center",
-            transition: "color 0.15s",
-          }}
+          aria-pressed={visible}
+          disabled={disabled}
         >
           {visible ? <EyeOff /> : <EyeOpen />}
         </button>
       </div>
 
-      {/* Strength meter */}
-      {showStrength && value && strength && (
-        <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-          {/* 4 segment bar */}
-          <div style={{ display: "flex", gap: 4 }}>
-            {[1, 2, 3, 4].map(seg => (
-              <div
-                key={seg}
-                style={{
-                  flex: 1, height: 3, borderRadius: 999,
-                  background:  strength.strength >= seg
-                    ? STRENGTH_META[strength.strength - 1]?.color ?? "#E8DDD4"
-                    : "#E8DDD4",
-                  transition: "background 0.3s ease",
-                }}
+      {result && (
+        <div className="ui-password__meter">
+          <div
+            className={`ui-password__bars${level ? ` ui-password__bars--${level.tone}` : ""}`}
+            aria-hidden="true"
+          >
+            {[1, 2, 3, 4].map((segment) => (
+              <span
+                key={segment}
+                className={`ui-password__bar${result.strength >= segment ? " is-on" : ""}`}
               />
             ))}
           </div>
-          {/* Label */}
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-            <span style={{ fontSize: 11, color: "#8B7355" }}>Password strength</span>
-            {strength.strength > 0 && (
-              <span style={{ fontSize: 11, fontWeight: 600, color: STRENGTH_META[strength.strength - 1]?.color }}>
-                {STRENGTH_META[strength.strength - 1]?.label}
+
+          <div className="ui-password__summary">
+            <span className="ui-password__caption">Password strength</span>
+            {level && (
+              <span className={`ui-password__level ui-password__level--${level.tone}`}>
+                {level.label}
               </span>
             )}
           </div>
-          {/* Requirement dots */}
-          <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
-            {[
-              { key: "length",    label: "8+ chars"   },
-              { key: "uppercase", label: "Uppercase"  },
-              { key: "number",    label: "Number"     },
-              { key: "special",   label: "Symbol"     },
-            ].map(req => (
-              <span key={req.key} style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 11 }}>
-                <span style={{ width: 6, height: 6, borderRadius: "50%", background: strength.checks[req.key] ? "#10B981" : "#E8DDD4", flexShrink: 0 }}/>
-                <span style={{ color: strength.checks[req.key] ? "#10B981" : "#8B7355" }}>{req.label}</span>
-              </span>
-            ))}
-          </div>
+
+          <ul className="ui-password__reqs">
+            {REQUIREMENTS.map((req) => {
+              const ok = result.checks[req.key];
+              return (
+                <li key={req.key} className={`ui-password__req${ok ? " is-met" : ""}`}>
+                  <span className="ui-password__dot" aria-hidden="true" />
+                  <span>{req.label}</span>
+                  <span className="sr-only">{ok ? " (met)" : " (not met)"}</span>
+                </li>
+              );
+            })}
+          </ul>
         </div>
       )}
-
-      {/* Error / helper */}
-      {error && (
-        <span role="alert" style={{ fontSize: 12, color: "#EF4444", lineHeight: 1.4, display: "flex", alignItems: "center", gap: 4 }}>
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>
-          {error}
-        </span>
-      )}
-      {!error && helper && (
-        <span style={{ fontSize: 12, color: "#8B7355", lineHeight: 1.4 }}>{helper}</span>
-      )}
-    </div>
+    </Field>
   );
 });
 

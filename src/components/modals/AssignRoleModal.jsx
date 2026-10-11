@@ -1,3 +1,4 @@
+// src/components/modals/AssignRoleModal.jsx — MODIFIED FILE (product name read from brand.js)
 import { useState } from "react";
 import { Modal }    from "./Modal.jsx";
 import Button       from "../ui/Button.jsx";
@@ -9,12 +10,13 @@ import { lookupVisitorByEmail, assignRole } from "../../lib/api/profile.js";
 import useAuthStore from "../../store/authStore.js";
 import { useToast } from "../../hooks/useNotifications.js";
 import { formatDate } from "../../lib/formatters.js";
+import { BRAND } from "../../config/brand.js";
 
 // =============================================================================
 // AssignRoleModal
 //
 // Universal role assignment flow — no email invites. The target user must
-// already have a fabRentals account (visitor role).
+// already have an account on the platform (visitor role).
 //
 // Flow:
 //   1. Inviter types the email address of the person
@@ -95,7 +97,7 @@ export default function AssignRoleModal({
       if (error) throw new Error(error);
       if (!data) {
         setSearchErr(
-          "No visitor account found with that email. The person must first create a fabRentals account.",
+          `No visitor account found with that email. The person must first create a ${BRAND.name} account.`,
         );
       } else {
         setFound(data);
@@ -224,7 +226,7 @@ export default function AssignRoleModal({
         {/* Instructions */}
         {!found && (
           <p style={{ fontSize: 14, color: "#5C4A3A", lineHeight: 1.65, margin: 0 }}>
-            The person must already have a <strong>fabRentals visitor account</strong>.
+            The person must already have a <strong>{BRAND.name} visitor account</strong>.
             Enter their email to look them up — no invite link needed.
           </p>
         )}

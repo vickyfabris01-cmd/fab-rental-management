@@ -1,43 +1,96 @@
-import React from "react";
+// src/components/ui/SelectInput.jsx — MODIFIED FILE (rebuilt on design tokens; old props still work)
+//
+// AIM
+// A dropdown. It uses the browser's native <select>, so it works well with touch screens,
+// keyboards and screen readers, and styled to match the other fields.
+//
+// onChange is called with the chosen VALUE (a string), not the DOM event. This is how every
+// existing page already uses it (onChange={setMethod}, onChange={(v) => set("role", v)}).
+//
+// PROPS
+//   label, error, helper, required, disabled, id, className, style
+//   options      array of strings, or of { value, label }
+//   placeholder  optional first, unselectable option shown while value is ""
+//   value, onChange, ...rest   as for a native select
 
-export default function SelectInput({
-  label,
-  options = [],
-  error,
-  className = "",
-  onChange,
-  ...props
-}) {
-  // Normalise onChange: always call with raw value (string), not a DOM Event.
-  // This keeps all callers that do onChange={setValue} working correctly while
-  // callers that do onChange={e => set(e.target.value)} still work because we
-  // pass the value directly and they can adapt — but to avoid breaking those
-  // we detect which style is in use: if the prop name suggests a setter or the
-  // caller passes a 1-arg fn that isn't reading .target we call with value.
-  // Simplest safe approach: always call onChange(value).
-  const handleChange = (e) => {
-    onChange?.(e.target.value);
-  };
+import { forwardRef } from "react";
+import Field, { describedBy, useFieldId } from "./Field.jsx";
+import "./SelectInput.css";
+
+const SelectInput = forwardRef(function SelectInput(
+  {
+    label,
+    options = [],
+    error,
+    helper,
+    required = false,
+    disabled = false,
+    placeholder,
+    id,
+    className = "",
+    style,
+    onChange,
+    ...rest
+  },
+  ref,
+) {
+  const selectId = useFieldId(id);
 
   return (
-    <label className="block w-full">
-      {label && (
-        <span className="mb-1 text-sm font-semibold text-gray-700 block">
-          {label}
+    <Field
+      id={selectId}
+      label={label}
+      required={required}
+      error={error}
+      helper={helper}
+      className={className}
+      style={style}
+    >
+      <div className="ui-control-wrap">
+        <select
+          {...rest}
+          ref={ref}
+          id={selectId}
+          disabled={disabled}
+          onChange={(event) => onChange?.(event.target.value)}
+          className="ui-control ui-select ui-control--pad-right"
+          aria-invalid={error ? true : undefined}
+          aria-required={required || undefined}
+          aria-describedby={describedBy(selectId, { error, helper })}
+        >
+          {placeholder && (
+            <option value="" disabled>
+              {placeholder}
+            </option>
+          )}
+          {options.map((opt, index) => {
+            const value = typeof opt === "object" && opt !== null ? opt.value : opt;
+            const text = typeof opt === "object" && opt !== null ? (opt.label ?? opt.value) : opt;
+            return (
+              <option key={`${value}-${index}`} value={value}>
+                {text}
+              </option>
+            );
+          })}
+        </select>
+        <span className="ui-control-wrap__right ui-select__chevron" aria-hidden="true">
+          <svg
+            width="18"
+            height="18"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            focusable="false"
+          >
+            <path d="M6 9l6 6 6-6" />
+          </svg>
         </span>
-      )}
-      <select
-        className={`w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-[#C5612C] focus:ring-2 focus:ring-[#C5612C] focus:ring-opacity-20 ${error ? "border-red-400" : ""} ${className}`.trim()}
-        onChange={handleChange}
-        {...props}
-      >
-        {options.map((opt, i) => (
-          <option key={i} value={opt.value ?? opt}>
-            {opt.label ?? opt}
-          </option>
-        ))}
-      </select>
-      {error && <p className="mt-1 text-sm text-red-500">{error}</p>}
-    </label>
+      </div>
+    </Field>
   );
-}
+});
+
+export default SelectInput;

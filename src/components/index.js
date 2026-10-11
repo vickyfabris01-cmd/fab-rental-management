@@ -1,37 +1,57 @@
-// =============================================================================
-// components/index.js
-// Master barrel — import any component from "../../components"
+// src/components/ui/index.js — MODIFIED FILE
+//
+// Barrel export — import any shared component from "components/ui".
 //
 // Usage:
-//   import { Button, Badge, Modal, DataTable, StatsCard, TabBar } from "../../components";
-// =============================================================================
+//   import { Button, Badge, Card }          from "../components/ui";
+//   import { Input, SelectInput, Toggle }   from "../components/ui";
+//   import { Spinner, EmptyState }          from "../components/ui";
+//
+// Changes in this step: the form fields (Input, PasswordInput, PhoneInput, SelectInput,
+// TextArea, Checkbox, Toggle), Alert, Avatar (+ AvatarGroup, which was exported here before
+// but never existed) and Tooltip are rebuilt. Added Field, the shared frame around every
+// form control.
 
-// ── UI primitives ─────────────────────────────────────────────────────────────
-export * from "./ui/index.js";
+// ── Actions ───────────────────────────────────────────────────────────────────
+export { default as Button } from "./Button.jsx";
+export { default as ThemeToggle } from "./ThemeToggle.jsx";
 
-// ── Layout ────────────────────────────────────────────────────────────────────
-export { default as PageHeader } from "./layout/PageHeader.jsx";
+// ── Form primitives ───────────────────────────────────────────────────────────
+export { default as Field } from "./Field.jsx";
+export { default as Input } from "./Input.jsx";
+export { default as PasswordInput } from "./PasswordInput.jsx";
+export { default as PhoneInput } from "./PhoneInput.jsx";
+export { default as SelectInput } from "./SelectInput.jsx";
+export { default as TextArea } from "./TextArea.jsx";
+export { default as Checkbox } from "./Checkbox.jsx";
+export { default as Toggle } from "./Toggle.jsx";
 
-// ── Navigation ────────────────────────────────────────────────────────────────
-export { TabBar, Pagination, Breadcrumb } from "./navigation/TabBar.jsx";
-
-// ── Data display ─────────────────────────────────────────────────────────────
-export { default as StatsCard }           from "./data/StatsCard.jsx";
-export { default as DataTable }           from "./data/DataTable.jsx";
+// ── Data display ──────────────────────────────────────────────────────────────
+export { default as Badge } from "./Badge.jsx";
 export {
-  BillingCycleRow,
-  PaymentRow,
-  ComplaintCard,
-  NotificationItem,
-  WorkerCard,
-  RoomCard,
-}                                          from "./data/domain-cards.jsx";
+  BillingBadge,
+  PaymentBadge,
+  RoomBadge,
+  RequestBadge,
+  ComplaintBadge,
+  RoleBadge,
+  TenantBadge,
+  MethodBadge,
+} from "./Badge.jsx";
 
-// ── Modals & overlays ─────────────────────────────────────────────────────────
-export { Modal, Drawer, ConfirmDialog }    from "./modals/Modal.jsx";
+export { Card, CardHeader, CardBody, CardFooter } from "./Card.jsx";
 
-// ── Feedback ─────────────────────────────────────────────────────────────────
-export { default as Toast, ToastContainer } from "./feedback/Toast.jsx";
+export { default as Avatar } from "./Avatar.jsx";
+export { AvatarGroup } from "./Avatar.jsx";
 
-// ── Charts (requires: npm install recharts) ───────────────────────────────────
-export { RevenueChart, OccupancyChart, OccupancyTrendLine, PaymentMethodPie, BillingStatusDonut, GrowthLineChart, TrendSparkline, SparkBar } from "./charts/index.js";
+// ── Overlays & feedback ───────────────────────────────────────────────────────
+export { default as Tooltip } from "./Tooltip.jsx";
+export { default as Alert } from "./Alert.jsx";
+
+// ── Loading states ────────────────────────────────────────────────────────────
+export { default as Spinner } from "./Spinner.jsx";
+export { Skeleton, SkeletonText, SkeletonCard, SkeletonTable } from "./Skeleton.jsx";
+
+// ── Layout helpers ────────────────────────────────────────────────────────────
+export { default as EmptyState } from "./EmptyState.jsx";
+export { default as Divider } from "./Divider.jsx";

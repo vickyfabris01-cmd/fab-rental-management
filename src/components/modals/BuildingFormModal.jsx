@@ -1,3 +1,4 @@
+// src/components/modals/BuildingFormModal.jsx — MODIFIED FILE (product name read from brand.js)
 import { useState, useEffect, useRef } from "react";
 import { Modal } from "./Modal.jsx";
 import Button from "../ui/Button.jsx";
@@ -8,6 +9,7 @@ import { createBuilding, updateBuilding } from "../../lib/api/rooms.js";
 import { uploadFile, BUCKETS } from "../../config/supabase.js";
 import { createWorker, updateWorker } from "../../lib/api/workers.js";
 import useAuthStore from "../../store/authStore.js";
+import { BRAND } from "../../config/brand.js";
 import { useToast } from "../../hooks/useNotifications.js";
 
 // =============================================================================
@@ -463,7 +465,7 @@ export function WorkerFormModal({ isOpen, onClose, worker, onSuccess }) {
       toast.success(
         isEdit
           ? "Worker profile updated."
-          : "Worker record saved. To give them dashboard access, ask them to create a fabRentals account, then assign the Worker role from the Workforce page.",
+          : `Worker record saved. To give them dashboard access, ask them to create a ${BRAND.name} account, then assign the Worker role from the Workforce page.`,
       );
       onSuccess?.(data);
       onClose();

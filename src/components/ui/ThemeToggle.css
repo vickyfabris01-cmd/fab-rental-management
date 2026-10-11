@@ -1,0 +1,70 @@
+/* src/components/ui/ThemeToggle.css — NEW FILE
+   Styles for ThemeToggle.jsx. Tokens only: no hex values. */
+
+/* ── Icon button ─────────────────────────────────────────────────────────── */
+.ui-theme-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--control-h-md);
+  height: var(--control-h-md);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-full);
+  background: var(--color-surface);
+  color: var(--color-text-muted);
+  cursor: pointer;
+  transition:
+    background-color var(--duration-fast) var(--ease-standard),
+    color var(--duration-fast) var(--ease-standard),
+    border-color var(--duration-fast) var(--ease-standard);
+}
+
+@media (hover: hover) {
+  .ui-theme-btn:hover {
+    background: var(--color-surface-2);
+    color: var(--color-text);
+  }
+}
+
+/* ── Segmented control (Light / Dark / System) ───────────────────────────── */
+.ui-theme-seg {
+  display: inline-flex;
+  max-width: 100%;
+  padding: var(--space-1);
+  gap: var(--space-1);
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+}
+
+.ui-theme-seg__option {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  min-height: var(--control-h-sm);
+  padding-inline: var(--space-3);
+  border: 0;
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--color-text-muted);
+  font-size: var(--text-sm);
+  line-height: 1.25;
+  font-weight: var(--weight-medium);
+  cursor: pointer;
+  transition:
+    background-color var(--duration-fast) var(--ease-standard),
+    color var(--duration-fast) var(--ease-standard);
+}
+
+.ui-theme-seg__option.is-selected {
+  background: var(--color-surface);
+  color: var(--color-text);
+  box-shadow: var(--shadow-sm);
+}
+
+@media (hover: hover) {
+  .ui-theme-seg__option:not(.is-selected):hover {
+    color: var(--color-text);
+  }
+}

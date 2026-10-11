@@ -1,4 +1,6 @@
+// src/components/feedback/ErrorBoundary.jsx — MODIFIED FILE (product name read from brand.js)
 import { Component } from "react";
+import { BRAND } from "../../config/brand.js";
 
 // =============================================================================
 // ErrorBoundary  — three variants, one file
@@ -180,7 +182,7 @@ class RootBoundaryClass extends Component {
   componentDidCatch(error, info) {
     this.setState({ info });
     // Log to console with context
-    console.group("🔴 [fabRentals] Root Error Boundary caught:");
+    console.group(`🔴 [${BRAND.name}] Root Error Boundary caught:`);
     console.error("Error:", error);
     console.error("Component stack:", info?.componentStack);
     console.groupEnd();
@@ -241,7 +243,7 @@ class RootBoundaryClass extends Component {
           maxWidth:   460,
           margin:     "0 0 32px",
         }}>
-          fabRentals hit an unexpected error. Your data is safe —
+          {BRAND.name} hit an unexpected error. Your data is safe —
           this is a display issue only. Try reloading or returning home.
         </p>
 
@@ -276,7 +278,7 @@ class PageBoundaryClass extends Component {
 
   componentDidCatch(error, info) {
     this.setState({ info });
-    console.group(`🟠 [fabRentals] Page Error Boundary — ${this.props.route ?? "unknown"}`);
+    console.group(`🟠 [${BRAND.name}] Page Error Boundary — ${this.props.route ?? "unknown"}`);
     console.error("Error:", error);
     console.error("Component stack:", info?.componentStack);
     console.groupEnd();
@@ -388,7 +390,7 @@ class WidgetBoundaryClass extends Component {
 
   componentDidCatch(error, info) {
     console.warn(
-      `🟡 [fabRentals] Widget Error Boundary — ${this.props.label ?? "widget"}:`,
+      `🟡 [${BRAND.name}] Widget Error Boundary — ${this.props.label ?? "widget"}:`,
       error.message
     );
     if (isDev) console.error(info?.componentStack);

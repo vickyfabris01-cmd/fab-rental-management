@@ -1,3 +1,4 @@
+// src/components/modals/RentalRequestModal.jsx — MODIFIED FILE (product name read from brand.js)
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Modal }     from "./Modal.jsx";
@@ -8,6 +9,7 @@ import { formatCurrency } from "../../lib/formatters.js";
 import { createRequest }  from "../../lib/api/rentalRequests.js";
 import useAuthStore        from "../../store/authStore.js";
 import { useToast }        from "../../hooks/useNotifications.js";
+import { BRAND }           from "../../config/brand.js";
 
 // =============================================================================
 // RentalRequestModal
@@ -56,7 +58,7 @@ export default function RentalRequestModal({ isOpen, onClose, room, tenantName, 
             </svg>
           </div>
           <p style={{ fontSize: 15, color: "#5C4A3A", lineHeight: 1.65, margin: 0 }}>
-            You need a free fabrentals account to submit a rental request for <strong>Room {room.room_number}</strong> at <strong>{tenantName}</strong>.
+            You need a free {BRAND.name} account to submit a rental request for <strong>Room {room.room_number}</strong> at <strong>{tenantName}</strong>.
           </p>
           <p style={{ fontSize: 13, color: "#8B7355", marginTop: 10 }}>
             Already have an account? <button onClick={() => { onClose(); navigate("/login"); }}

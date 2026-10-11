@@ -1,40 +1,42 @@
-import React from "react";
+// src/components/ui/Badge.jsx — MODIFIED FILE (rebuilt on design tokens; old props still work)
+//
+// AIM
+// A small status pill ("Paid", "Overdue", "Pending"). Colours come from the status tokens,
+// so every status looks the same on every page and passes contrast in both themes.
+//
+// PROPS
+//   variant  "neutral" (default) | "brand" | "success" | "warning" | "error" | "info"
+//            plus the old names "paid" (= success), "overdue" (= error), "pending" (= warning)
+//   size     "sm" | "md" (default) | "lg"
+//   A badge with no children renders nothing (the old one drew an empty pill).
+//
+// The wrapper badges at the bottom (PaymentBadge, RoleBadge ...) are kept because old
+// pages import them.
 
-const VARIANT_STYLES = {
-  brand: "bg-[#C5612C] text-white",
-  success: "bg-[#DCFCE7] text-[#065F46]",
-  warning: "bg-[#FEF3C7] text-[#92400E]",
-  error: "bg-[#FEE2E2] text-[#991B1B]",
-  info: "bg-[#DBEAFE] text-[#1D4ED8]",
-  neutral: "bg-[#F3F4F6] text-[#374151]",
-  paid: "bg-[#DCFCE7] text-[#065F46]",
-  overdue: "bg-[#FEE2E2] text-[#991B1B]",
-  pending: "bg-[#FEF9C3] text-[#92400E]",
-};
+import "./Badge.css";
 
-const SIZE_STYLES = {
-  sm: "px-2 py-0.5 text-[11px] font-bold",
-  md: "px-3 py-1 text-[12px] font-semibold",
-  lg: "px-4 py-1.5 text-[13px] font-semibold",
-};
+const ALIASES = { paid: "success", overdue: "error", pending: "warning" };
+const VARIANTS = ["neutral", "brand", "success", "warning", "error", "info"];
+const SIZES = ["sm", "md", "lg"];
 
 function Badge({
   variant = "neutral",
   size = "md",
   className = "",
-  style = {},
+  style,
   children,
 }) {
-  const variantClass = VARIANT_STYLES[variant] || VARIANT_STYLES.neutral;
-  const sizeClass = SIZE_STYLES[size] || SIZE_STYLES.md;
+  if (children === null || children === undefined || children === false || children === "") {
+    return null;
+  }
+
+  const resolved = ALIASES[variant] || variant;
+  const v = VARIANTS.includes(resolved) ? resolved : "neutral";
+  const s = SIZES.includes(size) ? size : "md";
+  const classes = `ui-badge ui-badge--${v} ui-badge--${s} ${className}`.trim();
 
   return (
-    <span
-      className={`inline-flex items-center gap-1 rounded-full ${variantClass} ${sizeClass} ${className}`.trim()}
-      style={style}
-      role="status"
-      aria-label={typeof children === "string" ? children : "badge"}
-    >
+    <span className={classes} style={style}>
       {children}
     </span>
   );

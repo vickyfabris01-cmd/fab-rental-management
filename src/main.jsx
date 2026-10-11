@@ -1,3 +1,7 @@
+// src/main.jsx — MODIFIED FILE (adds the two global style imports; nothing else changed)
+import "./styles/tokens.css";   // design tokens: colours, type, spacing, radii, motion
+import "./styles/base.css";     // global reset + defaults built from the tokens
+
 import React                from "react";
 import ReactDOM             from "react-dom/client";
 import AppRouter            from "./router/AppRouter.jsx";

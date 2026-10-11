@@ -1,12 +1,23 @@
-import React from "react";
+// src/components/ui/Button.jsx — MODIFIED FILE (rebuilt on design tokens; old props still work)
+//
+// AIM
+// The one button used everywhere. Colours, sizes and states all come from tokens.css, so a
+// button looks the same on every page and in both themes.
+//
+// PROPS
+//   variant    "primary" (default) | "secondary" | "outline" | "danger" | "ghost"
+//              Any other old value (e.g. "approve") falls back to "primary".
+//   size       "sm" | "md" (default) | "lg"      all are at least 44px tall on touch screens
+//   fullWidth  stretch to the container width
+//   loading    shows a spinner, disables the button, keeps its width
+//   leftIcon / rightIcon   optional nodes shown beside the label
+//   as, href   render as a link:  <Button as="a" href="/x">  (or just pass href)
+//   ...rest    onClick, type, disabled, style, aria-*, target, rel, etc.
 
-const VARIANT = {
-  primary: "bg-[#C5612C] text-white hover:bg-[#A84E22]",
-  secondary:
-    "bg-white text-[#1F2937] border border-[#E5E7EB] hover:bg-[#F9FAFB]",
-  danger: "bg-[#DC2626] text-white hover:bg-[#B91C1C]",
-  ghost: "bg-transparent text-[#1F2937] hover:bg-[#F3F4F6]",
-};
+import "./Button.css";
+
+const VARIANTS = ["primary", "secondary", "outline", "danger", "ghost"];
+const SIZES = ["sm", "md", "lg"];
 
 export default function Button({
   children,
@@ -15,25 +26,62 @@ export default function Button({
   className = "",
   fullWidth = false,
   loading = false,
-  ...props
+  leftIcon = null,
+  rightIcon = null,
+  as,
+  href,
+  type,
+  disabled,
+  onClick,
+  ...rest
 }) {
-  const sizeStyle =
-    size === "sm"
-      ? "px-3 py-2 text-sm"
-      : size === "lg"
-        ? "px-5 py-3 text-base"
-        : "px-4 py-2.5 text-sm";
+  const v = VARIANTS.includes(variant) ? variant : "primary";
+  const s = SIZES.includes(size) ? size : "md";
+  const isDisabled = Boolean(disabled || loading);
+  const Tag = as || (href ? "a" : "button");
+  const isLink = Tag !== "button";
 
-  const widthStyle = fullWidth ? "w-full" : "inline-flex";
-  const disabled = loading || props.disabled;
+  const classes = [
+    "ui-btn",
+    `ui-btn--${v}`,
+    `ui-btn--${s}`,
+    fullWidth ? "ui-btn--full" : "",
+    loading ? "is-loading" : "",
+    className,
+  ]
+    .filter(Boolean)
+    .join(" ");
+
+  const props = { ...rest, className: classes };
+
+  if (isLink) {
+    props.href = isDisabled ? undefined : href;
+    props["aria-disabled"] = isDisabled || undefined;
+    props.role = props.role || (href ? undefined : "button");
+    props.onClick = isDisabled
+      ? (event) => event.preventDefault()
+      : onClick;
+  } else {
+    props.type = type || "button";
+    props.disabled = isDisabled;
+    props.onClick = onClick;
+  }
+  if (loading) props["aria-busy"] = true;
 
   return (
-    <button
-      className={`${VARIANT[variant] || VARIANT.primary} ${sizeStyle} ${widthStyle} rounded-lg font-semibold transition focus:outline-none focus:ring-2 focus:ring-[#C5612C] ${className}`.trim()}
-      disabled={disabled}
-      {...props}
-    >
-      {loading ? "Loading..." : children}
-    </button>
+    <Tag {...props}>
+      {loading && <span className="ui-btn__spinner" aria-hidden="true" />}
+      {leftIcon && !loading && (
+        <span className="ui-btn__icon" aria-hidden="true">
+          {leftIcon}
+        </span>
+      )}
+      {children != null && <span className="ui-btn__label">{children}</span>}
+      {rightIcon && (
+        <span className="ui-btn__icon" aria-hidden="true">
+          {rightIcon}
+        </span>
+      )}
+    </Tag>
   );
 }
