@@ -1,4 +1,4 @@
-/* src/styles/tokens.css — NEW FILE (re-sent in step 4 with one addition: --color-control-border)
+/* src/styles/tokens.css — MODIFIED FILE (step 5: adds the --color-nav-* tokens and --sidebar-rail-w)
 
    AIM
    Single source of truth for every colour, size, spacing, radius, shadow and
@@ -95,6 +95,17 @@
   --color-neutral-bg: #E2E8F0;
   --color-neutral-text: #334155;
 
+  /* Navigation (sidebar). Deep green in both themes, as in the design sheets.
+     Pairs: --color-nav-text / --color-nav-text-muted on --color-nav-bg;
+     --color-nav-active-text on --color-nav-active-bg. */
+  --color-nav-bg: #14532D;
+  --color-nav-text: #DCFCE7;
+  --color-nav-text-muted: #86EFAC;
+  --color-nav-hover-bg: #166534;
+  --color-nav-active-bg: #15803D;
+  --color-nav-active-text: #FFFFFF;
+  --color-nav-border: #166534;
+
   /* Focus, overlays, skeletons */
   --color-focus: #2563EB;
   --color-overlay: rgba(15, 23, 42, 0.5);
@@ -176,6 +187,17 @@
   --color-neutral-bg: #1F2937;
   --color-neutral-text: #CBD5E1;
 
+  /* Navigation (sidebar). Deep green in both themes, as in the design sheets.
+     Pairs: --color-nav-text / --color-nav-text-muted on --color-nav-bg;
+     --color-nav-active-text on --color-nav-active-bg. */
+  --color-nav-bg: #052E16;
+  --color-nav-text: #DCFCE7;
+  --color-nav-text-muted: #86EFAC;
+  --color-nav-hover-bg: #14532D;
+  --color-nav-active-bg: #166534;
+  --color-nav-active-text: #FFFFFF;
+  --color-nav-border: #14532D;
+
   --color-focus: #60A5FA;
   --color-overlay: rgba(0, 0, 0, 0.65);
   --color-skeleton: #1F2937;
@@ -255,6 +277,17 @@
     --color-neutral-bg: #1F2937;
     --color-neutral-text: #CBD5E1;
 
+    /* Navigation (sidebar). Deep green in both themes, as in the design sheets.
+       Pairs: --color-nav-text / --color-nav-text-muted on --color-nav-bg;
+       --color-nav-active-text on --color-nav-active-bg. */
+    --color-nav-bg: #052E16;
+    --color-nav-text: #DCFCE7;
+    --color-nav-text-muted: #86EFAC;
+    --color-nav-hover-bg: #14532D;
+    --color-nav-active-bg: #166534;
+    --color-nav-active-text: #FFFFFF;
+    --color-nav-border: #14532D;
+
     --color-focus: #60A5FA;
     --color-overlay: rgba(0, 0, 0, 0.65);
     --color-skeleton: #1F2937;
@@ -328,6 +361,7 @@
   --container-max: 75rem;                         /* 1200 */
   --gutter: clamp(1rem, 4vw, 2rem);               /* page side padding: never below 16 */
   --sidebar-w: 16rem;
+  --sidebar-rail-w: 4.5rem;                        /* icon-only sidebar on tablets */
   --topbar-h: 4rem;
   --tabbar-h: 4rem;
   --safe-top: env(safe-area-inset-top, 0px);

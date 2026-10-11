@@ -1,4 +1,4 @@
-/* src/components/ui/Alert.css — NEW FILE
+/* src/components/ui/Alert.css — MODIFIED FILE (step 5: close-button hover is a tint of the alert's own colour)
    Styles for Alert.jsx. Tokens only: no hex values.
    Each type uses a background token with its matching text token (a tested pair). */
 
@@ -51,7 +51,7 @@
 }
 @media (hover: hover) {
   .ui-alert__close:hover {
-    background: var(--color-overlay);
+    background: color-mix(in srgb, currentColor 14%, transparent);
   }
 }
 .ui-alert__close:focus-visible {

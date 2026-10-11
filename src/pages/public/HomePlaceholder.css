@@ -1,0 +1,54 @@
+/* src/pages/public/HomePlaceholder.css — NEW FILE (TEMPORARY, deleted with HomePlaceholder.jsx)
+   Tokens only: no hex values. */
+
+.home-ph {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100dvh;
+  padding: var(--space-6) var(--gutter);
+  background: var(--color-bg);
+  color: var(--color-text);
+}
+
+.home-ph__theme {
+  position: absolute;
+  top: calc(var(--safe-top) + var(--space-4));
+  inset-inline-end: var(--gutter);
+}
+
+.home-ph__card {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-4);
+  width: 100%;
+  max-width: 34rem;
+  padding: var(--space-6);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-md);
+}
+@media (min-width: 768px) {
+  .home-ph__card { padding: var(--space-10); }
+}
+
+.home-ph__title {
+  margin: 0;
+  font-size: var(--text-2xl);
+  line-height: var(--lh-2xl);
+  font-weight: var(--weight-bold);
+  letter-spacing: -0.01em;
+}
+@media (min-width: 768px) {
+  .home-ph__title { font-size: var(--text-3xl); line-height: var(--lh-3xl); }
+}
+
+.home-ph__text {
+  margin: 0;
+  font-size: var(--text-md);
+  line-height: var(--lh-md);
+  color: var(--color-text-muted);
+}

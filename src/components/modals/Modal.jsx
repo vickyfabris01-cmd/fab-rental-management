@@ -1,53 +1,191 @@
-import { useEffect, useRef, useCallback } from "react";
-import { createPortal }                    from "react-dom";
-
-// =============================================================================
-// Modal  ·  Drawer  ·  ConfirmDialog
+// src/components/modals/Modal.jsx — MODIFIED FILE (rebuilt on design tokens; same props as before)
 //
-// All built on a shared portal + focus-trap foundation.
-// =============================================================================
+// AIM
+// The three overlay pieces every dialog in the app is built from:
+//   Modal          a centred dialog (a bottom sheet on phones)
+//   Drawer         a panel that slides in from the right or left
+//   ConfirmDialog  a small "Are you sure?" dialog for risky actions
+//
+// WHAT IS NEW (props are unchanged, so every existing modal keeps working)
+//   - Tab and Shift+Tab stay inside the open dialog (focus trap) and focus goes back to the
+//     button that opened it when it closes.
+//   - Each dialog has its own id for its title (the old one used one fixed id for all).
+//   - Scroll lock counts open dialogs, so a ConfirmDialog opened on top of a Modal no longer
+//     unlocks the page when it closes.
+//   - Colours, corners and shadows come from tokens, so light and dark mode both work.
+//   - On phones a Modal is a bottom sheet: easier to reach with a thumb.
+//
+// MODAL PROPS
+//   isOpen, onClose, title, children, footer
+//   size        "sm"(400) | "md"(560) | "lg"(720) | "xl"(900) | "full"
+//   closable    show the X button and allow Escape / backdrop click (default true)
+//   scrollable  let the body scroll when tall (default true)
+//   Put data-autofocus on an element in the body to choose what gets focus on open.
+//
+// USAGE
+//   <Modal isOpen={open} onClose={close} title="New complaint" size="md"
+//          footer={<><Button variant="secondary" onClick={close}>Cancel</Button><Button>Submit</Button></>}>
+//     <NewComplaintForm />
+//   </Modal>
 
-// ─── Shared: lock body scroll while open ─────────────────────────────────────
+import { useCallback, useEffect, useId, useRef } from "react";
+import { createPortal } from "react-dom";
+import Button from "../ui/Button.jsx";
+import Icon from "../ui/Icon.jsx";
+import "./Modal.css";
+
+// ─── Scroll lock that survives nested dialogs ────────────────────────────────
+let lockCount = 0;
+let previousOverflow = "";
+
 function useLockScroll(active) {
   useEffect(() => {
-    if (!active) return;
-    const prev = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    return () => { document.body.style.overflow = prev; };
+    if (!active) return undefined;
+    if (lockCount === 0) {
+      previousOverflow = document.body.style.overflow;
+      document.body.style.overflow = "hidden";
+    }
+    lockCount += 1;
+    return () => {
+      lockCount -= 1;
+      if (lockCount === 0) document.body.style.overflow = previousOverflow;
+    };
   }, [active]);
 }
 
-// ─── Shared: Escape key close ─────────────────────────────────────────────────
-function useEscClose(active, onClose) {
+// ─── Focus trap: keep Tab inside, restore focus on close ─────────────────────
+const FOCUSABLE =
+  'a[href], button:not([disabled]), input:not([disabled]):not([type="hidden"]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
+
+function useFocusTrap(panelRef, active) {
   useEffect(() => {
-    if (!active) return;
-    const fn = e => { if (e.key === "Escape") onClose?.(); };
-    document.addEventListener("keydown", fn);
-    return () => document.removeEventListener("keydown", fn);
-  }, [active, onClose]);
+    if (!active) return undefined;
+    const panel = panelRef.current;
+    if (!panel) return undefined;
+
+    const opener = document.activeElement;
+
+    // Choose what gets focus: [data-autofocus], else the first field/button in the body,
+    // else the first focusable thing (the close button), else the panel itself.
+    const preferred =
+      panel.querySelector("[data-autofocus]") ||
+      panel.querySelector(
+        `.ui-overlay__body :is(input, select, textarea, button, a[href]):not([disabled])`,
+      ) ||
+      panel.querySelector(FOCUSABLE) ||
+      panel;
+    requestAnimationFrame(() => preferred.focus?.({ preventScroll: true }));
+
+    const onKeyDown = (event) => {
+      if (event.key !== "Tab") return;
+      const items = Array.from(panel.querySelectorAll(FOCUSABLE)).filter(
+        (el) => el.offsetParent !== null,
+      );
+      if (items.length === 0) {
+        event.preventDefault();
+        panel.focus();
+        return;
+      }
+      const first = items[0];
+      const last = items[items.length - 1];
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      }
+    };
+
+    panel.addEventListener("keydown", onKeyDown);
+    return () => {
+      panel.removeEventListener("keydown", onKeyDown);
+      if (opener && typeof opener.focus === "function" && document.contains(opener)) {
+        opener.focus({ preventScroll: true });
+      }
+    };
+  }, [active, panelRef]);
+}
+
+// ─── Layer: portal + backdrop + Escape + scroll lock + focus trap ────────────
+function Layer({
+  isOpen,
+  onClose,
+  closable = true,
+  role = "dialog",
+  labelledBy,
+  layerClass = "",
+  panelClass = "",
+  children,
+}) {
+  const panelRef = useRef(null);
+  const pressStartedOnBackdrop = useRef(false);
+
+  useLockScroll(isOpen);
+  useFocusTrap(panelRef, isOpen);
+
+  useEffect(() => {
+    if (!isOpen || !closable) return undefined;
+    const onKey = (event) => {
+      if (event.key === "Escape") {
+        event.stopPropagation();
+        onClose?.();
+      }
+    };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [isOpen, closable, onClose]);
+
+  // Close on backdrop click only when the press also STARTED on the backdrop, so dragging
+  // a text selection out of an input does not close the dialog by accident.
+  const onBackdropDown = useCallback((event) => {
+    pressStartedOnBackdrop.current = event.target === event.currentTarget;
+  }, []);
+  const onBackdropClick = useCallback(
+    (event) => {
+      if (closable && pressStartedOnBackdrop.current && event.target === event.currentTarget) {
+        onClose?.();
+      }
+      pressStartedOnBackdrop.current = false;
+    },
+    [closable, onClose],
+  );
+
+  if (!isOpen || typeof document === "undefined") return null;
+
+  return createPortal(
+    <div
+      className={`ui-overlay ${layerClass}`.trim()}
+      onMouseDown={onBackdropDown}
+      onClick={onBackdropClick}
+    >
+      <div
+        ref={panelRef}
+        className={panelClass}
+        role={role}
+        aria-modal="true"
+        aria-labelledby={labelledBy}
+        tabIndex={-1}
+      >
+        {children}
+      </div>
+    </div>,
+    document.body,
+  );
+}
+
+function CloseButton({ onClick }) {
+  return (
+    <button type="button" className="ui-overlay__close" onClick={onClick} aria-label="Close">
+      <Icon name="x" size={20} />
+    </button>
+  );
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Modal
-//
-// Props:
-//   isOpen     — boolean
-//   onClose    — fn
-//   title      — string
-//   children   — ReactNode — modal body
-//   footer     — ReactNode — optional footer (action buttons)
-//   size       — "sm"(400) | "md"(560) | "lg"(720) | "xl"(900) | "full"
-//   closable   — boolean — show X button and allow backdrop click (default true)
-//   scrollable — boolean — make body scroll if tall (default true)
-//
-// Usage:
-//   <Modal isOpen={open} onClose={close} title="New Complaint" size="md"
-//          footer={<><Button variant="secondary" onClick={close}>Cancel</Button><Button variant="primary">Submit</Button></>}>
-//     <NewComplaintForm />
-//   </Modal>
 // ─────────────────────────────────────────────────────────────────────────────
-
-const SIZES = { sm: 400, md: 560, lg: 720, xl: 900, full: "100%" };
+const SIZES = ["sm", "md", "lg", "xl", "full"];
 
 export function Modal({
   isOpen,
@@ -55,279 +193,121 @@ export function Modal({
   title,
   children,
   footer,
-  size       = "md",
-  closable   = true,
+  size = "md",
+  closable = true,
   scrollable = true,
 }) {
-  const dialogRef = useRef(null);
-  useLockScroll(isOpen);
-  useEscClose(isOpen && closable, onClose);
+  const titleId = useId();
+  const s = SIZES.includes(size) ? size : "md";
 
-  // Focus first focusable element on open
-  useEffect(() => {
-    if (!isOpen || !dialogRef.current) return;
-    const focusable = dialogRef.current.querySelectorAll(
-      'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
-    );
-    const first = focusable[0];
-    requestAnimationFrame(() => first?.focus());
-  }, [isOpen]);
-
-  if (!isOpen || typeof document === "undefined") return null;
-
-  const maxW = SIZES[size] ?? 560;
-
-  return createPortal(
-    <div
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="modal-title"
-      style={{
-        position:   "fixed", inset: 0, zIndex: 1000,
-        display:    "flex", alignItems: "center", justifyContent: "center",
-        padding:    16,
-        background: "rgba(26,20,18,0.55)",
-        backdropFilter: "blur(4px)",
-        animation: "modal-fade 0.18s ease both",
-      }}
-      onClick={e => { if (closable && e.target === e.currentTarget) onClose?.(); }}
+  return (
+    <Layer
+      isOpen={isOpen}
+      onClose={onClose}
+      closable={closable}
+      labelledBy={title ? titleId : undefined}
+      layerClass="ui-overlay--center"
+      panelClass={`ui-modal ui-modal--${s}`}
     >
-      <style>{`
-        @keyframes modal-fade { from{opacity:0} to{opacity:1} }
-        @keyframes modal-slide { from{opacity:0;transform:translateY(16px) scale(0.98)} to{opacity:1;transform:translateY(0) scale(1)} }
-      `}</style>
-
-      <div
-        ref={dialogRef}
-        style={{
-          width:        "100%",
-          maxWidth:     maxW,
-          maxHeight:    "90dvh",
-          background:   "#fff",
-          borderRadius: 20,
-          boxShadow:    "0 24px 64px rgba(0,0,0,0.20)",
-          display:      "flex",
-          flexDirection:"column",
-          animation:    "modal-slide 0.22s cubic-bezier(.22,.68,0,1.2) both",
-          overflow:     "hidden",
-        }}
-      >
-        {/* Header */}
-        {(title || closable) && (
-          <div style={{
-            display:     "flex", alignItems: "center", justifyContent: "space-between",
-            padding:     "20px 24px 18px",
-            borderBottom:"1px solid #EDE4D8",
-            flexShrink:  0,
-          }}>
-            {title && (
-              <h2 id="modal-title" style={{
-                fontFamily: "'Playfair Display', serif",
-                fontWeight: 900, fontSize: 20,
-                color: "#1A1412", margin: 0,
-              }}>
-                {title}
-              </h2>
-            )}
-            {closable && (
-              <button
-                onClick={onClose}
-                aria-label="Close"
-                style={{
-                  background: "none", border: "none", cursor: "pointer",
-                  padding: 6, borderRadius: 8, color: "#8B7355",
-                  display: "flex", alignItems: "center", justifyContent: "center",
-                  transition: "all 0.15s", marginLeft: "auto",
-                }}
-                onMouseOver={e => { e.currentTarget.style.background = "#F5EDE0"; e.currentTarget.style.color = "#1A1412"; }}
-                onMouseOut={e  => { e.currentTarget.style.background = "none";     e.currentTarget.style.color = "#8B7355"; }}
-              >
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round">
-                  <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
-                </svg>
-              </button>
-            )}
-          </div>
-        )}
-
-        {/* Body */}
-        <div style={{
-          flex:       1,
-          overflowY:  scrollable ? "auto" : "visible",
-          padding:    "20px 24px",
-        }}>
-          {children}
+      {(title || closable) && (
+        <div className="ui-overlay__header">
+          {title && (
+            <h2 id={titleId} className="ui-overlay__title">
+              {title}
+            </h2>
+          )}
+          {closable && <CloseButton onClick={onClose} />}
         </div>
+      )}
 
-        {/* Footer */}
-        {footer && (
-          <div style={{
-            padding:    "16px 24px",
-            borderTop:  "1px solid #EDE4D8",
-            display:    "flex", gap: 10, justifyContent: "flex-end",
-            flexShrink: 0,
-            flexWrap:   "wrap",
-          }}>
-            {footer}
-          </div>
-        )}
-      </div>
-    </div>,
-    document.body
+      <div className={`ui-overlay__body${scrollable ? " is-scrollable" : ""}`}>{children}</div>
+
+      {footer && <div className="ui-overlay__footer">{footer}</div>}
+    </Layer>
   );
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Drawer
-//
-// Slide-in panel from the right (or left) side.
-//
-// Props:
-//   isOpen  — boolean
-//   onClose — fn
-//   title   — string
-//   side    — "right" | "left" (default "right")
-//   width   — number px (default 400)
-//   children, footer — same as Modal
+// Drawer — slides in from the right (default) or left.
+//   width   maximum width in pixels (default 400); never wider than the screen
 // ─────────────────────────────────────────────────────────────────────────────
 export function Drawer({ isOpen, onClose, title, children, footer, side = "right", width = 400 }) {
-  useLockScroll(isOpen);
-  useEscClose(isOpen, onClose);
+  const titleId = useId();
+  const edge = side === "left" ? "left" : "right";
 
-  if (!isOpen || typeof document === "undefined") return null;
-
-  const fromX = side === "right" ? "100%" : "-100%";
-
-  return createPortal(
-    <div
-      style={{ position: "fixed", inset: 0, zIndex: 1000, display: "flex", justifyContent: side === "right" ? "flex-end" : "flex-start" }}
+  return (
+    <Layer
+      isOpen={isOpen}
+      onClose={onClose}
+      labelledBy={title ? titleId : undefined}
+      layerClass={`ui-overlay--${edge}`}
+      panelClass={`ui-drawer ui-drawer--${edge}`}
     >
-      <style>{`
-        @keyframes drawer-in-r { from{transform:translateX(100%)} to{transform:translateX(0)} }
-        @keyframes drawer-in-l { from{transform:translateX(-100%)} to{transform:translateX(0)} }
-        @keyframes drawer-bg   { from{opacity:0} to{opacity:1} }
-      `}</style>
-
-      {/* Backdrop */}
-      <div
-        onClick={onClose}
-        style={{ position: "absolute", inset: 0, background: "rgba(26,20,18,0.45)", backdropFilter: "blur(3px)", animation: "drawer-bg 0.2s ease" }}
-      />
-
-      {/* Panel */}
-      <div style={{
-        position:     "relative",
-        width:        Math.min(width, window.innerWidth - 32),
-        height:       "100%",
-        background:   "#fff",
-        display:      "flex", flexDirection: "column",
-        boxShadow:    side === "right" ? "-8px 0 32px rgba(0,0,0,0.15)" : "8px 0 32px rgba(0,0,0,0.15)",
-        animation:    side === "right" ? "drawer-in-r 0.25s cubic-bezier(.22,.68,0,1.2)" : "drawer-in-l 0.25s cubic-bezier(.22,.68,0,1.2)",
-      }}>
-        {/* Header */}
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "20px 24px 18px", borderBottom: "1px solid #EDE4D8", flexShrink: 0 }}>
-          {title && <h2 style={{ fontFamily: "'Playfair Display', serif", fontWeight: 900, fontSize: 19, color: "#1A1412", margin: 0 }}>{title}</h2>}
-          <button onClick={onClose} aria-label="Close" style={{ background: "none", border: "none", cursor: "pointer", padding: 6, borderRadius: 8, color: "#8B7355", display: "flex", transition: "all 0.15s", marginLeft: "auto" }}
-            onMouseOver={e => { e.currentTarget.style.background = "#F5EDE0"; e.currentTarget.style.color = "#1A1412"; }}
-            onMouseOut={e  => { e.currentTarget.style.background = "none";     e.currentTarget.style.color = "#8B7355"; }}
-          >
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-          </button>
+      <div className="ui-drawer__inner" style={{ "--drawer-width": `${width}px` }}>
+        <div className="ui-overlay__header">
+          {title && (
+            <h2 id={titleId} className="ui-overlay__title">
+              {title}
+            </h2>
+          )}
+          <CloseButton onClick={onClose} />
         </div>
-        {/* Body */}
-        <div style={{ flex: 1, overflowY: "auto", padding: "20px 24px" }}>{children}</div>
-        {/* Footer */}
-        {footer && <div style={{ padding: "16px 24px", borderTop: "1px solid #EDE4D8", display: "flex", gap: 10, justifyContent: "flex-end", flexShrink: 0 }}>{footer}</div>}
+        <div className="ui-overlay__body is-scrollable">{children}</div>
+        {footer && <div className="ui-overlay__footer">{footer}</div>}
       </div>
-    </div>,
-    document.body
+    </Layer>
   );
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// ConfirmDialog
-//
-// Lightweight destructive-action confirmation dialog.
-//
-// Props:
-//   isOpen       — boolean
-//   title        — string (default "Are you sure?")
-//   message      — string | ReactNode
-//   confirmLabel — string (default "Confirm")
-//   cancelLabel  — string (default "Cancel")
-//   variant      — "danger" | "warning" | "info" (default "danger")
-//   onConfirm    — fn
-//   onCancel     — fn
-//   loading      — boolean — disables confirm button while action runs
+// ConfirmDialog — lightweight confirmation for risky actions.
+//   title, message, confirmLabel, cancelLabel, onConfirm, onCancel
+//   variant   "danger" (default) | "warning" | "info"
+//   loading   disables the confirm button and shows a spinner while the action runs
 // ─────────────────────────────────────────────────────────────────────────────
+const CONFIRM_ICON = { danger: "warning", warning: "warning", info: "info" };
+
 export function ConfirmDialog({
   isOpen,
-  title        = "Are you sure?",
+  title = "Are you sure?",
   message,
   confirmLabel = "Confirm",
-  cancelLabel  = "Cancel",
-  variant      = "danger",
+  cancelLabel = "Cancel",
+  variant = "danger",
   onConfirm,
   onCancel,
-  loading      = false,
+  loading = false,
 }) {
-  useEscClose(isOpen, onCancel);
-  useLockScroll(isOpen);
+  const titleId = useId();
+  const v = CONFIRM_ICON[variant] ? variant : "danger";
 
-  if (!isOpen || typeof document === "undefined") return null;
-
-  const COLORS = {
-    danger:  { icon: "#DC2626", iconBg: "#FEF2F2", btn: "#EF4444", btnHover: "#DC2626" },
-    warning: { icon: "#D97706", iconBg: "#FFFBEB", btn: "#F59E0B", btnHover: "#D97706" },
-    info:    { icon: "#2563EB", iconBg: "#EFF6FF", btn: "#2563EB", btnHover: "#1D4ED8" },
-  };
-  const c = COLORS[variant] ?? COLORS.danger;
-
-  const ICON_PATHS = {
-    danger:  "M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z",
-    warning: "M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z",
-    info:    "M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z",
-  };
-
-  return createPortal(
-    <div
-      style={{ position: "fixed", inset: 0, zIndex: 1100, display: "flex", alignItems: "center", justifyContent: "center", padding: 16, background: "rgba(26,20,18,0.60)", backdropFilter: "blur(4px)", animation: "modal-fade 0.15s ease" }}
-      onClick={e => { if (e.target === e.currentTarget) onCancel?.(); }}
+  return (
+    <Layer
+      isOpen={isOpen}
+      onClose={onCancel}
+      role="alertdialog"
+      labelledBy={titleId}
+      layerClass="ui-overlay--center ui-overlay--top"
+      panelClass="ui-modal ui-modal--confirm"
     >
-      <style>{`@keyframes modal-fade{from{opacity:0}to{opacity:1}} @keyframes modal-slide{from{opacity:0;transform:translateY(12px) scale(0.97)}to{opacity:1;transform:translateY(0) scale(1)}}`}</style>
-      <div style={{ width: "100%", maxWidth: 420, background: "#fff", borderRadius: 20, boxShadow: "0 24px 64px rgba(0,0,0,0.20)", padding: "28px 28px 24px", animation: "modal-slide 0.2s cubic-bezier(.22,.68,0,1.2)" }}>
-        {/* Icon */}
-        <div style={{ width: 48, height: 48, borderRadius: 14, background: c.iconBg, display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 16, color: c.icon }}>
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-            <path d={ICON_PATHS[variant] ?? ICON_PATHS.danger}/>
-          </svg>
-        </div>
-        {/* Text */}
-        <h3 style={{ fontFamily: "'Playfair Display', serif", fontWeight: 900, fontSize: 19, color: "#1A1412", margin: "0 0 8px" }}>{title}</h3>
-        {message && <p style={{ fontSize: 14, color: "#5C4A3A", lineHeight: 1.6, margin: "0 0 24px" }}>{message}</p>}
-        {/* Actions */}
-        <div style={{ display: "flex", gap: 10, justifyContent: "flex-end" }}>
-          <button onClick={onCancel} style={{ padding: "10px 20px", borderRadius: 999, border: "1.5px solid #E8DDD4", background: "#fff", color: "#5C4A3A", fontSize: 14, fontWeight: 600, cursor: "pointer", transition: "all 0.15s", fontFamily: "'DM Sans', system-ui" }}
-            onMouseOver={e => { e.currentTarget.style.borderColor = "#C5612C"; e.currentTarget.style.color = "#C5612C"; }}
-            onMouseOut={e  => { e.currentTarget.style.borderColor = "#E8DDD4"; e.currentTarget.style.color = "#5C4A3A"; }}
-          >
+      <div className="ui-confirm">
+        <span className={`ui-confirm__icon ui-confirm__icon--${v}`}>
+          <Icon name={CONFIRM_ICON[v]} size={24} />
+        </span>
+        <h2 id={titleId} className="ui-confirm__title">
+          {title}
+        </h2>
+        {message && <div className="ui-confirm__message">{message}</div>}
+        <div className="ui-confirm__actions">
+          <Button variant="secondary" onClick={onCancel} data-autofocus>
             {cancelLabel}
-          </button>
-          <button onClick={onConfirm} disabled={loading} style={{ padding: "10px 20px", borderRadius: 999, border: "none", background: c.btn, color: "#fff", fontSize: 14, fontWeight: 600, cursor: loading ? "not-allowed" : "pointer", opacity: loading ? 0.7 : 1, transition: "background 0.15s", fontFamily: "'DM Sans', system-ui", display: "flex", alignItems: "center", gap: 6 }}
-            onMouseOver={e => { if (!loading) e.currentTarget.style.background = c.btnHover; }}
-            onMouseOut={e  => { e.currentTarget.style.background = c.btn; }}
-          >
-            {loading && (
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" style={{ animation: "modal-fade 0.3s infinite alternate" }}>
-                <circle cx="12" cy="12" r="10" strokeOpacity="0.25"/><path d="M12 2a10 10 0 0110 10" strokeLinecap="round" style={{ animation: "spin-cd 0.7s linear infinite" }}/>
-              </svg>
-            )}
+          </Button>
+          <Button variant={v === "danger" ? "danger" : "primary"} onClick={onConfirm} loading={loading}>
             {confirmLabel}
-          </button>
+          </Button>
         </div>
       </div>
-    </div>,
-    document.body
+    </Layer>
   );
 }
 

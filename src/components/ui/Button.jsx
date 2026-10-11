@@ -1,4 +1,4 @@
-// src/components/ui/Button.jsx — MODIFIED FILE (rebuilt on design tokens; old props still work)
+// src/components/ui/Button.jsx — MODIFIED FILE (rebuilt on design tokens; old props still work; step 5: works with React Router <Link>)
 //
 // AIM
 // The one button used everywhere. Colours, sizes and states all come from tokens.css, so a
@@ -12,6 +12,7 @@
 //   loading    shows a spinner, disables the button, keeps its width
 //   leftIcon / rightIcon   optional nodes shown beside the label
 //   as, href   render as a link:  <Button as="a" href="/x">  (or just pass href)
+//               with React Router:  <Button as={Link} to="/x">
 //   ...rest    onClick, type, disabled, style, aria-*, target, rel, etc.
 
 import "./Button.css";
@@ -57,7 +58,8 @@ export default function Button({
   if (isLink) {
     props.href = isDisabled ? undefined : href;
     props["aria-disabled"] = isDisabled || undefined;
-    props.role = props.role || (href ? undefined : "button");
+    // A real link (href, or <Link to>) keeps its link role; only a bare element needs role="button"
+    props.role = props.role || (href || rest.to ? undefined : "button");
     props.onClick = isDisabled
       ? (event) => event.preventDefault()
       : onClick;
