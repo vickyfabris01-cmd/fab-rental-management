@@ -6,14 +6,15 @@
 //
 //   RequireAuth         signed in, else /login?next=…
 //   RequireSuperAdmin   super admin, else the 404 page
-//   RequireMember       loads the business from :slug, checks the person belongs to it (or is
-//                       super admin) and that the business is active; fills BusinessContext
+//   RequireMember       loads the business from :slug and checks the person is an owner or
+//                       manager OF THAT BUSINESS and that it is active; fills BusinessContext.
+//                       The super admin gets no special entry: a business dashboard is a no-go
+//                       zone for them (they see business data from /admin instead) and is sent
+//                       to /admin/businesses unless they truly are a member of it.
 //   RoleRoute           ONE path, a different screen per role:
 //                         <RoleRoute screens={{ owner: <A/>, manager: <B/> }} />
 
 import { Navigate, Outlet, useLocation, useParams } from "react-router-dom";
-import { useEffect, useState } from "react";
-import { supabase } from "../config/supabase.js";
 import Spinner from "../components/ui/Spinner.jsx";
 import { useSession } from "../store/sessionStore.js";
 import { useBusinessStore } from "../store/businessStore.js";
@@ -58,32 +59,15 @@ export function RequireMember() {
   const profile = useSession((s) => s.profile);
   const memberships = useBusinessStore((s) => s.memberships);
   const loadedFor = useBusinessStore((s) => s.loadedFor);
-  const [admin, setAdmin] = useState({ slug: null, business: null });
-
-  const isAdmin = profile?.role === "super_admin";
-  const own = memberships.find((m) => m.business.slug === slug) || null;
-
-  // Super admin opening a business they do not belong to: load it directly.
-  useEffect(() => {
-    if (!isAdmin || own || !supabase) return;
-    let alive = true;
-    supabase.from("businesses").select("*").eq("slug", slug).maybeSingle().then(({ data }) => {
-      if (alive) setAdmin({ slug, business: data || false });
-    });
-    return () => { alive = false; };
-  }, [isAdmin, own, slug]);
 
   if (!user || !profile || loadedFor !== user.id) return <FullPageLoader />;
 
-  let business = own?.business || null;
-  let role = own?.role || null;
-  if (!business && isAdmin) {
-    if (admin.slug !== slug) return <FullPageLoader />;
-    business = admin.business || null;
-    role = "super_admin";
-  }
+  const own = memberships.find((m) => m.business.slug === slug) || null;
 
-  if (!business) {
+  // Super admin who is not a member of this business: send to the admin area.
+  if (!own && profile.role === "super_admin") return <Navigate to="/admin/businesses" replace />;
+
+  if (!own) {
     return (
       <Card style={{ margin: "var(--space-8) auto", maxWidth: 520 }}>
         <EmptyState
@@ -96,7 +80,8 @@ export function RequireMember() {
     );
   }
 
-  if (business.status !== "active" && role !== "super_admin") {
+  const { business, role } = own;
+  if (business.status !== "active") {
     return <Navigate to={`/start/status?business=${business.slug}`} replace />;
   }
 
@@ -111,7 +96,7 @@ export function RequireMember() {
 export function RoleRoute({ screens = {}, fallback = null }) {
   const ctx = useBusinessContext();
   const role = ctx?.role;
-  const screen = screens[role] ?? (role === "super_admin" ? screens.owner : null) ?? fallback;
+  const screen = screens[role] ?? fallback;
   if (screen) return screen;
   return (
     <Card style={{ margin: "var(--space-8) auto", maxWidth: 520 }}>

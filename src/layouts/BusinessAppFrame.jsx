@@ -40,7 +40,7 @@ export function ModuleScreen() {
       <EmptyState icon="search" title="Page not found" description="This page does not exist in this business."
         action={<Button as={Link} to={base}>Go to the dashboard</Button>} /></Card>;
   }
-  if (role !== "super_admin" && !item.roles.includes(role)) {
+  if (!item.roles.includes(role)) {
     return <Card style={{ margin: "var(--space-8) auto", maxWidth: 520 }}>
       <EmptyState icon="user" title="Owners only" description="This screen is only available to the business owner."
         action={<Button as={Link} to={base}>Go to the dashboard</Button>} /></Card>;

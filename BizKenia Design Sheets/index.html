@@ -1,0 +1,145 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>GreenHub Design Sheets</title>
+<style>
+/* Layout: narrow header, then one full-width sheet per section with a short note beside the title. */
+:root{
+  --bg:#f6f8f6; --surface:#ffffff; --fg:#14201a; --muted:#5b6a62; --line:#dbe3dd;
+  --accent:#16a34a; --accent-fg:#ffffff; --tag-bg:#e3f4e8; --tag-fg:#14532d; --warn-bg:#fff6e0; --warn-fg:#7a5200;
+  --font-body:"Inter","Segoe UI",system-ui,sans-serif;
+  --font-head:"Manrope","Segoe UI",system-ui,sans-serif;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0b1410; --surface:#111d17; --fg:#e7f0ea; --muted:#9fb1a6; --line:#223229;
+  --accent:#22c55e; --accent-fg:#06210f; --tag-bg:#12301f; --tag-fg:#86efac; --warn-bg:#2a2108; --warn-fg:#f3cf7a; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0b1410; --surface:#111d17; --fg:#e7f0ea; --muted:#9fb1a6; --line:#223229;
+  --accent:#22c55e; --accent-fg:#06210f; --tag-bg:#12301f; --tag-fg:#86efac; --warn-bg:#2a2108; --warn-fg:#f3cf7a; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--fg);font-family:var(--font-body);line-height:1.55;padding-inline:16px;padding-block:28px 56px}
+main{max-width:1180px;margin-inline:auto;display:flex;flex-direction:column;gap:36px}
+h1,h2{font-family:var(--font-head);text-wrap:balance;margin:0;letter-spacing:-.01em}
+h1{font-size:clamp(1.6rem,4vw,2.2rem)}
+h2{font-size:1.2rem}
+.num{color:var(--muted);font-weight:600;margin-inline-end:6px}
+.lede{color:var(--muted);max-width:68ch;margin:0}
+header .lede{margin-top:8px}
+.nav{display:flex;flex-wrap:wrap;gap:8px;margin-top:16px}
+.nav a{border:1px solid var(--line);background:var(--surface);color:var(--fg);padding:6px 12px;border-radius:999px;font-size:.85rem;text-decoration:none}
+.nav a:hover,.nav a:focus-visible{border-color:var(--accent);outline:none}
+section{display:flex;flex-direction:column;gap:12px;scroll-margin-top:16px}
+.head{display:flex;flex-wrap:wrap;gap:6px 16px;align-items:baseline;justify-content:space-between}
+.meta{display:flex;align-items:center;gap:12px}
+.tag{background:var(--tag-bg);color:var(--tag-fg);border-radius:999px;padding:2px 10px;font-size:.78rem;font-weight:600;letter-spacing:.02em}
+.open{color:var(--accent);font-size:.85rem;text-decoration:none;font-weight:600}
+.open:hover{text-decoration:underline}
+.sheet{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:6px;overflow:hidden}
+.sheet img{display:block;width:100%;height:auto;border-radius:6px}
+.flag{background:var(--warn-bg);color:var(--warn-fg);border-radius:10px;padding:14px 18px}
+.flag h2{font-size:1rem;margin-bottom:6px}
+.flag ul{margin:0;padding-left:1.1rem;display:flex;flex-direction:column;gap:4px;font-size:.92rem}
+</style>
+
+<main>
+  <header>
+    <h1>GreenHub Design Sheets</h1>
+    <p class="lede">Reference designs for the rebuild. Each sheet shows mobile, tablet and desktop, in light and dark. The tag on each sheet is the build phase that uses it. Anything the sheets do not show is built around the same flow and components.</p>
+    <nav class="nav" aria-label="Sheets"><a href="#design-system">Sheet 1 · Design system</a><a href="#public">Sheet 2 · Public website</a><a href="#auth">Sheet 3 · Authentication and account</a><a href="#onboarding">Sheet 4 · Business onboarding</a><a href="#dashboard">Sheet 5 · Rental: owner and manager</a><a href="#resident-worker">Sheet 6A · Resident and worker portals</a><a href="#resident-manager-views">Sheet 6B · Resident portal and manager views</a><a href="#operations">Sheet 7 · Business management and operations</a><a href="#notifications">Sheet 8 · Notifications and messaging</a><a href="#agriculture">Sheet 9 · Agriculture module</a><a href="#shopping">Sheet 10 · Shopping module</a><a href="#super-admin">Sheet 11 · Super admin</a></nav>
+  </header>
+
+  <section id="design-system">
+    <div class="head"><h2><span class="num">Sheet 1</span> Design system</h2><div class="meta"><span class="tag">Phase 1</span><a class="open" href="design-system.png" target="_blank" rel="noopener">Open full size</a></div></div>
+    <p class="lede">Colour tokens (light and dark), type scale, buttons in four states and three sizes, form controls, cards, tables, badges, toasts, navigation, icons. Already built in steps 1 to 5.</p>
+    <div class="sheet"><img src="design-system.png" alt="Sheet 1: Design system. Colour tokens (light and dark), type scale, buttons in four states and three sizes, form controls, cards, tables, badges, toasts, navigation, icons. Already built in steps 1 to 5." loading="lazy"></div>
+  </section>
+
+  <section id="public">
+    <div class="head"><h2><span class="num">Sheet 2</span> Public website</h2><div class="meta"><span class="tag">Phase 1</span><a class="open" href="public.png" target="_blank" rel="noopener">Open full size</a></div></div>
+    <p class="lede">Home, Explore with filters, business page (rental), Pricing, and static pages including 404.</p>
+    <div class="sheet"><img src="public.png" alt="Sheet 2: Public website. Home, Explore with filters, business page (rental), Pricing, and static pages including 404." loading="lazy"></div>
+  </section>
+
+  <section id="auth">
+    <div class="head"><h2><span class="num">Sheet 3</span> Authentication and account</h2><div class="meta"><span class="tag">Phase 1</span><a class="open" href="auth.png" target="_blank" rel="noopener">Open full size</a></div></div>
+    <p class="lede">Login, sign up, email confirmation, forgot and reset password, reset success, My account, My businesses.</p>
+    <div class="sheet"><img src="auth.png" alt="Sheet 3: Authentication and account. Login, sign up, email confirmation, forgot and reset password, reset success, My account, My businesses." loading="lazy"></div>
+  </section>
+
+  <section id="onboarding">
+    <div class="head"><h2><span class="num">Sheet 4</span> Business onboarding</h2><div class="meta"><span class="tag">Phase 1</span><a class="open" href="onboarding.png" target="_blank" rel="noopener">Open full size</a></div></div>
+    <p class="lede">Choose type, business details, subscription payment, approval wait, rejection, getting-started checklist.</p>
+    <div class="sheet"><img src="onboarding.png" alt="Sheet 4: Business onboarding. Choose type, business details, subscription payment, approval wait, rejection, getting-started checklist." loading="lazy"></div>
+  </section>
+
+  <section id="dashboard">
+    <div class="head"><h2><span class="num">Sheet 5</span> Rental: owner and manager</h2><div class="meta"><span class="tag">Phase 2</span><a class="open" href="dashboard.png" target="_blank" rel="noopener">Open full size</a></div></div>
+    <p class="lede">Dashboard, Properties, Rental requests, Residents, Billing and payments.</p>
+    <div class="sheet"><img src="dashboard.png" alt="Sheet 5: Rental: owner and manager. Dashboard, Properties, Rental requests, Residents, Billing and payments." loading="lazy"></div>
+  </section>
+
+  <section id="resident-worker">
+    <div class="head"><h2><span class="num">Sheet 6A</span> Resident and worker portals</h2><div class="meta"><span class="tag">Phase 3</span><a class="open" href="resident-worker.png" target="_blank" rel="noopener">Open full size</a></div></div>
+    <p class="lede">Resident dashboard, My room, Billing and payments, Complaints, Transfer request, Notifications, Worker portal.</p>
+    <div class="sheet"><img src="resident-worker.png" alt="Sheet 6A: Resident and worker portals. Resident dashboard, My room, Billing and payments, Complaints, Transfer request, Notifications, Worker portal." loading="lazy"></div>
+  </section>
+
+  <section id="resident-manager-views">
+    <div class="head"><h2><span class="num">Sheet 6B</span> Resident portal and manager views</h2><div class="meta"><span class="tag">Phase 3</span><a class="open" href="resident-manager-views.png" target="_blank" rel="noopener">Open full size</a></div></div>
+    <p class="lede">Resident dashboard, Room details, Billing, Complaints and support, Worker attendance and payroll. Includes manager-side tables for rooms, complaints and payroll.</p>
+    <div class="sheet"><img src="resident-manager-views.png" alt="Sheet 6B: Resident portal and manager views. Resident dashboard, Room details, Billing, Complaints and support, Worker attendance and payroll. Includes manager-side tables for rooms, complaints and payroll." loading="lazy"></div>
+  </section>
+
+  <section id="operations">
+    <div class="head"><h2><span class="num">Sheet 7</span> Business management and operations</h2><div class="meta"><span class="tag">Phase 2 and 4</span><a class="open" href="business-operations.png" target="_blank" rel="noopener">Open full size</a></div></div>
+    <p class="lede">Generic business dashboard, Assets and inventory, Bookings and reservations, Payments and invoices, Reports and analytics. For rental, assets are rooms and bookings are rental requests and tenancies.</p>
+    <div class="sheet"><img src="business-operations.png" alt="Sheet 7: Business management and operations. Generic business dashboard, Assets and inventory, Bookings and reservations, Payments and invoices, Reports and analytics. For rental, assets are rooms and bookings are rental requests and tenancies." loading="lazy"></div>
+  </section>
+
+  <section id="notifications">
+    <div class="head"><h2><span class="num">Sheet 8</span> Notifications and messaging</h2><div class="meta"><span class="tag">Phase 3</span><a class="open" href="notifications-messaging.png" target="_blank" rel="noopener">Open full size</a></div></div>
+    <p class="lede">Notifications, Messaging, Announcements, Support and helpdesk, Alerts and in-app messages.</p>
+    <div class="sheet"><img src="notifications-messaging.png" alt="Sheet 8: Notifications and messaging. Notifications, Messaging, Announcements, Support and helpdesk, Alerts and in-app messages." loading="lazy"></div>
+  </section>
+
+  <section id="agriculture">
+    <div class="head"><h2><span class="num">Sheet 9</span> Agriculture module</h2><div class="meta"><span class="tag">Phase 4</span><a class="open" href="agriculture.png" target="_blank" rel="noopener">Open full size</a></div></div>
+    <p class="lede">Farm dashboard, Crop management, Fields and land (map), Inventory and supplies, Livestock and analytics, Settings and profile.</p>
+    <div class="sheet"><img src="agriculture.png" alt="Sheet 9: Agriculture module. Farm dashboard, Crop management, Fields and land (map), Inventory and supplies, Livestock and analytics, Settings and profile." loading="lazy"></div>
+  </section>
+
+  <section id="shopping">
+    <div class="head"><h2><span class="num">Sheet 10</span> Shopping module</h2><div class="meta"><span class="tag">Phase 5</span><a class="open" href="shopping.png" target="_blank" rel="noopener">Open full size</a></div></div>
+    <p class="lede">Shop home and browse, Product details, Cart, Checkout and payment, Orders and tracking, Wishlist, Support and help.</p>
+    <div class="sheet"><img src="shopping.png" alt="Sheet 10: Shopping module. Shop home and browse, Product details, Cart, Checkout and payment, Orders and tracking, Wishlist, Support and help." loading="lazy"></div>
+  </section>
+
+  <section id="super-admin">
+    <div class="head"><h2><span class="num">Sheet 11</span> Super admin</h2><div class="meta"><span class="tag">Phase 1 and 5</span><a class="open" href="super-admin.png" target="_blank" rel="noopener">Open full size</a></div></div>
+    <p class="lede">Platform dashboard, Business management, User management, Transactions and payments, System settings, Reports and analytics.</p>
+    <div class="sheet"><img src="super-admin.png" alt="Sheet 11: Super admin. Platform dashboard, Business management, User management, Transactions and payments, System settings, Reports and analytics." loading="lazy"></div>
+  </section>
+
+  <section class="flag">
+    <h2>Differences from the agreed plan, to settle before building</h2>
+    <ul>
+      <li>Subscription page offers "M-Pesa" and "Card". The plan is M-Pesa only for now.</li>
+      <li>Business cards, the business page and the product page show star ratings and a Reviews tab. Reviews are not in the plan and will be left out.</li>
+      <li>Onboarding shows prices as "per month" for each type. Pricing and billing period are set by the super admin, so these are placeholders.</li>
+      <li>System settings (sheet 11) show a "Default commission (%)" field. The plan charges a subscription, not a commission. The field will be stored and shown, but nothing is charged from it until you decide.</li>
+      <li>Messaging (sheet 8) shows one-to-one chat. It was not in the plan. It is scheduled in Phase 3 as simple message threads between a resident or worker and the manager.</li>
+      <li>Sheet 7 uses equipment examples (pickup truck, power tiller, generator). For rental, assets become rooms and bookings become rental requests and tenancies.</li>
+      <li>Sheet 11 shows maintenance mode and "2FA required" switches. Maintenance mode is built. Two-factor sign-in is not planned; the switch will be hidden until it is.</li>
+      <li>The dark desktop Properties screen on sheet 5 is titled "Residents". A labelling slip to fix in the final image.</li>
+    </ul>
+  </section>
+
+  <section class="flag">
+    <h2>Notes on the numbering</h2>
+    <ul>
+      <li>Two sheets are labelled 06/10. They are kept here as 6A and 6B. The super admin sheet is labelled 11/10.</li>
+      <li>Sheet 6B mixes resident screens with manager tables (rooms, complaints, payroll). Those manager tables are built in Phase 3 beside the resident screens they match.</li>
+      <li>Sheet 10 has two sections numbered 9 (both Support and Help).</li>
+    </ul>
+  </section>
+</main>
+
+</body></html>

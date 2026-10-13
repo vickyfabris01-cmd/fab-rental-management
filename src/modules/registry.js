@@ -42,6 +42,5 @@ export function listModules() {
 export function navFor(type, role) {
   const mod = getModule(type);
   if (!mod) return [];
-  return mod.nav.filter((item) => role === "super_admin" || item.roles.includes(role));
+  return mod.nav.filter((item) => item.roles.includes(role));
 }
-

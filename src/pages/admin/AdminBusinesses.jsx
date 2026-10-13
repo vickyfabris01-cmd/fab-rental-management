@@ -124,7 +124,6 @@ function Detail({ id }) {
         {b.status === "active" && <Button variant="danger" onClick={() => open("suspend")}>Suspend</Button>}
         {b.status === "suspended" && <Button onClick={() => open("reinstate")}>Reinstate</Button>}
         {(b.status === "pending_payment" || b.status === "draft") && <Button variant="secondary" onClick={openPay}>Record payment</Button>}
-        {b.status === "active" && <Button as={Link} to={`/app/${b.slug}`} variant="outline">Open business app</Button>}
         {b.status === "active" && <Button as={Link} to={`/b/${b.slug}`} variant="ghost">Public page</Button>}
       </div>
 

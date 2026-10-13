@@ -4,8 +4,9 @@
 // One place that answers "may this person do that?". Screens and menus ask here instead of
 // comparing role names themselves, so a rule changes in one file.
 //
-// ROLES   global: super_admin     per business: owner, manager (workers, residents and
-//         customers arrive in later phases).
+// ROLES   per business: owner, manager (workers, residents and customers arrive in later
+//         phases). The platform super_admin has NO role inside a business: business dashboards
+//         are a no-go zone for them; they see business data from /admin only.
 // ACTIONS strings such as "rental.property.create" (module.thing.verb), or the platform ones
 //         below. "*" in the table means every action in that group.
 //
@@ -25,13 +26,11 @@ const RULES = {
   manager: (action) => !OWNER_ONLY.includes(action) && !action.startsWith("business.billing."),
 };
 
-export function roleOf(profile, membership) {
-  if (profile?.role === "super_admin" && !membership) return "super_admin";
+export function roleOf(_profile, membership) {
   return membership?.role || null;
 }
 
-export function can(profile, membership, action) {
-  if (profile?.role === "super_admin") return true;
+export function can(_profile, membership, action) {
   const role = membership?.role;
   const rule = RULES[role];
   return rule ? rule(action) : false;
@@ -43,4 +42,4 @@ export function useCan(action) {
   return can(profile, ctx ? { role: ctx.role } : null, action);
 }
 
-export const ROLE_LABEL = { owner: "Owner", manager: "Manager", super_admin: "Super admin" };
+export const ROLE_LABEL = { owner: "Owner", manager: "Manager" };
