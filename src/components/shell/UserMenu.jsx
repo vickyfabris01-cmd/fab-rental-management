@@ -18,7 +18,7 @@
 
 import { useEffect, useId, useRef, useState } from "react";
 import { Link } from "react-router-dom";
-import { BRAND } from "../../config/brand.js";
+import useBrand from "../../hooks/useBrand.js";
 import Avatar from "../ui/Avatar.jsx";
 import Icon from "../ui/Icon.jsx";
 import ThemeToggle from "../ui/ThemeToggle.jsx";
@@ -50,7 +50,8 @@ export default function UserMenu({ user, profileTo, onSwitchBusiness, helpHref, 
   }, [open]);
 
   const close = () => setOpen(false);
-  const help = helpHref || `mailto:${BRAND.supportEmail}`;
+  const brand = useBrand();
+  const help = helpHref || brand.mailto;
 
   return (
     <div className="shell-user" ref={rootRef}>

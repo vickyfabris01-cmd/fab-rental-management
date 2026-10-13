@@ -1,0 +1,24 @@
+/* src/pages/admin/Admin.css — NEW FILE */
+.adm { display: grid; gap: var(--space-5); max-width: 1100px; }
+.adm__title { margin: 0; font-size: var(--text-2xl); font-weight: var(--weight-bold); }
+.adm__bar { display: flex; flex-wrap: wrap; gap: var(--space-3); align-items: end; }
+.adm__bar > * { flex: 1 1 200px; }
+.adm-stats { display: grid; gap: var(--space-3); grid-template-columns: 1fr 1fr; }
+@media (min-width: 768px) { .adm-stats { grid-template-columns: repeat(3, 1fr); } }
+.adm-stat { display: grid; gap: var(--space-1); }
+.adm-stat__link { text-decoration: none; color: inherit; display: block; }
+.adm-stat__link:hover .adm-stat { box-shadow: var(--shadow-md); }
+.adm-stat__label { color: var(--color-text-muted); font-size: var(--text-sm); }
+.adm-stat__value { font-size: var(--text-2xl); font-weight: var(--weight-bold); color: var(--color-text); }
+.adm-detail { display: grid; gap: var(--space-4); }
+.adm-dl { display: grid; gap: var(--space-3); margin: 0; }
+.adm-dl > div { display: grid; gap: 2px; }
+.adm-dl dt { color: var(--color-text-muted); font-size: var(--text-xs); text-transform: uppercase; letter-spacing: .04em; }
+.adm-dl dd { margin: 0; color: var(--color-text); font-size: var(--text-md); overflow-wrap: anywhere; }
+@media (min-width: 768px) { .adm-dl { grid-template-columns: 1fr 1fr; } }
+.adm-actions { display: flex; flex-wrap: wrap; gap: var(--space-2); }
+.adm-form { display: grid; gap: var(--space-4); }
+.adm-form__row { display: grid; gap: var(--space-4); }
+@media (min-width: 640px) { .adm-form__row { grid-template-columns: 1fr 1fr; } }
+.adm-sec { display: grid; gap: var(--space-3); }
+.adm-hint { margin: 0; color: var(--color-text-muted); font-size: var(--text-sm); }

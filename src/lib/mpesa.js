@@ -218,3 +218,62 @@ export function isValidKEPhone(phone) {
     return false;
   }
 }
+
+
+// =============================================================================
+// BizKenia additions (Phase 1) — the ONE way any phase takes money.
+//
+//   const { intentId } = await startStk({ purpose: "subscription", businessId, planId, phone });
+//   const stop = watchPayment(intentId, (intent) => { ... });   // call stop() to unsubscribe
+//
+// The browser never talks to Safaricom. It calls the `mpesa-stk-push` Edge Function, which
+// creates a payment_intents row and sends the STK push; `mpesa-callback` updates the row;
+// watchPayment() polls `mpesa-status`/the row until it is no longer pending.
+// =============================================================================
+import { supabase } from "../config/supabase.js";
+
+/** Starts an M-Pesa prompt on the customer's phone. Returns { intentId, simulated }. */
+export async function startStk({ purpose = "subscription", businessId, planId, phone, amount, reference }) {
+  if (!supabase) throw new Error("The app is not connected to the database yet.");
+  const { data, error } = await supabase.functions.invoke("mpesa-stk-push", {
+    body: { purpose, businessId, planId, phone, amount, reference },
+  });
+  if (error) {
+    let message = error.message;
+    let code;
+    try {
+      const body = await error.context?.json?.();
+      if (body?.error) message = body.error;
+      code = body?.code;
+    } catch { /* keep the generic message */ }
+    const err = new Error(message || "Could not start the payment.");
+    err.code = code; // e.g. "NOT_CONFIGURED" when no Daraja credentials are set
+    throw err;
+  }
+  if (data?.error) { const err = new Error(data.error); err.code = data.code; throw err; }
+  return data; // { intentId, status, simulated?, message }
+}
+
+/**
+ * Calls onChange(intent) now and every few seconds until the payment is success, failed,
+ * cancelled or timeout. Returns a function that stops watching.
+ */
+export function watchPayment(intentId, onChange, { everyMs = 3000, maxMs = 120000 } = {}) {
+  let stopped = false;
+  const started = Date.now();
+  async function tick() {
+    if (stopped) return;
+    const { data } = await supabase.functions.invoke("mpesa-status", { body: { intentId } });
+    if (stopped) return;
+    if (data?.intent) onChange(data.intent);
+    const done = data?.intent && data.intent.status !== "pending";
+    if (done) return;
+    if (Date.now() - started > maxMs) {
+      onChange({ ...(data?.intent || { id: intentId }), status: "timeout" });
+      return;
+    }
+    setTimeout(tick, everyMs);
+  }
+  tick();
+  return () => { stopped = true; };
+}

@@ -1,24 +1,31 @@
-// src/router/AppRouter.jsx — MODIFIED FILE (replaces the old route tree)
+// src/router/AppRouter.jsx — MODIFIED FILE (Phase 1: the real route tree)
 //
 // AIM
-// The app's route tree. At this stage only the rebuilt screens are linked:
-//   /                  temporary home page
-//   /preview/*         developer testing pages (shell, components, forms, feedback...)
-//   anything else      the 404 page
-// The old pages (login, dashboards...) are NOT imported here, so nothing old can stop the site
-// from loading, and no Supabase .env values are needed. Each rebuilt page is added to this
-// file as it is finished.
+// Every route of the site. Unbuilt screens are NOT missing: they open the ComingSoon page
+// (inside /app/:slug and /admin they are driven by the module registry / admin menu).
 //
-// Developers who still need an old page can create .env.local with
+//   public      /  /explore  /b/:slug  /pricing  /about  /contact  /terms  /privacy  /help
+//   auth        /login  /signup  /confirm  /forgot-password  /reset-password  /auth/callback
+//   signed in   /account  /businesses  /start  /start/details  /start/subscribe  /start/status
+//   business    /app/:slug/*   (members only; the menu comes from modules/registry.js)
+//   admin       /admin/*       (super admin only)
+//   developer   /preview/*     (development builds only)
+//
+// Developers who still need the old pages can create .env.local with
 //   VITE_ENABLE_LEGACY_PAGES=true
-// and restart `npm run dev`. The old route tree (LegacyApp.jsx) is then loaded instead. This
-// only works in development; a production build never contains the old pages.
+// and restart `npm run dev`. This only works in development.
 
 import { Suspense, lazy, useEffect } from "react";
 import { BrowserRouter, Navigate, Route, Routes, useLocation } from "react-router-dom";
 import { PageErrorBoundary } from "../components/feedback/ErrorBoundary.jsx";
 import Spinner from "../components/ui/Spinner.jsx";
 import { ROUTE_META } from "./routes";
+import { RequireAuth, RequireMember, RequireSuperAdmin } from "./guards.jsx";
+import PublicLayout from "../layouts/PublicLayout.jsx";
+import ComingSoonPage from "../pages/shared/ComingSoonPage.jsx";
+import useBrand from "../hooks/useBrand.js";
+import { useSession } from "../store/sessionStore.js";
+import { useBusinessStore } from "../store/businessStore.js";
 
 const LEGACY = import.meta.env.DEV && import.meta.env.VITE_ENABLE_LEGACY_PAGES === "true";
 
@@ -26,12 +33,43 @@ const LEGACY = import.meta.env.DEV && import.meta.env.VITE_ENABLE_LEGACY_PAGES =
 const LEGACY_PATH = "/src/router/" + "LegacyApp.jsx";
 const LegacyApp = LEGACY ? lazy(() => import(/* @vite-ignore */ LEGACY_PATH)) : null;
 
-const HomePlaceholder = lazy(() => import("../pages/public/HomePlaceholder.jsx"));
-const NotFoundPage = lazy(() => import("../pages/public/NotFoundPage.jsx"));
-const PreviewLayout = lazy(() => import("../pages/preview/PreviewPage.jsx"));
-const PreviewSection = lazy(() =>
-  import("../pages/preview/PreviewPage.jsx").then((m) => ({ default: m.PreviewSection })),
-);
+const page = (loader) => lazy(loader);
+const HomePage = page(() => import("../pages/public/HomePage.jsx"));
+const ExplorePage = page(() => import("../pages/public/ExplorePage.jsx"));
+const BusinessPage = page(() => import("../pages/public/BusinessPage.jsx"));
+const PricingPage = page(() => import("../pages/public/PricingPage.jsx"));
+const NotFoundPage = page(() => import("../pages/public/NotFoundPage.jsx"));
+const staticPage = (name) => page(() => import("../pages/public/StaticPages.jsx").then((m) => ({ default: m[name] })));
+const AboutPage = staticPage("AboutPage");
+const ContactPage = staticPage("ContactPage");
+const TermsPage = staticPage("TermsPage");
+const PrivacyPage = staticPage("PrivacyPage");
+const HelpPage = staticPage("HelpPage");
+
+const LoginPage = page(() => import("../pages/auth/LoginPage.jsx"));
+const SignupPage = page(() => import("../pages/auth/SignupPage.jsx"));
+const ConfirmPage = page(() => import("../pages/auth/ConfirmPage.jsx"));
+const ForgotPasswordPage = page(() => import("../pages/auth/ForgotPasswordPage.jsx"));
+const ResetPasswordPage = page(() => import("../pages/auth/ResetPasswordPage.jsx"));
+const AuthCallbackPage = page(() => import("../pages/auth/AuthCallbackPage.jsx"));
+
+const AccountPage = page(() => import("../pages/account/AccountPage.jsx"));
+const MyBusinessesPage = page(() => import("../pages/account/MyBusinessesPage.jsx"));
+
+const StartPage = page(() => import("../pages/onboarding/StartPage.jsx"));
+const DetailsPage = page(() => import("../pages/onboarding/DetailsPage.jsx"));
+const SubscribePage = page(() => import("../pages/onboarding/SubscribePage.jsx"));
+const StatusPage = page(() => import("../pages/onboarding/StatusPage.jsx"));
+
+const BusinessAppFrame = page(() => import("../layouts/BusinessAppFrame.jsx"));
+const ModuleScreen = page(() => import("../layouts/BusinessAppFrame.jsx").then((m) => ({ default: m.ModuleScreen })));
+const AdminFrame = page(() => import("../layouts/AdminFrame.jsx"));
+const AdminScreen = page(() => import("../layouts/AdminFrame.jsx").then((m) => ({ default: m.AdminScreen })));
+
+const PreviewLayout = import.meta.env.DEV ? page(() => import("../pages/preview/PreviewPage.jsx")) : null;
+const PreviewSection = import.meta.env.DEV
+  ? page(() => import("../pages/preview/PreviewPage.jsx").then((m) => ({ default: m.PreviewSection })))
+  : null;
 
 function PageLoader() {
   return (
@@ -41,14 +79,26 @@ function PageLoader() {
   );
 }
 
-/** Keeps the browser tab title in step with the page. */
-function TitleSync() {
+/** Starts the session, platform settings and business list once, and keeps the tab title in step. */
+function Boot() {
   const { pathname } = useLocation();
+  const brand = useBrand();
+  const user = useSession((s) => s.user);
+
+  useEffect(() => { useSession.getState().init(); }, []);
+  useEffect(() => {
+    if (user) useBusinessStore.getState().load(user.id);
+    else useBusinessStore.getState().reset();
+  }, [user]);
   useEffect(() => {
     const title = ROUTE_META[pathname]?.title;
-    document.title = title ? `${title} | BizKenia` : "BizKenia";
-  }, [pathname]);
+    document.title = title ? `${title} | ${brand.name}` : brand.name;
+  }, [pathname, brand.name]);
   return null;
+}
+
+function Guarded({ children }) {
+  return <PageErrorBoundary>{children}</PageErrorBoundary>;
 }
 
 export default function AppRouter() {
@@ -62,21 +112,73 @@ export default function AppRouter() {
 
   return (
     <BrowserRouter>
-      <TitleSync />
-      <PageErrorBoundary>
-        <Suspense fallback={<PageLoader />}>
-          <Routes>
-            <Route path="/" element={<HomePlaceholder />} />
+      <Boot />
+      <Suspense fallback={<PageLoader />}>
+        <Routes>
+          {/* Public site */}
+          <Route element={<PublicLayout />}>
+            <Route path="/" element={<Guarded><HomePage /></Guarded>} />
+            <Route path="/explore" element={<Guarded><ExplorePage /></Guarded>} />
+            <Route path="/b/:slug" element={<Guarded><BusinessPage /></Guarded>} />
+            <Route element={<RequireAuth />}>
+              <Route path="/b/:slug/request" element={<ComingSoonPage name="Request a room" phase={2} backTo="/explore" backLabel="Back to explore" />} />
+            </Route>
+            <Route path="/pricing" element={<Guarded><PricingPage /></Guarded>} />
+            <Route path="/about" element={<Guarded><AboutPage /></Guarded>} />
+            <Route path="/contact" element={<Guarded><ContactPage /></Guarded>} />
+            <Route path="/terms" element={<Guarded><TermsPage /></Guarded>} />
+            <Route path="/privacy" element={<Guarded><PrivacyPage /></Guarded>} />
+            <Route path="/help" element={<Guarded><HelpPage /></Guarded>} />
 
+            {/* Signed-in pages that use the public frame */}
+            <Route element={<RequireAuth />}>
+              <Route path="/account" element={<Guarded><AccountPage /></Guarded>} />
+              <Route path="/businesses" element={<Guarded><MyBusinessesPage /></Guarded>} />
+              <Route path="/start" element={<Guarded><StartPage /></Guarded>} />
+              <Route path="/start/details" element={<Guarded><DetailsPage /></Guarded>} />
+              <Route path="/start/subscribe" element={<Guarded><SubscribePage /></Guarded>} />
+              <Route path="/start/status" element={<Guarded><StatusPage /></Guarded>} />
+            </Route>
+          </Route>
+
+          {/* Authentication (own centred layout) */}
+          <Route path="/login" element={<Guarded><LoginPage /></Guarded>} />
+          <Route path="/signup" element={<Guarded><SignupPage /></Guarded>} />
+          <Route path="/confirm" element={<Guarded><ConfirmPage /></Guarded>} />
+          <Route path="/forgot-password" element={<Guarded><ForgotPasswordPage /></Guarded>} />
+          <Route path="/reset-password" element={<Guarded><ResetPasswordPage /></Guarded>} />
+          <Route path="/auth/callback" element={<Guarded><AuthCallbackPage /></Guarded>} />
+
+          {/* One business */}
+          <Route element={<RequireAuth />}>
+            <Route path="/app/:slug" element={<RequireMember />}>
+              <Route element={<BusinessAppFrame />}>
+                <Route index element={<Guarded><ModuleScreen /></Guarded>} />
+                <Route path="*" element={<Guarded><ModuleScreen /></Guarded>} />
+              </Route>
+            </Route>
+          </Route>
+
+          {/* Platform admin */}
+          <Route element={<RequireSuperAdmin />}>
+            <Route path="/admin" element={<AdminFrame />}>
+              <Route index element={<Guarded><AdminScreen /></Guarded>} />
+              <Route path="*" element={<Guarded><AdminScreen /></Guarded>} />
+            </Route>
+          </Route>
+
+          {/* Developer preview (development builds only) */}
+          {PreviewLayout && (
             <Route path="/preview" element={<PreviewLayout />}>
               <Route index element={<Navigate to="components" replace />} />
               <Route path=":section" element={<PreviewSection />} />
             </Route>
+          )}
 
-            <Route path="*" element={<NotFoundPage />} />
-          </Routes>
-        </Suspense>
-      </PageErrorBoundary>
+          <Route path="/not-found" element={<NotFoundPage />} />
+          <Route path="*" element={<NotFoundPage />} />
+        </Routes>
+      </Suspense>
     </BrowserRouter>
   );
 }

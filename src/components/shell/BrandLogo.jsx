@@ -10,10 +10,11 @@
 //   size       height of the mark in pixels (default 32)
 //   className
 
-import { BRAND } from "../../config/brand.js";
+import useBrand from "../../hooks/useBrand.js";
 import "./BrandLogo.css";
 
 export default function BrandLogo({ showName = true, size = 32, className = "" }) {
+  const BRAND = useBrand();
   return (
     <span className={`shell-logo ${className}`.trim()}>
       <svg
