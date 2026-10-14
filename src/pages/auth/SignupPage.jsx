@@ -6,27 +6,28 @@
 // asked to confirm their email (the confirmation page also lets them resend the link).
 
 import { useState } from "react";
-import { Link, Navigate, useNavigate, useSearchParams } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { Alert, Button, Checkbox, Input, PasswordInput, PhoneInput } from "../../components/ui";
 import GoogleButton from "../../components/auth/GoogleButton.jsx";
 import AuthLayout from "../../layouts/AuthLayout.jsx";
 import { useSession } from "../../store/sessionStore.js";
 import { collect, email as vEmail, password as vPassword, phone as vPhone, required } from "../../lib/validate.js";
-import { safeNext } from "./LoginPage.jsx";
+import AfterSignIn from "../../components/auth/AfterSignIn.jsx";
+import { safeNext } from "../../lib/landing.js";
 import "../../layouts/AuthLayout.css";
 
 export default function SignupPage() {
   const [params] = useSearchParams();
   const navigate = useNavigate();
   const user = useSession((s) => s.user);
-  const next = safeNext(params.get("next"), "/businesses");
+  const next = safeNext(params.get("next"), "/");
   const [f, setF] = useState({ fullName: "", email: "", phone: "", password: "", agree: false });
   const [errors, setErrors] = useState({});
   const [formError, setFormError] = useState("");
   const [busy, setBusy] = useState(false);
   const set = (k) => (v) => setF((s) => ({ ...s, [k]: v && v.target ? v.target.value : v }));
 
-  if (user) return <Navigate to={next} replace />;
+  if (user) return <AfterSignIn next={params.get("next")} />;
 
   async function submit(e) {
     e.preventDefault();

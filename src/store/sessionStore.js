@@ -127,11 +127,11 @@ export const useSession = create((set, get) => ({
     return { error: friendly(error), needsConfirmation: !error && !data.session, email: email.trim() };
   },
 
-  async signInWithGoogle(nextPath = "/businesses") {
+  async signInWithGoogle(nextPath = "") {
     if (!isSupabaseConfigured) return { error: "The app is not connected to the database yet." };
     const { error } = await supabase.auth.signInWithOAuth({
       provider: "google",
-      options: { redirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(nextPath)}` },
+      options: { redirectTo: `${window.location.origin}/auth/callback${nextPath ? `?next=${encodeURIComponent(nextPath)}` : ""}` },
     });
     return { error: friendly(error) };
   },

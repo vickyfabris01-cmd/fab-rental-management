@@ -77,7 +77,7 @@ export function PrivacyPage() {
 
 const FAQ = [
   ["How do I sign in?", "Use your email and password, your phone number and password, or Google. No SMS code is needed."],
-  ["How do I list my business?", "Create an account, open Get started, choose the business type, add your details and pay the subscription by M-Pesa. We then review your business."],
+  ["How do I list my business?", "Create an account, choose List your business, pick the business type, add your details and pay the subscription by M-Pesa. We then review your business."],
   ["How long does approval take?", "It depends on how the platform is set up. You will get a notification as soon as a decision is made, and you can follow the status on your business status page."],
   ["My business was rejected. What now?", "Open the status page, read the reason, update your details and send it again. You do not pay again."],
   ["My M-Pesa payment failed.", "Check that the phone number is right and has enough balance, then try again from the subscribe page. If money left your account, contact support with the M-Pesa message."],

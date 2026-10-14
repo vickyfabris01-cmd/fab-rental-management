@@ -3,7 +3,8 @@
 // AIM
 // The signed-in landing page: every business the person belongs to, with its status and the
 // right next action (open, finish payment, see approval status, fix and resubmit), a button to
-// start another business, and the latest notifications.
+// start another business, and the latest notifications. A visitor with no business sees
+// "explore" first; starting a business is the secondary choice.
 
 import "./Account.css";
 import { Link, useNavigate } from "react-router-dom";
@@ -43,7 +44,7 @@ export default function MyBusinessesPage() {
         </div>
         <div className="acct__head-actions">
           {profile?.role === "super_admin" && <Button as={Link} to="/admin" variant="outline">Admin dashboard</Button>}
-          <Button as={Link} to="/start" leftIcon={<Icon name="plus" size={18} />}>Start a business</Button>
+          <Button as={Link} to="/start" variant="outline" leftIcon={<Icon name="plus" size={18} />}>Start a business</Button>
         </div>
       </div>
 
@@ -53,9 +54,12 @@ export default function MyBusinessesPage() {
             [0, 1].map((i) => <Card key={i}><Skeleton width="45%" height={20} /><Skeleton width="30%" height={14} style={{ marginTop: 10 }} /></Card>)
           ) : memberships.length === 0 ? (
             <Card>
-              <EmptyState icon="building" title="You have no business yet"
-                description="Start one to manage it here, or explore businesses already on the platform."
-                action={<Button as={Link} to="/start">Start a business</Button>} />
+              <EmptyState icon="building" title="You do not own or manage a business"
+                description="Looking for a place or a service? Explore businesses. Own one? Start it here."
+                action={<div style={{ display: "flex", flexWrap: "wrap", gap: 12, justifyContent: "center" }}>
+                  <Button as={Link} to="/explore">Explore businesses</Button>
+                  <Button as={Link} to="/start" variant="outline">Start a business</Button>
+                </div>} />
             </Card>
           ) : (
             memberships.map(({ business: b, role }) => {

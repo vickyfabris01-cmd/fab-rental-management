@@ -37,7 +37,7 @@ export default function ResetPasswordPage() {
     setBusy(false);
     if (error) return setFormError(error);
     setDone(true);
-    setTimeout(() => navigate("/businesses", { replace: true }), 1500);
+    setTimeout(() => navigate("/", { replace: true }), 1500);
   }
 
   if (!loading && !user) {

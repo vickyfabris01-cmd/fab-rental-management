@@ -54,7 +54,7 @@ export default function ExplorePage() {
           <Card>
             <EmptyState icon="search" title={hasFilter ? "No business matches your search" : "No businesses yet"}
               description={hasFilter ? "Try a different name or clear the filters." : "Approved businesses will appear here."}
-              action={hasFilter ? <Button variant="outline" onClick={() => setParams({}, { replace: true })}>Clear filters</Button> : <Button as={Link} to="/start">List your business</Button>} />
+              action={hasFilter ? <Button variant="outline" onClick={() => setParams({}, { replace: true })}>Clear filters</Button> : <Button as={Link} to="/start" variant="outline">List your business</Button>} />
           </Card>
         ) : (
           <>

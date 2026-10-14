@@ -18,7 +18,7 @@ const G = (
   </svg>
 );
 
-export default function GoogleButton({ next = "/businesses", label = "Continue with Google" }) {
+export default function GoogleButton({ next = "", label = "Continue with Google" }) {
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
   async function go() {

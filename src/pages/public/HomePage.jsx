@@ -1,61 +1,105 @@
 // src/pages/public/HomePage.jsx — NEW FILE (replaces HomePlaceholder)
 //
 // AIM
-// The front door: what the product is, the business types, how it works, a few live
-// businesses and the call to list your own. Everything shown here is real: the business list
-// comes from the database and shows a skeleton, then cards, or a friendly message.
+// The front door, written for someone who just wants to FIND a business: search by name,
+// place and type, jump straight to a county, browse the latest businesses and the types.
+// Owners get one short, clearly separate section near the bottom ("Own a business?"), not the
+// main message. Signed-in visitors see the same page with a greeting, and a signed-in owner
+// sees a link to their businesses instead of the sales pitch. Everything shown is real: the
+// list comes from the database (skeleton, then cards, or a friendly message).
 
 import "./HomePage.css";
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Badge, Button, Card, EmptyState, Icon } from "../../components/ui";
 import BusinessCard, { BusinessCardSkeleton } from "../../components/business/BusinessCard.jsx";
-import { BUSINESS_TYPES } from "../../config/counties.js";
+import { BUSINESS_TYPES, COUNTIES } from "../../config/counties.js";
 import useAsync from "../../hooks/useAsync.js";
 import useBrand from "../../hooks/useBrand.js";
 import { listBusinesses } from "../../lib/api/directory.js";
+import { useSession } from "../../store/sessionStore.js";
+import { useBusinessStore } from "../../store/businessStore.js";
 
-const STEPS = [
-  { icon: "user", title: "Create your account", text: "Sign up with your email, phone number or Google. It takes a minute." },
-  { icon: "building", title: "Set up your business", text: "Pick the type, add your details and choose a subscription. Pay with M-Pesa." },
-  { icon: "success", title: "Get approved and go live", text: "We check your details. Once approved, customers can find you and you can start managing." },
+const POPULAR_COUNTIES = ["Nairobi", "Mombasa", "Kisumu", "Nakuru", "Kiambu", "Uasin Gishu", "Machakos", "Kajiado"];
+
+const OWNER_STEPS = [
+  "Create your account and choose your business type.",
+  "Add your details and pay the subscription by M-Pesa.",
+  "Get approved, go live and start managing.",
 ];
 
 export default function HomePage() {
   const brand = useBrand();
   const navigate = useNavigate();
+  const user = useSession((s) => s.user);
+  const profile = useSession((s) => s.profile);
+  const memberships = useBusinessStore((s) => s.memberships);
   const [term, setTerm] = useState("");
+  const [county, setCounty] = useState("");
   const { data, error, loading } = useAsync(() => listBusinesses({ limit: 6 }), []);
+  const first = (profile?.full_name || "").split(" ")[0];
+  const ownsBusiness = Boolean(user) && memberships.length > 0;
 
   function search(e) {
     e.preventDefault();
-    navigate(`/explore${term.trim() ? `?q=${encodeURIComponent(term.trim())}` : ""}`);
+    const q = new URLSearchParams();
+    if (term.trim()) q.set("q", term.trim());
+    if (county) q.set("county", county);
+    const s = q.toString();
+    navigate(`/explore${s ? `?${s}` : ""}`);
   }
 
   return (
     <>
       <section className="home-hero">
         <div className="home-hero__inner">
-          <h1 className="home-hero__title">{brand.tagline}</h1>
+          <h1 className="home-hero__title">
+            {first ? `Hello, ${first}. What are you looking for?` : "Find rentals and local businesses across Kenya"}
+          </h1>
           <p className="home-hero__lead">
-            {brand.name} helps Kenyan businesses run day to day work in one place, and helps customers find them.
-            Rentals are open today. Agriculture and shops are coming.
+            Browse businesses approved on {brand.name}, see where they are and contact them directly.
+            You do not need an account to look around.
           </p>
-          <form className="home-hero__search" onSubmit={search} role="search">
-            <label htmlFor="home-q" className="home-hero__label">Search businesses</label>
-            <input id="home-q" className="ui-control home-hero__input" value={term} onChange={(e) => setTerm(e.target.value)}
-              placeholder="Search by name or place, for example Nakuru" />
+
+          <form className="home-search" onSubmit={search} role="search">
+            <label htmlFor="home-q" className="home-hero__label">Search by name or place</label>
+            <input id="home-q" className="ui-control home-search__input" value={term} onChange={(e) => setTerm(e.target.value)}
+              placeholder="Name or place, for example Sunrise or Nakuru" />
+            <label htmlFor="home-county" className="home-hero__label">County</label>
+            <select id="home-county" className="ui-control home-search__select" value={county} onChange={(e) => setCounty(e.target.value)}>
+              <option value="">All counties</option>
+              {COUNTIES.map((c) => <option key={c} value={c}>{c}</option>)}
+            </select>
             <Button type="submit" size="lg" leftIcon={<Icon name="search" size={18} />}>Search</Button>
           </form>
-          <div className="home-hero__cta">
-            <Button as={Link} to="/start" variant="outline">List your business</Button>
-            <Link to="/explore" className="home-hero__link">Browse all businesses</Link>
-          </div>
+
+          <ul className="home-chips" aria-label="Popular counties">
+            {POPULAR_COUNTIES.map((c) => (
+              <li key={c}><Link className="home-chip" to={`/explore?county=${encodeURIComponent(c)}`}>{c}</Link></li>
+            ))}
+            <li><Link className="home-chip home-chip--all" to="/explore">All businesses</Link></li>
+          </ul>
         </div>
       </section>
 
       <section className="pg">
-        <h2 className="pg__title">What you can run on {brand.name}</h2>
+        <div className="home-list__head">
+          <h2 className="pg__title">Latest businesses</h2>
+          <Link to="/explore">See all</Link>
+        </div>
+        {loading ? (
+          <div className="pg-grid pg-grid--3">{[0, 1, 2].map((i) => <BusinessCardSkeleton key={i} />)}</div>
+        ) : error ? (
+          <Card><EmptyState icon="info" title="Businesses could not be loaded" description={error} compact /></Card>
+        ) : data.length === 0 ? (
+          <Card><EmptyState icon="building" title="No businesses listed yet" description="Approved businesses will appear here. Check back soon." compact /></Card>
+        ) : (
+          <div className="pg-grid pg-grid--3">{data.map((b) => <BusinessCard key={b.id} business={b} />)}</div>
+        )}
+      </section>
+
+      <section className="pg">
+        <h2 className="pg__title">Browse by type</h2>
         <div className="pg-grid pg-grid--3">
           {BUSINESS_TYPES.map((t) => (
             <Card key={t.value} className="home-type">
@@ -71,43 +115,31 @@ export default function HomePage() {
       </section>
 
       <section className="pg">
-        <h2 className="pg__title">How it works</h2>
-        <div className="pg-grid pg-grid--3">
-          {STEPS.map((s, i) => (
-            <Card key={s.title} className="home-step">
-              <span className="home-step__n" aria-hidden="true">{i + 1}</span>
-              <h3>{s.title}</h3>
-              <p>{s.text}</p>
-            </Card>
-          ))}
-        </div>
-      </section>
-
-      <section className="pg">
-        <div className="home-list__head">
-          <h2 className="pg__title">Businesses on {brand.name}</h2>
-          <Link to="/explore">See all</Link>
-        </div>
-        {loading ? (
-          <div className="pg-grid pg-grid--3">{[0, 1, 2].map((i) => <BusinessCardSkeleton key={i} />)}</div>
-        ) : error ? (
-          <Card><EmptyState icon="info" title="Businesses could not be loaded" description={error} compact /></Card>
-        ) : data.length === 0 ? (
-          <Card><EmptyState icon="building" title="No businesses yet" description="Approved businesses appear here. Be the first to list yours."
-            action={<Button as={Link} to="/start">List your business</Button>} compact /></Card>
-        ) : (
-          <div className="pg-grid pg-grid--3">{data.map((b) => <BusinessCard key={b.id} business={b} />)}</div>
-        )}
-      </section>
-
-      <section className="pg">
-        <Card className="home-cta">
-          <h2>Ready to list your business?</h2>
-          <p>Create an account, choose a subscription and send your business for approval. See the prices first if you like.</p>
-          <div className="home-cta__actions">
-            <Button as={Link} to="/start" size="lg">Get started</Button>
-            <Button as={Link} to="/pricing" variant="outline" size="lg">See pricing</Button>
-          </div>
+        <Card className="home-owner">
+          {ownsBusiness ? (
+            <>
+              <div>
+                <h2>Your businesses</h2>
+                <p>Open a business to manage it, or start another one.</p>
+              </div>
+              <div className="home-owner__actions">
+                <Button as={Link} to="/businesses">My businesses</Button>
+                <Button as={Link} to="/start" variant="outline">Start another</Button>
+              </div>
+            </>
+          ) : (
+            <>
+              <div>
+                <h2>Own a business?</h2>
+                <p>List it on {brand.name} so customers can find you, and run your day to day work in one place.</p>
+                <ol className="home-owner__steps">{OWNER_STEPS.map((s) => <li key={s}>{s}</li>)}</ol>
+              </div>
+              <div className="home-owner__actions">
+                <Button as={Link} to="/start">List your business</Button>
+                <Button as={Link} to="/pricing" variant="outline">See pricing</Button>
+              </div>
+            </>
+          )}
         </Card>
       </section>
     </>

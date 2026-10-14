@@ -15,19 +15,22 @@ import { Drawer } from "../components/modals/Modal.jsx";
 import BrandLogo from "../components/shell/BrandLogo.jsx";
 import useBrand from "../hooks/useBrand.js";
 import { useSession } from "../store/sessionStore.js";
+import { useBusinessStore } from "../store/businessStore.js";
 
 const LINKS = [
   { to: "/explore", label: "Explore" },
-  { to: "/pricing", label: "Pricing" },
   { to: "/about", label: "About" },
   { to: "/help", label: "Help" },
+  { to: "/pricing", label: "For business owners" },
 ];
 
 export function SiteHeader() {
   const [open, setOpen] = useState(false);
   const user = useSession((s) => s.user);
   const profile = useSession((s) => s.profile);
+  const hasBusiness = useBusinessStore((s) => s.memberships.length > 0);
   const name = profile?.full_name || user?.email || "";
+  const accountTo = hasBusiness ? "/businesses" : "/account";
 
   return (
     <header className="site-header">
@@ -47,13 +50,13 @@ export function SiteHeader() {
         <div className="site-header__actions">
           <ThemeToggle />
           {user ? (
-            <Button as={Link} to="/businesses" variant="outline" size="sm" className="site-hide-sm">
+            <Button as={Link} to={accountTo} variant="outline" size="sm" className="site-hide-sm">
               {name ? name.split(" ")[0] : "My account"}
             </Button>
           ) : (
             <>
               <Button as={Link} to="/login" variant="ghost" size="sm" className="site-hide-sm">Sign in</Button>
-              <Button as={Link} to="/signup" size="sm" className="site-hide-sm">Get started</Button>
+              <Button as={Link} to="/signup" size="sm" className="site-hide-sm">Create account</Button>
             </>
           )}
           <button type="button" className="site-header__menu" aria-label="Open menu" onClick={() => setOpen(true)}>
@@ -70,7 +73,7 @@ export function SiteHeader() {
           <li className="site-drawer__sep" />
           {user ? (
             <>
-              <li><Link to="/businesses" onClick={() => setOpen(false)}>My businesses</Link></li>
+              {hasBusiness && <li><Link to="/businesses" onClick={() => setOpen(false)}>My businesses</Link></li>}
               <li><Link to="/account" onClick={() => setOpen(false)}>My account</Link></li>
             </>
           ) : (
@@ -98,7 +101,7 @@ export function SiteFooter() {
         <nav aria-label="Company">
           <h2>Company</h2>
           <Link to="/about">About</Link>
-          <Link to="/pricing">Pricing</Link>
+          <Link to="/pricing">Pricing for owners</Link>
           <Link to="/contact">Contact</Link>
         </nav>
         <nav aria-label="Support">
@@ -107,9 +110,10 @@ export function SiteFooter() {
           <Link to="/terms">Terms of use</Link>
           <Link to="/privacy">Privacy</Link>
         </nav>
-        <nav aria-label="Get started">
-          <h2>Get started</h2>
+        <nav aria-label="Discover">
+          <h2>Discover</h2>
           <Link to="/explore">Find a business</Link>
+          <Link to="/explore?type=rental">Rentals</Link>
           <Link to="/start">List your business</Link>
           <Link to="/login">Sign in</Link>
         </nav>

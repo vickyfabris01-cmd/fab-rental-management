@@ -3,14 +3,14 @@
 // AIM
 // Where Google sign-in and email-confirmation links land (/auth/callback). Supabase reads the
 // code or token from the address by itself; this page waits for the session, then sends the
-// person on to ?next=… (default My businesses). If nothing arrives it shows a way back.
+// person on to ?next=… (default: see lib/landing.js). If nothing arrives it shows a way back.
 
 import { useEffect, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { Button, Spinner } from "../../components/ui";
 import AuthLayout from "../../layouts/AuthLayout.jsx";
 import { useSession } from "../../store/sessionStore.js";
-import { safeNext } from "./LoginPage.jsx";
+import { landingFor, safeNext } from "../../lib/landing.js";
 
 export default function AuthCallbackPage() {
   const [params] = useSearchParams();
@@ -20,9 +20,12 @@ export default function AuthCallbackPage() {
   const [late, setLate] = useState(false);
 
   useEffect(() => {
-    if (user && profile) {
-      navigate(safeNext(params.get("next"), profile.role === "super_admin" ? "/admin" : "/businesses"), { replace: true });
-    }
+    if (!user || !profile) return undefined;
+    let alive = true;
+    landingFor(profile, user.id).then((to) => {
+      if (alive) navigate(safeNext(params.get("next"), to), { replace: true });
+    });
+    return () => { alive = false; };
   }, [user, profile, navigate, params]);
 
   useEffect(() => {

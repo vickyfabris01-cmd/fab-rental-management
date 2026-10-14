@@ -4,21 +4,23 @@
 // Sign in with email OR phone number plus password, or with Google. The first box accepts
 // either: text with an "@" is an email, digits are a phone number (the resolve-login function
 // finds the account). After signing in the person goes to ?next=… or, by default, to
-// My businesses (super admins go to the admin dashboard).
+// the home page for a visitor, My businesses for an owner or manager, and the admin dashboard
+// for a super admin (see lib/landing.js).
 
 import { useState } from "react";
-import { Link, Navigate, useNavigate, useSearchParams } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { Alert, Button, Input, PasswordInput } from "../../components/ui";
 import GoogleButton from "../../components/auth/GoogleButton.jsx";
+import AfterSignIn from "../../components/auth/AfterSignIn.jsx";
 import AuthLayout from "../../layouts/AuthLayout.jsx";
 import { useSession } from "../../store/sessionStore.js";
 import { looksLikePhone } from "../../lib/phone.js";
+import { landingFor, safeNext } from "../../lib/landing.js";
 import { required } from "../../lib/validate.js";
 import "../../layouts/AuthLayout.css";
 
-export function safeNext(value, fallback) {
-  return value && value.startsWith("/") && !value.startsWith("//") ? value : fallback;
-}
+// Kept so older imports of safeNext from this file keep working.
+export { safeNext };
 
 export default function LoginPage() {
   const [params] = useSearchParams();
@@ -32,9 +34,7 @@ export default function LoginPage() {
   const [busy, setBusy] = useState(false);
   const next = params.get("next");
 
-  if (user && profile) {
-    return <Navigate to={safeNext(next, profile.role === "super_admin" ? "/admin" : "/businesses")} replace />;
-  }
+  if (user && profile) return <AfterSignIn next={next} />;
 
   async function submit(e) {
     e.preventDefault();
@@ -51,7 +51,8 @@ export default function LoginPage() {
     setBusy(false);
     if (error) return setFormError(error);
     const p = await useSession.getState().refreshProfile();
-    navigate(safeNext(next, p?.role === "super_admin" ? "/admin" : "/businesses"), { replace: true });
+    const to = await landingFor(p, useSession.getState().user?.id);
+    navigate(safeNext(next, to), { replace: true });
   }
 
   return (
@@ -69,7 +70,7 @@ export default function LoginPage() {
         <Button type="submit" size="lg" fullWidth loading={busy}>Sign in</Button>
       </form>
       <div className="auth__or">or</div>
-      <GoogleButton next={safeNext(next, "/businesses")} />
+      <GoogleButton next={safeNext(next, "")} />
     </AuthLayout>
   );
 }
