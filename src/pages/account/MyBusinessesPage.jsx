@@ -1,4 +1,4 @@
-// src/pages/account/MyBusinessesPage.jsx — NEW FILE
+// src/pages/account/MyBusinessesPage.jsx — MODIFIED FILE (Phase 2: shows the Resident role and links My requests)
 //
 // AIM
 // The signed-in landing page: every business the person belongs to, with its status and the
@@ -10,6 +10,7 @@ import "./Account.css";
 import { Link, useNavigate } from "react-router-dom";
 import { Badge, Button, Card, CardHeader, EmptyState, Icon, Skeleton } from "../../components/ui";
 import useAsync from "../../hooks/useAsync.js";
+import { ROLE_LABEL } from "../../lib/permissions.js";
 import { listMyNotifications, markAllRead } from "../../lib/api/notifications.js";
 import { STATUS_BADGE, formatDateTime } from "../../lib/format.js";
 import { typeLabel } from "../../config/counties.js";
@@ -43,6 +44,7 @@ export default function MyBusinessesPage() {
           <p className="pg__lead" style={{ marginBottom: 0 }}>The businesses you own or help manage.</p>
         </div>
         <div className="acct__head-actions">
+          <Button as={Link} to="/account/requests" variant="outline">My requests</Button>
           {profile?.role === "super_admin" && <Button as={Link} to="/admin" variant="outline">Admin dashboard</Button>}
           <Button as={Link} to="/start" variant="outline" leftIcon={<Icon name="plus" size={18} />}>Start a business</Button>
         </div>
@@ -69,7 +71,7 @@ export default function MyBusinessesPage() {
                 <Card key={b.id} className="acct__biz">
                   <div className="acct__biz-main">
                     <h2 className="acct__biz-name">{b.name}</h2>
-                    <p className="acct__biz-meta">{typeLabel(b.business_type)} · {role === "owner" ? "Owner" : "Manager"}{b.county ? ` · ${b.county}` : ""}</p>
+                    <p className="acct__biz-meta">{typeLabel(b.business_type)} · {ROLE_LABEL[role] || role}{b.county ? ` · ${b.county}` : ""}</p>
                     <Badge variant={variant}>{text}</Badge>
                   </div>
                   <Button as={Link} to={action.to} variant={b.status === "active" ? "primary" : "outline"}>{action.label}</Button>

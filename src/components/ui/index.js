@@ -1,4 +1,4 @@
-// src/components/ui/index.js — MODIFIED FILE (adds Field and Icon)
+// src/components/ui/index.js — MODIFIED FILE (adds PhotoUploader)
 //
 // Barrel export — import any shared component from "components/ui".
 //
@@ -7,7 +7,7 @@
 //   import { BillingBadge, SkeletonTable }  from "../components/ui";
 //   import { Spinner, EmptyState }          from "../components/ui";
 //
-// Changes in this step: added Field (the shared label/helper/error wrapper) and Icon.
+// Changes in Phase 2: added PhotoUploader.
 
 // ── Actions ───────────────────────────────────────────────────────────────────
 export { default as Button } from "./Button.jsx";
@@ -23,6 +23,7 @@ export { default as SelectInput } from "./SelectInput.jsx";
 export { default as TextArea } from "./TextArea.jsx";
 export { default as Checkbox } from "./Checkbox.jsx";
 export { default as Toggle } from "./Toggle.jsx";
+export { default as PhotoUploader } from "./PhotoUploader.jsx";
 
 // ── Data display ──────────────────────────────────────────────────────────────
 export { default as Badge } from "./Badge.jsx";

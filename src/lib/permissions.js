@@ -1,11 +1,11 @@
-// src/lib/permissions.js — NEW FILE
+// src/lib/permissions.js — MODIFIED FILE (Phase 2: adds the resident role)
 //
 // AIM
 // One place that answers "may this person do that?". Screens and menus ask here instead of
 // comparing role names themselves, so a rule changes in one file.
 //
-// ROLES   per business: owner, manager (workers, residents and customers arrive in later
-//         phases). The platform super_admin has NO role inside a business: business dashboards
+// ROLES   per business: owner, manager, resident (a person with a current tenancy; their own
+//         screens arrive in Phase 3, and they have no staff rights; workers arrive later). The platform super_admin has NO role inside a business: business dashboards
 //         are a no-go zone for them; they see business data from /admin only.
 // ACTIONS strings such as "rental.property.create" (module.thing.verb), or the platform ones
 //         below. "*" in the table means every action in that group.
@@ -24,6 +24,7 @@ const OWNER_ONLY = ["business.settings", "business.managers", "business.subscrip
 const RULES = {
   owner: () => true,
   manager: (action) => !OWNER_ONLY.includes(action) && !action.startsWith("business.billing."),
+  resident: (action) => action.startsWith("resident."),
 };
 
 export function roleOf(_profile, membership) {
@@ -42,4 +43,4 @@ export function useCan(action) {
   return can(profile, ctx ? { role: ctx.role } : null, action);
 }
 
-export const ROLE_LABEL = { owner: "Owner", manager: "Manager" };
+export const ROLE_LABEL = { owner: "Owner", manager: "Manager", resident: "Resident" };

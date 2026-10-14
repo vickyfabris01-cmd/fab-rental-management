@@ -1,12 +1,13 @@
-// src/router/AppRouter.jsx — MODIFIED FILE (Phase 1: the real route tree)
+// src/router/AppRouter.jsx — MODIFIED FILE (Phase 2: request a room, my requests, manager invite, public invoice)
 //
 // AIM
 // Every route of the site. Unbuilt screens are NOT missing: they open the ComingSoon page
 // (inside /app/:slug and /admin they are driven by the module registry / admin menu).
 //
 //   public      /  /explore  /b/:slug  /pricing  /about  /contact  /terms  /privacy  /help
+//               /invoice/:token (one shared invoice)  /invite/:token (manager invite)
 //   auth        /login  /signup  /confirm  /forgot-password  /reset-password  /auth/callback
-//   signed in   /account  /businesses  /start  /start/details  /start/subscribe  /start/status
+//   signed in   /account  /account/requests  /businesses  /b/:slug/request  /start  /start/details  /start/subscribe  /start/status
 //   business    /app/:slug/*   (members only; the menu comes from modules/registry.js)
 //   admin       /admin/*       (super admin only)
 //   developer   /preview/*     (development builds only)
@@ -22,7 +23,6 @@ import Spinner from "../components/ui/Spinner.jsx";
 import { ROUTE_META } from "./routes";
 import { RequireAuth, RequireMember, RequireSuperAdmin } from "./guards.jsx";
 import PublicLayout from "../layouts/PublicLayout.jsx";
-import ComingSoonPage from "../pages/shared/ComingSoonPage.jsx";
 import useBrand from "../hooks/useBrand.js";
 import { useSession } from "../store/sessionStore.js";
 import { useBusinessStore } from "../store/businessStore.js";
@@ -52,6 +52,11 @@ const ConfirmPage = page(() => import("../pages/auth/ConfirmPage.jsx"));
 const ForgotPasswordPage = page(() => import("../pages/auth/ForgotPasswordPage.jsx"));
 const ResetPasswordPage = page(() => import("../pages/auth/ResetPasswordPage.jsx"));
 const AuthCallbackPage = page(() => import("../pages/auth/AuthCallbackPage.jsx"));
+
+const RequestRoomPage = page(() => import("../pages/rental/RequestRoomPage.jsx"));
+const MyRequestsPage = page(() => import("../pages/rental/MyRequestsPage.jsx"));
+const PublicInvoicePage = page(() => import("../pages/rental/PublicInvoicePage.jsx"));
+const InvitePage = page(() => import("../pages/auth/InvitePage.jsx"));
 
 const AccountPage = page(() => import("../pages/account/AccountPage.jsx"));
 const MyBusinessesPage = page(() => import("../pages/account/MyBusinessesPage.jsx"));
@@ -121,7 +126,7 @@ export default function AppRouter() {
             <Route path="/explore" element={<Guarded><ExplorePage /></Guarded>} />
             <Route path="/b/:slug" element={<Guarded><BusinessPage /></Guarded>} />
             <Route element={<RequireAuth />}>
-              <Route path="/b/:slug/request" element={<ComingSoonPage name="Request a room" phase={2} backTo="/explore" backLabel="Back to explore" />} />
+              <Route path="/b/:slug/request" element={<Guarded><RequestRoomPage /></Guarded>} />
             </Route>
             <Route path="/pricing" element={<Guarded><PricingPage /></Guarded>} />
             <Route path="/about" element={<Guarded><AboutPage /></Guarded>} />
@@ -133,6 +138,7 @@ export default function AppRouter() {
             {/* Signed-in pages that use the public frame */}
             <Route element={<RequireAuth />}>
               <Route path="/account" element={<Guarded><AccountPage /></Guarded>} />
+              <Route path="/account/requests" element={<Guarded><MyRequestsPage /></Guarded>} />
               <Route path="/businesses" element={<Guarded><MyBusinessesPage /></Guarded>} />
               <Route path="/start" element={<Guarded><StartPage /></Guarded>} />
               <Route path="/start/details" element={<Guarded><DetailsPage /></Guarded>} />
@@ -140,6 +146,10 @@ export default function AppRouter() {
               <Route path="/start/status" element={<Guarded><StatusPage /></Guarded>} />
             </Route>
           </Route>
+
+          {/* Shared links: open without signing in */}
+          <Route path="/invoice/:token" element={<Guarded><PublicInvoicePage /></Guarded>} />
+          <Route path="/invite/:token" element={<Guarded><InvitePage /></Guarded>} />
 
           {/* Authentication (own centred layout) */}
           <Route path="/login" element={<Guarded><LoginPage /></Guarded>} />

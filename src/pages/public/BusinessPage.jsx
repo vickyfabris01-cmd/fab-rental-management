@@ -1,22 +1,28 @@
-// src/pages/public/BusinessPage.jsx — NEW FILE
+// src/pages/public/BusinessPage.jsx — MODIFIED FILE (Phase 2: lists available rooms)
 //
 // AIM
 // The public page of one approved business at /b/:slug: name, type, description, location,
 // contact buttons (call, WhatsApp, email). Reviews and stars are left out on purpose.
-// For rentals, "Request a room" leads to /b/:slug/request (built in Phase 2; until then it
-// shows the ComingSoon page). A business that is not active shows "not found".
+// Phase 2: for rentals it also lists the rooms available now (anyone can look, no sign-in), and
+// "Request a room" leads to /b/:slug/request, which asks the person to sign in first.
+// A business that is not active shows "not found".
 
 import "./BusinessPage.css";
+import "../rental/Rental.css";
 import { Link, useParams } from "react-router-dom";
 import { Badge, Button, Card, EmptyState, Icon, Skeleton, SkeletonText } from "../../components/ui";
 import { typeLabel } from "../../config/counties.js";
 import useAsync from "../../hooks/useAsync.js";
 import { getBusinessBySlug } from "../../lib/api/directory.js";
+import { listAvailableRooms } from "../../lib/api/rental.js";
+import { RoomCard } from "../rental/RequestRoomPage.jsx";
 import { toE164 } from "../../lib/phone.js";
 
 export default function BusinessPage() {
   const { slug } = useParams();
   const { data: b, error, loading } = useAsync(() => getBusinessBySlug(slug), [slug]);
+  const { data: rooms, loading: roomsLoading } = useAsync(
+    () => (b?.business_type === "rental" ? listAvailableRooms(b.id) : Promise.resolve({ data: [], error: null })), [b?.id]);
 
   if (loading) {
     return (
@@ -57,6 +63,22 @@ export default function BusinessPage() {
           {place && <p className="bpage__place"><Icon name="home" size={16} /> {place}</p>}
           <h2>About</h2>
           <p>{b.description || "This business has not added a description yet."}</p>
+
+          {b.business_type === "rental" && (
+            <section aria-labelledby="rooms-h" style={{ marginTop: "var(--space-6)" }}>
+              <h2 id="rooms-h">Rooms available now</h2>
+              {roomsLoading ? <Skeleton height={180} /> : (rooms || []).length ? (
+                <div className="rent-rooms">
+                  {rooms.map((r) => (
+                    <div key={r.id} style={{ display: "grid", gap: "var(--space-2)" }}>
+                      <RoomCard room={r} />
+                      <Button as={Link} to={`/b/${b.slug}/request?room=${r.id}`} variant="outline">Request room {r.room_number}</Button>
+                    </div>
+                  ))}
+                </div>
+              ) : <p className="rent-muted">No rooms are free right now. Call or message the business to ask when one will be.</p>}
+            </section>
+          )}
         </div>
 
         <Card className="bpage__side">

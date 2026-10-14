@@ -1,4 +1,4 @@
-// src/layouts/BusinessAppFrame.jsx — NEW FILE
+// src/layouts/BusinessAppFrame.jsx — MODIFIED FILE (Phase 2: a screen is chosen per role, so residents get their own menu)
 //
 // AIM
 // The signed-in frame for one business (/app/:slug/*): the AppShell with the menu supplied by
@@ -8,7 +8,8 @@
 // HOW A SCREEN IS CHOSEN (ModuleScreen)
 //   /app/:slug                  -> the nav item with path ""
 //   /app/:slug/properties/12    -> the nav item with path "properties" (first segment)
-//   no such item for this role  -> "Owners only" card (if another role has it) or "not found"
+//   the same path can belong to different roles (staff and residents both have "")
+//   no such item for this role  -> "No access" card (if another role has it) or "not found"
 
 import { Suspense } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
@@ -32,7 +33,7 @@ export function ModuleScreen() {
   const first = (params["*"] || "").split("/")[0];
   const mod = getModule(business.business_type);
   const all = mod?.nav || [];
-  const item = all.find((i) => i.path === first);
+  const item = all.find((i) => i.path === first && i.roles.includes(role)) || all.find((i) => i.path === first);
   const base = `/app/${business.slug}`;
 
   if (!item) {
@@ -42,7 +43,7 @@ export function ModuleScreen() {
   }
   if (!item.roles.includes(role)) {
     return <Card style={{ margin: "var(--space-8) auto", maxWidth: 520 }}>
-      <EmptyState icon="user" title="Owners only" description="This screen is only available to the business owner."
+      <EmptyState icon="user" title="No access" description="Your role in this business does not include this screen."
         action={<Button as={Link} to={base}>Go to the dashboard</Button>} /></Card>;
   }
   if (!item.element) return <ComingSoonPage titleAs="h2" name={item.label} phase={item.phase} backTo={base} backLabel="Back to dashboard" />;
