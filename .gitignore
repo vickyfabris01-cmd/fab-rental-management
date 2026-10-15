@@ -28,3 +28,4 @@ dist-ssr
 .env.test.local
 .env.production.local
 .env.example
+phase2bugs.txt

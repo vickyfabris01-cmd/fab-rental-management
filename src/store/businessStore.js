@@ -1,4 +1,4 @@
-// src/store/businessStore.js — NEW FILE
+// src/store/businessStore.js — MODIFIED (Phase 3: links worker invitations made by email before loading)
 //
 // AIM
 // The businesses the signed-in person belongs to (as owner or manager) and the role in each.
@@ -23,6 +23,8 @@ export const useBusinessStore = create((set, get) => ({
     if (!supabase || !userId) return set({ memberships: [], loadedFor: null });
     if (!force && get().loadedFor === userId) return;
     set({ loading: true });
+    // a worker added by email before they had an account gets linked now (cheap, does nothing otherwise)
+    await supabase.rpc("claim_worker_links");
     const { data, error } = await supabase
       .from("business_members")
       .select(`role, status, business:businesses(${BUSINESS_FIELDS})`)

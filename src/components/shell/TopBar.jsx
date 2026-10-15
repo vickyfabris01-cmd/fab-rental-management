@@ -1,4 +1,4 @@
-// src/components/shell/TopBar.jsx — NEW FILE
+// src/components/shell/TopBar.jsx — MODIFIED (Phase 3: bellTo="live" shows the live notification dropdown)
 //
 // AIM
 // The bar across the top of every signed-in page.
@@ -15,6 +15,7 @@ import { Link } from "react-router-dom";
 import Icon from "../ui/Icon.jsx";
 import ThemeToggle from "../ui/ThemeToggle.jsx";
 import BrandLogo from "./BrandLogo.jsx";
+import NotificationBell from "../notifications/NotificationBell.jsx";
 import UserMenu from "./UserMenu.jsx";
 
 export default function TopBar({
@@ -40,7 +41,7 @@ export default function TopBar({
       <div className="shell-topbar__right">
         <ThemeToggle />
 
-        {bellTo && (
+        {bellTo === "live" ? <NotificationBell /> : bellTo && (
           <Link to={bellTo} className="shell-topbar__bell" aria-label={unreadLabel}>
             <Icon name="bell" size={20} />
             {unreadCount > 0 && (

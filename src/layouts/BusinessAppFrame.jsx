@@ -1,4 +1,4 @@
-// src/layouts/BusinessAppFrame.jsx — MODIFIED FILE (Phase 2: a screen is chosen per role, so residents get their own menu)
+// src/layouts/BusinessAppFrame.jsx — MODIFIED FILE (Phase 3: live notification bell)
 //
 // AIM
 // The signed-in frame for one business (/app/:slug/*): the AppShell with the menu supplied by
@@ -23,8 +23,6 @@ import { ROLE_LABEL } from "../lib/permissions.js";
 import { useSession } from "../store/sessionStore.js";
 import { useBusinessStore } from "../store/businessStore.js";
 import useBrand from "../hooks/useBrand.js";
-import useAsync from "../hooks/useAsync.js";
-import { unreadCount } from "../lib/api/notifications.js";
 import { typeLabel } from "../config/counties.js";
 
 export function ModuleScreen() {
@@ -57,7 +55,6 @@ export default function BusinessAppFrame() {
   const brand = useBrand();
   const profile = useSession((s) => s.profile);
   const user = useSession((s) => s.user);
-  const { data: unread } = useAsync(() => unreadCount().then((n) => ({ data: n, error: null })), [business.id]);
 
   const nav = navFor(business.business_type, role).map((i) => ({
     to: i.path ? `/app/${business.slug}/${i.path}` : `/app/${business.slug}`,
@@ -75,8 +72,7 @@ export default function BusinessAppFrame() {
       nav={nav}
       user={{ name: profile?.full_name || user?.email, email: user?.email, role: ROLE_LABEL[role] || role, avatarUrl: profile?.avatar_url }}
       business={{ name: business.name, subtitle: `${typeLabel(business.business_type)} business` }}
-      unreadCount={unread || 0}
-      bellTo="/businesses"
+      bellTo="live"
       profileTo="/account"
       helpHref={brand.mailto}
       onSwitchBusiness={() => navigate("/businesses")}

@@ -1,4 +1,4 @@
-// src/layouts/AdminFrame.jsx — NEW FILE
+// src/layouts/AdminFrame.jsx — MODIFIED (Phase 3: live notification bell)
 //
 // AIM
 // The frame for platform admin pages (/admin/*): the AppShell with the admin menu. Screens that
@@ -14,8 +14,6 @@ import { ADMIN_NAV } from "../modules/adminNav.js";
 import { useSession } from "../store/sessionStore.js";
 import { useBusinessStore } from "../store/businessStore.js";
 import useBrand from "../hooks/useBrand.js";
-import useAsync from "../hooks/useAsync.js";
-import { unreadCount } from "../lib/api/notifications.js";
 
 export function AdminScreen() {
   const params = useParams();
@@ -32,7 +30,6 @@ export default function AdminFrame() {
   const brand = useBrand();
   const profile = useSession((s) => s.profile);
   const user = useSession((s) => s.user);
-  const { data: unread } = useAsync(() => unreadCount().then((n) => ({ data: n, error: null })), []);
   const nav = ADMIN_NAV.map((i) => ({ to: i.path ? `/admin/${i.path}` : "/admin", label: i.label, icon: i.icon, end: i.end }));
 
   async function signOut() {
@@ -45,7 +42,7 @@ export default function AdminFrame() {
     <AppShell nav={nav} tabs={["/admin", "/admin/businesses", "/admin/users", "/admin/settings"]}
       user={{ name: profile?.full_name || user?.email, email: user?.email, role: "Super admin", avatarUrl: profile?.avatar_url }}
       business={{ name: `${brand.name} admin`, subtitle: "Platform" }}
-      unreadCount={unread || 0} bellTo="/businesses" profileTo="/account" helpHref={brand.mailto}
+      bellTo="live" profileTo="/account" helpHref={brand.mailto}
       onSwitchBusiness={() => navigate("/businesses")} onSignOut={signOut} />
   );
 }

@@ -1,4 +1,4 @@
-// src/layouts/PublicLayout.jsx — NEW FILE
+// src/layouts/PublicLayout.jsx — MODIFIED (Phase 3: signed-in account menu with Sign out)
 //
 // AIM
 // The frame for every public page: header (logo, links, theme, sign in / account), the page,
@@ -9,9 +9,11 @@
 
 import "./PublicLayout.css";
 import { useState } from "react";
-import { Link, NavLink, Outlet } from "react-router-dom";
+import { Link, NavLink, Outlet, useNavigate } from "react-router-dom";
 import { Button, Icon, ThemeToggle } from "../components/ui";
 import { Drawer } from "../components/modals/Modal.jsx";
+import NotificationBell from "../components/notifications/NotificationBell.jsx";
+import UserMenu from "../components/shell/UserMenu.jsx";
 import BrandLogo from "../components/shell/BrandLogo.jsx";
 import useBrand from "../hooks/useBrand.js";
 import { useSession } from "../store/sessionStore.js";
@@ -30,7 +32,20 @@ export function SiteHeader() {
   const profile = useSession((s) => s.profile);
   const hasBusiness = useBusinessStore((s) => s.memberships.length > 0);
   const name = profile?.full_name || user?.email || "";
-  const accountTo = hasBusiness ? "/businesses" : "/account";
+  const navigate = useNavigate();
+
+  const signOut = async () => {
+    setOpen(false);
+    await useSession.getState().signOut();
+    useBusinessStore.getState().reset();
+    navigate("/");
+  };
+  const menuLinks = [
+    ...(hasBusiness ? [{ to: "/businesses", label: "My businesses", icon: "building" }] : []),
+    { to: "/account/requests", label: "My requests", icon: "file" },
+    { to: "/notifications", label: "Notifications", icon: "bell" },
+    { to: "/help/tickets", label: "My tickets", icon: "help" },
+  ];
 
   return (
     <header className="site-header">
@@ -50,9 +65,17 @@ export function SiteHeader() {
         <div className="site-header__actions">
           <ThemeToggle />
           {user ? (
-            <Button as={Link} to={accountTo} variant="outline" size="sm" className="site-hide-sm">
-              {name ? name.split(" ")[0] : "My account"}
-            </Button>
+            <NotificationBell />
+          ) : null}
+          {user ? (
+            <div className="site-hide-sm">
+              <UserMenu
+                user={{ name, email: user.email, avatarUrl: profile?.avatar_url }}
+                profileTo="/account"
+                links={menuLinks}
+                onSignOut={signOut}
+              />
+            </div>
           ) : (
             <>
               <Button as={Link} to="/login" variant="ghost" size="sm" className="site-hide-sm">Sign in</Button>
@@ -74,7 +97,11 @@ export function SiteHeader() {
           {user ? (
             <>
               {hasBusiness && <li><Link to="/businesses" onClick={() => setOpen(false)}>My businesses</Link></li>}
+              <li><Link to="/account/requests" onClick={() => setOpen(false)}>My requests</Link></li>
+              <li><Link to="/notifications" onClick={() => setOpen(false)}>Notifications</Link></li>
+              <li><Link to="/help/tickets" onClick={() => setOpen(false)}>My tickets</Link></li>
               <li><Link to="/account" onClick={() => setOpen(false)}>My account</Link></li>
+              <li><button type="button" className="site-drawer__out" onClick={signOut}>Sign out</button></li>
             </>
           ) : (
             <>

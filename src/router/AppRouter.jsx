@@ -1,4 +1,4 @@
-// src/router/AppRouter.jsx — MODIFIED FILE (Phase 2: request a room, my requests, manager invite, public invoice)
+// src/router/AppRouter.jsx — MODIFIED FILE (Phase 3: help centre, my tickets, notification centre)
 //
 // AIM
 // Every route of the site. Unbuilt screens are NOT missing: they open the ComingSoon page
@@ -44,7 +44,9 @@ const AboutPage = staticPage("AboutPage");
 const ContactPage = staticPage("ContactPage");
 const TermsPage = staticPage("TermsPage");
 const PrivacyPage = staticPage("PrivacyPage");
-const HelpPage = staticPage("HelpPage");
+const HelpPage = page(() => import("../pages/help/HelpCentrePage.jsx"));
+const MyTicketsPage = page(() => import("../pages/help/MyTicketsPage.jsx"));
+const NotificationsPage = page(() => import("../pages/notifications/NotificationsPage.jsx"));
 
 const LoginPage = page(() => import("../pages/auth/LoginPage.jsx"));
 const SignupPage = page(() => import("../pages/auth/SignupPage.jsx"));
@@ -137,6 +139,8 @@ export default function AppRouter() {
 
             {/* Signed-in pages that use the public frame */}
             <Route element={<RequireAuth />}>
+              <Route path="/help/tickets" element={<Guarded><MyTicketsPage /></Guarded>} />
+              <Route path="/notifications" element={<Guarded><NotificationsPage /></Guarded>} />
               <Route path="/account" element={<Guarded><AccountPage /></Guarded>} />
               <Route path="/account/requests" element={<Guarded><MyRequestsPage /></Guarded>} />
               <Route path="/businesses" element={<Guarded><MyBusinessesPage /></Guarded>} />

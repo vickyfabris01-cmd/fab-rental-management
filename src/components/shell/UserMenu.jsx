@@ -1,4 +1,4 @@
-// src/components/shell/UserMenu.jsx — NEW FILE
+// src/components/shell/UserMenu.jsx — MODIFIED (Phase 3: extra links so it also serves the public site)
 //
 // AIM
 // The avatar button in the top bar and the menu it opens: who is signed in, Profile,
@@ -7,6 +7,7 @@
 //
 // PROPS
 //   user              { name, email, role, avatarUrl }
+//   links             extra links [{ to, label, icon }] shown after Profile (Phase 3)
 //   profileTo         link for "Profile" (omit to hide it)
 //   onSwitchBusiness  function; "Switch business" shows only when given
 //   helpHref          link for "Help & Support" (default: mailto the support address from brand.js)
@@ -19,11 +20,12 @@
 import { useEffect, useId, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import useBrand from "../../hooks/useBrand.js";
+import "./Shell.css";
 import Avatar from "../ui/Avatar.jsx";
 import Icon from "../ui/Icon.jsx";
 import ThemeToggle from "../ui/ThemeToggle.jsx";
 
-export default function UserMenu({ user, profileTo, onSwitchBusiness, helpHref, onSignOut }) {
+export default function UserMenu({ user, profileTo, links = [], onSwitchBusiness, helpHref, onSignOut }) {
   const [open, setOpen] = useState(false);
   const rootRef = useRef(null);
   const buttonRef = useRef(null);
@@ -91,6 +93,14 @@ export default function UserMenu({ user, profileTo, onSwitchBusiness, helpHref, 
                 </Link>
               </li>
             )}
+            {links.map((l) => (
+              <li key={l.to}>
+                <Link className="shell-menu__item" to={l.to} onClick={close}>
+                  <Icon name={l.icon || "file"} size={18} />
+                  <span>{l.label}</span>
+                </Link>
+              </li>
+            ))}
             {onSwitchBusiness && (
               <li>
                 <button
