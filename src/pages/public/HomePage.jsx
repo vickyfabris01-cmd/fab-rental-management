@@ -1,4 +1,4 @@
-// src/pages/public/HomePage.jsx — NEW FILE (replaces HomePlaceholder)
+// src/pages/public/HomePage.jsx — MODIFIED (hero background image with plain-green fallback)
 //
 // AIM
 // The front door, written for someone who just wants to FIND a business: search by name,
@@ -7,9 +7,12 @@
 // main message. Signed-in visitors see the same page with a greeting, and a signed-in owner
 // sees a link to their businesses instead of the sales pitch. Everything shown is real: the
 // list comes from the database (skeleton, then cards, or a friendly message).
+//
+// Hero background: the super admin uploads photos in Settings. The photo showing now comes from
+// current_hero_image(). If there is none, or it cannot load, the original plain green hero stays.
 
 import "./HomePage.css";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Badge, Button, Card, EmptyState, Icon } from "../../components/ui";
 import BusinessCard, { BusinessCardSkeleton } from "../../components/business/BusinessCard.jsx";
@@ -17,6 +20,7 @@ import { BUSINESS_TYPES, COUNTIES } from "../../config/counties.js";
 import useAsync from "../../hooks/useAsync.js";
 import useBrand from "../../hooks/useBrand.js";
 import { listBusinesses } from "../../lib/api/directory.js";
+import { getHeroImage } from "../../lib/api/hero.js";
 import { useSession } from "../../store/sessionStore.js";
 import { useBusinessStore } from "../../store/businessStore.js";
 
@@ -37,8 +41,22 @@ export default function HomePage() {
   const [term, setTerm] = useState("");
   const [county, setCounty] = useState("");
   const { data, error, loading } = useAsync(() => listBusinesses({ limit: 6 }), []);
+  const { data: heroData } = useAsync(() => getHeroImage(), []);
+  const [heroUrl, setHeroUrl] = useState("");
   const first = (profile?.full_name || "").split(" ")[0];
   const ownsBusiness = Boolean(user) && memberships.length > 0;
+
+  // Show the photo only after it has loaded; on any failure the plain hero stays.
+  useEffect(() => {
+    const url = heroData?.url;
+    if (!url) { setHeroUrl(""); return undefined; }
+    let cancelled = false;
+    const img = new Image();
+    img.onload = () => { if (!cancelled) setHeroUrl(url); };
+    img.onerror = () => { if (!cancelled) setHeroUrl(""); };
+    img.src = url;
+    return () => { cancelled = true; };
+  }, [heroData]);
 
   function search(e) {
     e.preventDefault();
@@ -51,7 +69,10 @@ export default function HomePage() {
 
   return (
     <>
-      <section className="home-hero">
+      <section
+        className={`home-hero${heroUrl ? " home-hero--image" : ""}`}
+        style={heroUrl ? { backgroundImage: `url("${heroUrl}")` } : undefined}
+      >
         <div className="home-hero__inner">
           <h1 className="home-hero__title">
             {first ? `Hello, ${first}. What are you looking for?` : "Find rentals and local businesses across Kenya"}

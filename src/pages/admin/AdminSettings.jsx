@@ -1,8 +1,9 @@
-// src/pages/admin/AdminSettings.jsx — NEW FILE
+// src/pages/admin/AdminSettings.jsx — MODIFIED (adds the Home page hero card)
 //
 // AIM
 // Platform settings, one card per topic, each saved on its own:
 //   Brand           product name, tagline, support email, website (shown across the whole site)
+//   Home page hero  background photos for the home page and how often they change (HeroImagesCard)
 //   Approval        manual (default) or automatic approval after payment
 //   Business types  which types can be chosen in onboarding (rental is always on)
 //   Prices          subscription plans: add, edit, switch off
@@ -14,6 +15,7 @@ import { useEffect, useState } from "react";
 import { Alert, Badge, Button, Card, CardBody, CardHeader, EmptyState, Input, SelectInput, Skeleton, Toggle } from "../../components/ui";
 import { Modal } from "../../components/modals/Modal.jsx";
 import SimpleTable from "../../components/data/SimpleTable.jsx";
+import HeroImagesCard from "./HeroImagesCard.jsx";
 import useAsync from "../../hooks/useAsync.js";
 import { useToast } from "../../hooks/useNotifications.js";
 import { adminGetSettings, adminListPlans, adminSavePlan, adminSaveSetting } from "../../lib/api/businesses.js";
@@ -103,6 +105,8 @@ export default function AdminSettings() {
           </form>
         </CardBody>
       </Card>
+
+      <HeroImagesCard />
 
       <Card>
         <CardHeader title="Approval" subtitle="What happens after a business pays its subscription." />

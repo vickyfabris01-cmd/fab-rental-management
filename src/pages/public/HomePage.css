@@ -1,4 +1,4 @@
-/* src/pages/public/HomePage.css — NEW FILE */
+/* src/pages/public/HomePage.css — MODIFIED (adds the hero photo variant at the end) */
 .home-hero { background: var(--color-primary-soft); border-bottom: 1px solid var(--color-border); }
 .home-hero__inner { max-width: var(--container-max); margin: 0 auto; padding: var(--space-10) var(--gutter); display: grid; gap: var(--space-4); }
 .home-hero__title { margin: 0; font-size: var(--text-3xl); line-height: 1.15; font-weight: var(--weight-bold); color: var(--color-on-primary-soft); max-width: 20ch; }
@@ -31,3 +31,10 @@
 .home-owner__steps { margin: var(--space-3) 0 0; padding-left: var(--space-5); display: grid; gap: var(--space-1); font-size: var(--text-sm); }
 .home-owner__actions { display: flex; flex-wrap: wrap; gap: var(--space-3); }
 @media (min-width: 768px) { .home-owner { grid-template-columns: 1fr auto; } }
+
+/* Hero with a background photo. The plain .home-hero rules above stay as the fallback. */
+.home-hero--image { position: relative; background-size: cover; background-position: center; border-bottom-color: transparent; }
+.home-hero--image::before { content: ""; position: absolute; inset: 0; background: linear-gradient(180deg, rgba(5, 46, 22, 0.78), rgba(5, 46, 22, 0.55)); }
+.home-hero--image .home-hero__inner { position: relative; }
+.home-hero--image .home-hero__title,
+.home-hero--image .home-hero__lead { color: #fff; }
