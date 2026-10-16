@@ -1,4 +1,4 @@
-// src/layouts/AuthLayout.jsx — NEW FILE
+// src/layouts/AuthLayout.jsx — MODIFIED (full BizKenia logo)
 //
 // AIM
 // The centred card used by every sign-in screen (login, sign up, confirm, forgot, reset),
@@ -15,7 +15,7 @@ export default function AuthLayout({ title, subtitle, children, footer }) {
     <div className="auth">
       <div className="auth__theme"><ThemeToggle /></div>
       <main className="auth__card">
-        <Link to="/" className="auth__logo" aria-label="Home"><BrandLogo size={40} /></Link>
+        <Link to="/" className="auth__logo" aria-label="Home"><BrandLogo variant="full" size={80} /></Link>
         <h1 className="auth__title">{title}</h1>
         {subtitle && <p className="auth__subtitle">{subtitle}</p>}
         {children}

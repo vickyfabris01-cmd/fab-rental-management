@@ -1,20 +1,22 @@
 <!-- index.html (project root) — MODIFIED FILE
      Changes: (1) Inter added to the font link, old fonts kept until old pages are migrated;
               (2) theme boot script added; (3) inline <style> block removed, its reset and
-              scrollbar rules now live in src/styles/base.css and read from tokens.css. -->
+              scrollbar rules now live in src/styles/base.css and read from tokens.css;
+              (4) favicon and apple-touch-icon now use the BizKenia logo from src/assets. -->
 <!DOCTYPE html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-    <!-- Primary meta (name and logo are placeholders until the final brand is agreed) -->
+    <!-- Primary meta -->
     <title>BizKenia — Manage and grow your business</title>
     <meta name="description" content="BizKenia — manage your rental, shop or farm business in one place, and be found by customers across Kenya." />
     <meta name="theme-color" content="#16A34A" />
 
-    <!-- Favicon (replace with real .ico / .png in production) -->
-    <link rel="icon" type="image/svg+xml" href="/src/assets/logo-icon.svg" />
+    <!-- Favicon and home-screen icon: the BizKenia logo (Vite bundles these from src/assets) -->
+    <link rel="icon" type="image/png" sizes="64x64" href="/src/assets/favicon.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/src/assets/apple-touch-icon.png" />
 
     <!-- Theme boot: sets data-theme BEFORE first paint so there is no flash.
          Values: "light" | "dark" | "system". Default is "light" while old pages are

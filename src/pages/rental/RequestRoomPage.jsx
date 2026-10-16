@@ -41,7 +41,7 @@ export default function RequestRoomPage() {
     const r = await listAvailableRooms(b.data.id);
     return { data: { business: b.data, rooms: r.data || [] }, error: r.error };
   }, [slug]);
-  useBusinessBrand(data?.business);
+  useBusinessBrand(data?.business, loading ? slug : "");
   const [roomId, setRoomId] = useState(params.get("room") || "");
   const [message, setMessage] = useState("");
   const [moveIn, setMoveIn] = useState("");

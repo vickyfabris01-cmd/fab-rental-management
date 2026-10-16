@@ -1,4 +1,4 @@
-// src/pages/public/NotFoundPage.jsx — NEW FILE
+// src/pages/public/NotFoundPage.jsx — MODIFIED (full BizKenia logo)
 //
 // AIM
 // The 404 page: shown for any address that does not exist. Built on the design tokens, so it
@@ -19,7 +19,7 @@ export default function NotFoundPage() {
       </div>
 
       <main className="nf__card">
-        <BrandLogo />
+        <BrandLogo variant="full" size={88} />
         <p className="nf__code" aria-hidden="true">
           404
         </p>

@@ -16,8 +16,8 @@ import { useBusinessContext } from "../../router/BusinessContext.jsx";
 import { getMpesaStatus, getSettings, saveMpesa, saveSettings } from "../../lib/api/rental.js";
 import { Link } from "react-router-dom";
 import { PageHead } from "./shared.jsx";
-import BusinessLogoCard from "./BusinessLogoCard.jsx";
-import BusinessCoverCard from "./BusinessCoverCard.jsx";
+import BusinessLogoCard from "../../components/business/BusinessLogoCard.jsx";
+import BusinessCoverCard from "../../components/business/BusinessCoverCard.jsx";
 
 const DEFAULTS = { billing_due_day: 5, grace_period_days: 3, late_fee_amount: 500, late_fee_percent: 0 };
 

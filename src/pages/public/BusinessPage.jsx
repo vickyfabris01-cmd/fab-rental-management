@@ -24,7 +24,7 @@ export default function BusinessPage() {
   const { data: b, error, loading } = useAsync(() => getBusinessBySlug(slug), [slug]);
   const { data: rooms, loading: roomsLoading } = useAsync(
     () => (b?.business_type === "rental" ? listAvailableRooms(b.id) : Promise.resolve({ data: [], error: null })), [b?.id]);
-  useBusinessBrand(b); // the site header shows this business logo while the page is open
+  useBusinessBrand(b, loading ? slug : ""); // header: this business logo, or its first letter
 
   if (loading) {
     return (

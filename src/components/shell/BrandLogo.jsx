@@ -1,37 +1,50 @@
-// src/components/shell/BrandLogo.jsx — MODIFIED (contextual: shows the business logo inside a business)
+// src/components/shell/BrandLogo.jsx — MODIFIED (real BizKenia logo; contextual business logo)
 //
 // AIM
-// The product mark and name in one place (top bar, sidebar, public pages, auth pages).
-// The mark is a PLACEHOLDER until the final logo is agreed: replace the <svg> below with the
-// real logo and every screen updates. The name always comes from config/brand.js.
+// The product logo in one place (header, sidebar, top bar, footer, sign-in pages, 404).
+// Two looks of the BizKenia logo:
+//   variant "mark" (default)  the BK mark, plus the product name as text beside it. The name
+//                             comes from Admin > Settings, so a rename still shows everywhere.
+//   variant "full"            the full logo with the BizKenia wordmark baked in (footer, sign-in
+//                             pages, 404).
+// The logo is dark green, so it sits on a small light tile that shows in dark mode and always in
+// the dark green sidebar (see BrandLogo.css).
 //
 // With `contextual`, and while a screen has told the business brand store which business it is
 // about (business page, room request, /app/:slug), the mark and name become that business's logo
-// (or its first letter on green when it has no logo) and its name. Without `contextual`, such as
-// in the footer, it is always the platform logo.
+// (or its first letter on green when it has no logo) and its name. While that business is still
+// loading, only its first letter shows. Inside a business the BizKenia logo is never the fallback.
+// Without `contextual`, such as in the footer, it is always the platform logo.
 //
 // PROPS
-//   showName     show the name beside the mark (default true)
-//   size         height of the mark in pixels (default 32)
+//   variant      "mark" (default) or "full"
+//   showName     "mark" only: show the name beside the mark (default true)
+//   size         height of the image in pixels (default 32 for "mark", 80 for "full")
 //   contextual   use the current business instead of the platform (default false)
 //   className
 
 import { useState } from "react";
 import useBrand from "../../hooks/useBrand.js";
 import useBusinessBrandStore from "../../store/businessBrandStore.js";
+import markSrc from "../../assets/bizkenia-mark.png";
+import fullSrc from "../../assets/bizkenia-logo.png";
 import "./BrandLogo.css";
+
+const MARK_RATIO = 282 / 160; // width / height of bizkenia-mark.png
+const FULL_RATIO = 560 / 447; // width / height of bizkenia-logo.png
 
 function BusinessMark({ business, showName, size, className }) {
   const [failedUrl, setFailedUrl] = useState("");
   const name = business.name || "";
-  const showImg = business.logo_url && failedUrl !== business.logo_url;
+  const showImg = !business.provisional && business.logo_url && failedUrl !== business.logo_url;
+  const withName = showName && !business.provisional; // still loading: the letter only
   return (
     <span className={`shell-logo ${className}`.trim()}>
       {showImg ? (
         <img
           className="shell-logo__img"
           src={business.logo_url}
-          alt={showName ? "" : name}
+          alt={withName ? "" : name}
           width={size}
           height={size}
           onError={() => setFailedUrl(business.logo_url)}
@@ -40,45 +53,43 @@ function BusinessMark({ business, showName, size, className }) {
         <span
           className="shell-logo__letter"
           style={{ width: size, height: size }}
-          role={showName ? undefined : "img"}
-          aria-label={showName ? undefined : name}
-          aria-hidden={showName ? "true" : undefined}
+          role={withName ? undefined : "img"}
+          aria-label={withName ? undefined : name}
+          aria-hidden={withName ? "true" : undefined}
         >
           {(name.trim().charAt(0) || "?").toUpperCase()}
         </span>
       )}
-      {showName && <span className="shell-logo__name shell-logo__name--business">{name}</span>}
+      {withName && <span className="shell-logo__name shell-logo__name--business">{name}</span>}
     </span>
   );
 }
 
-export default function BrandLogo({ showName = true, size = 32, className = "", contextual = false }) {
+export default function BrandLogo({ variant = "mark", showName = true, size, className = "", contextual = false }) {
   const BRAND = useBrand();
   const business = useBusinessBrandStore((s) => s.business);
 
   if (contextual && business) {
-    return <BusinessMark business={business} showName={showName} size={size} className={className} />;
+    return <BusinessMark business={business} showName={showName} size={size || 32} className={className} />;
   }
 
+  if (variant === "full") {
+    const h = size || 80;
+    return (
+      <span className={`shell-logo shell-logo--full ${className}`.trim()}>
+        <span className="shell-logo__tile">
+          <img className="shell-logo__full" src={fullSrc} alt={BRAND.name} width={Math.round(h * FULL_RATIO)} height={h} />
+        </span>
+      </span>
+    );
+  }
+
+  const h = size || 32;
   return (
     <span className={`shell-logo ${className}`.trim()}>
-      <svg
-        width={size}
-        height={size}
-        viewBox="0 0 32 32"
-        role={showName ? undefined : "img"}
-        aria-label={showName ? undefined : BRAND.name}
-        aria-hidden={showName ? "true" : undefined}
-        focusable="false"
-      >
-        <rect width="32" height="32" rx="9" fill="var(--color-primary)" />
-        {/* Placeholder leaf */}
-        <path
-          d="M9 22c0-7 5-12 14-12 0 8-4 13-11 13-1 0-2 0-3-1z"
-          fill="var(--color-on-scrim)"
-        />
-        <path d="M9 24c3-5 6-8 10-10" stroke="var(--color-primary)" strokeWidth="1.6" strokeLinecap="round" fill="none" />
-      </svg>
+      <span className="shell-logo__tile">
+        <img className="shell-logo__mark" src={markSrc} alt={showName ? "" : BRAND.name} width={Math.round(h * MARK_RATIO)} height={h} />
+      </span>
       {showName && <span className="shell-logo__name">{BRAND.name}</span>}
     </span>
   );

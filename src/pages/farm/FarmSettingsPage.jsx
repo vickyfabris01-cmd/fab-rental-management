@@ -1,13 +1,16 @@
-// src/pages/farm/FarmSettingsPage.jsx — NEW FILE
+// src/pages/farm/FarmSettingsPage.jsx — MODIFIED (adds the logo and cover photo cards)
 //
 // AIM
 // /app/:slug/settings (owner only) — the farm's profile and a summary of how it is set up: name,
 // type, status, county, contact details and what has been recorded so far. The profile is edited
 // on the same page used at sign-up (it also handles changes that need the platform's review).
+// The farm logo and cover photo are uploaded here too (the same cards rental businesses use).
 
 import "./Farm.css";
 import { Link } from "react-router-dom";
 import { Badge, Button, Card, CardBody, CardHeader } from "../../components/ui";
+import BusinessLogoCard from "../../components/business/BusinessLogoCard.jsx";
+import BusinessCoverCard from "../../components/business/BusinessCoverCard.jsx";
 import useAsync from "../../hooks/useAsync.js";
 import { getFarmSummary } from "../../lib/api/farm.js";
 import { formatDate } from "../../lib/format.js";
@@ -56,6 +59,11 @@ export default function FarmSettingsPage() {
             )}
           </CardBody>
         </Card>
+      </div>
+
+      <div className="farm-grid farm-grid--2">
+        <BusinessLogoCard business={business} />
+        <BusinessCoverCard business={business} />
       </div>
     </div>
   );

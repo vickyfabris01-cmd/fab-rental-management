@@ -1,4 +1,4 @@
-// src/layouts/PublicLayout.jsx — MODIFIED (Phase 3 account menu; header logo follows the current business)
+// src/layouts/PublicLayout.jsx — MODIFIED (Phase 3 account menu; header logo follows the current business; full logo in the footer)
 //
 // AIM
 // The frame for every public page: header (logo, links, theme, sign in / account), the page,
@@ -121,7 +121,7 @@ export function SiteFooter() {
     <footer className="site-footer">
       <div className="site-footer__inner">
         <div className="site-footer__about">
-          <BrandLogo />
+          <BrandLogo variant="full" size={72} />
           <p>{brand.tagline}</p>
           <a href={brand.mailto}>{brand.supportEmail}</a>
         </div>

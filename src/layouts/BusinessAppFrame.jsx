@@ -56,7 +56,7 @@ export default function BusinessAppFrame() {
   const brand = useBrand();
   const profile = useSession((s) => s.profile);
   const user = useSession((s) => s.user);
-  useBusinessBrand(business); // sidebar and top bar show this business logo (or its first letter)
+  useBusinessBrand(business); // sidebar and top bar: this business logo, or its first letter
 
   const nav = navFor(business.business_type, role).map((i) => ({
     to: i.path ? `/app/${business.slug}/${i.path}` : `/app/${business.slug}`,

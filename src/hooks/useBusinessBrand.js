@@ -1,20 +1,27 @@
-// src/hooks/useBusinessBrand.js — NEW FILE
+// src/hooks/useBusinessBrand.js — MODIFIED (first letter while loading, no flash)
 //
 // AIM
-// Call it in a screen that belongs to one business: useBusinessBrand(business). While the screen
-// is open, the header and sidebar logo become that business's logo. It resets when the screen
-// closes. Pass null or undefined while the business is still loading.
+// Call it in a screen that belongs to one business: useBusinessBrand(business, loadingSlug).
+// While the screen is open, the header and sidebar logo become that business's logo, or its first
+// letter when it has no logo. It resets when the screen closes.
+//   business     the loaded business, or null/undefined while it loads
+//   loadingSlug  pass the address slug while loading: the header then shows the first letter of
+//                the slug straight away, never the BizKenia logo. Pass "" once loaded or failed
+//                (a business that does not exist falls back to the BizKenia logo).
+// It runs before the screen is painted, so the BizKenia logo never flashes.
 
-import { useEffect } from "react";
+import { useLayoutEffect } from "react";
 import useBusinessBrandStore from "../store/businessBrandStore.js";
 
-export default function useBusinessBrand(business) {
+export default function useBusinessBrand(business, loadingSlug = "") {
   const id = business?.id;
   const name = business?.name;
   const logo = business?.logo_url || null;
-  useEffect(() => {
-    if (!id) return undefined;
-    useBusinessBrandStore.getState().set({ id, name, logo_url: logo });
+  useLayoutEffect(() => {
+    const store = useBusinessBrandStore.getState();
+    if (id) store.set({ id, name, logo_url: logo });
+    else if (loadingSlug) store.set({ id: "", name: loadingSlug.replace(/[-_]+/g, " "), logo_url: null, provisional: true });
+    else return undefined;
     return () => useBusinessBrandStore.getState().clear();
-  }, [id, name, logo]);
+  }, [id, name, logo, loadingSlug]);
 }
