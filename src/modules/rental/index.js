@@ -1,4 +1,4 @@
-// src/modules/rental/index.js — MODIFIED FILE (Phase 3: resident portal, complaints, workforce, announcements, messages)
+// src/modules/rental/index.js — MODIFIED FILE (Phase 4: Reports screen; agriculture now has its own module file)
 //
 // The rental module's navigation. Phase 2 builds the owner and manager screens (dashboard,
 // properties, requests, residents, tenancies, billing, payments, invoices, managers, settings).
@@ -32,7 +32,7 @@ registerModule({
     { id: "workforce", label: "Workforce", icon: "user", path: "workforce", phase: 3, roles: BOTH, element: lazy(() => import("../../pages/people/WorkforcePage.jsx")) },
     { id: "announcements", label: "Announcements", icon: "megaphone", path: "announcements", phase: 3, roles: BOTH, element: lazy(() => import("../../pages/people/AnnouncementsPage.jsx")) },
     { id: "messages", label: "Messages", icon: "user", path: "messages", phase: 3, roles: ALL, element: lazy(() => import("../../pages/people/MessagesPage.jsx")) },
-    { id: "reports", label: "Reports", icon: "chart", path: "reports", phase: 4, roles: BOTH },
+    { id: "reports", label: "Reports", icon: "chart", path: "reports", phase: 4, roles: OWNER, element: lazy(() => import("../../pages/reports/ReportsPage.jsx")) },
     { id: "managers", label: "Managers", icon: "users", path: "managers", phase: 2, roles: OWNER, element: lazy(() => import("../../pages/rental/ManagersPage.jsx")) },
     { id: "settings", label: "Settings", icon: "settings", path: "settings", phase: 2, roles: OWNER, element: lazy(() => import("../../pages/rental/SettingsPage.jsx")) },
 
@@ -50,6 +50,5 @@ registerModule({
   ],
 });
 
-// Business types that are listed in onboarding but not open yet.
-registerModule({ type: "agriculture", label: "Agriculture", nav: [] });
+// Agriculture is registered in ../agriculture/index.js (Phase 4). The shop is not open yet.
 registerModule({ type: "shop", label: "Shop", nav: [] });

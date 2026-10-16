@@ -1,4 +1,4 @@
-// src/config/counties.js — NEW FILE
+// src/config/counties.js — MODIFIED FILE (Phase 4: agriculture is open in onboarding)
 // The 47 counties of Kenya, used by filters and forms.
 export const COUNTIES = [
   "Baringo","Bomet","Bungoma","Busia","Elgeyo-Marakwet","Embu","Garissa","Homa Bay","Isiolo","Kajiado",
@@ -10,7 +10,7 @@ export const COUNTIES = [
 
 export const BUSINESS_TYPES = [
   { value: "rental", label: "Rental", blurb: "Apartments, hostels and rooms", open: true },
-  { value: "agriculture", label: "Agriculture", blurb: "Farms, produce and inputs", open: false },
+  { value: "agriculture", label: "Agriculture", blurb: "Farms, produce and inputs", open: true },
   { value: "shop", label: "Shop", blurb: "Retail and online selling", open: false },
 ];
 

@@ -1,4 +1,4 @@
-// src/pages/admin/AdminSettings.jsx — MODIFIED (adds the Home page hero card)
+// src/pages/admin/AdminSettings.jsx — MODIFIED (adds the Home page hero card; Phase 4: the Agriculture switch label)
 //
 // AIM
 // Platform settings, one card per topic, each saved on its own:
@@ -124,7 +124,7 @@ export default function AdminSettings() {
         <CardBody>
           <div className="adm-sec">
             <Toggle label="Rental" checked disabled onChange={() => {}} />
-            <Toggle label="Agriculture (module arrives in Phase 4)" checked={!!modules.agriculture} onChange={(v) => setModules({ ...modules, agriculture: v })} />
+            <Toggle label="Agriculture" checked={!!modules.agriculture} onChange={(v) => setModules({ ...modules, agriculture: v })} />
             <Toggle label="Shop (module arrives in Phase 5)" checked={!!modules.shop} onChange={(v) => setModules({ ...modules, shop: v })} />
             <p className="adm-hint">Switching a type on before its module is built lets owners register, but the app screens show "Coming soon".</p>
             <div><Button loading={busy === "modules"} onClick={() => save("modules", { ...modules, rental: true }, "Business types")}>Save business types</Button></div>
