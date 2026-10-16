@@ -1,4 +1,4 @@
-// src/components/business/BusinessCard.jsx — NEW FILE
+// src/components/business/BusinessCard.jsx — MODIFIED (logo mark on the top left of the cover)
 //
 // AIM
 // One business in a list (home page, explore). Cover picture (or a coloured placeholder with
@@ -16,6 +16,11 @@ export default function BusinessCard({ business }) {
     <Link to={`/b/${b.slug}`} className="bcard">
       <div className="bcard__cover" style={b.cover_url ? { backgroundImage: `url(${b.cover_url})` } : undefined}>
         {!b.cover_url && <span aria-hidden="true">{b.name.charAt(0).toUpperCase()}</span>}
+        {(b.logo_url || b.cover_url) && (
+          <span className="bcard__mark" aria-hidden="true">
+            {b.logo_url ? <img src={b.logo_url} alt="" loading="lazy" /> : b.name.charAt(0).toUpperCase()}
+          </span>
+        )}
       </div>
       <div className="bcard__body">
         <div className="bcard__top">

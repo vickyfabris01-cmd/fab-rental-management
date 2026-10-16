@@ -1,4 +1,4 @@
-// src/pages/rental/BusinessCoverCard.jsx — NEW FILE
+// src/pages/rental/BusinessCoverCard.jsx — MODIFIED (landscape 16:9 only, soft notice otherwise)
 //
 // AIM
 // Lets the owner upload, replace or remove the business cover photo. The photo shows at the top
@@ -30,8 +30,9 @@ export default function BusinessCoverCard({ business }) {
     e.target.value = "";
     if (!file) return;
     setBusy("upload");
-    const { error } = await uploadBusinessCover(business.id, file, cover);
+    const { error, notice } = await uploadBusinessCover(business.id, file, cover);
     setBusy("");
+    if (notice) return toast.info(notice);
     if (error) return toast.error(error);
     toast.success("Cover photo saved.");
     refresh();
@@ -61,7 +62,7 @@ export default function BusinessCoverCard({ business }) {
             </label>
             {cover && <Button variant="ghost" loading={busy === "remove"} disabled={busy === "upload"} onClick={onRemove}>Remove photo</Button>}
           </div>
-          <p className="rent-muted">JPG, PNG or WebP, up to {COVER_MAX_MB} MB. Use a wide landscape photo with the main subject in the middle, because the edges are cropped on small screens.</p>
+          <p className="rent-muted">JPG, PNG or WebP, up to {COVER_MAX_MB} MB. Landscape 16:9 only, for example 1920 x 1080. Keep the main subject in the middle, because the edges are cropped on small screens. A new photo replaces the old one.</p>
         </div>
       </CardBody>
     </Card>

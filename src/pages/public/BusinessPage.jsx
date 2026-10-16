@@ -1,4 +1,4 @@
-// src/pages/public/BusinessPage.jsx — MODIFIED FILE (Phase 2: lists available rooms)
+// src/pages/public/BusinessPage.jsx — MODIFIED FILE (Phase 2 rooms; header logo becomes the business logo)
 //
 // AIM
 // The public page of one approved business at /b/:slug: name, type, description, location,
@@ -13,6 +13,7 @@ import { Link, useParams } from "react-router-dom";
 import { Badge, Button, Card, EmptyState, Icon, Skeleton, SkeletonText } from "../../components/ui";
 import { typeLabel } from "../../config/counties.js";
 import useAsync from "../../hooks/useAsync.js";
+import useBusinessBrand from "../../hooks/useBusinessBrand.js";
 import { getBusinessBySlug } from "../../lib/api/directory.js";
 import { listAvailableRooms } from "../../lib/api/rental.js";
 import { RoomCard } from "../rental/RequestRoomPage.jsx";
@@ -23,6 +24,7 @@ export default function BusinessPage() {
   const { data: b, error, loading } = useAsync(() => getBusinessBySlug(slug), [slug]);
   const { data: rooms, loading: roomsLoading } = useAsync(
     () => (b?.business_type === "rental" ? listAvailableRooms(b.id) : Promise.resolve({ data: [], error: null })), [b?.id]);
+  useBusinessBrand(b); // the site header shows this business logo while the page is open
 
   if (loading) {
     return (

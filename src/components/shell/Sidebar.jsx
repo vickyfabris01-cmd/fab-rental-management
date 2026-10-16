@@ -1,4 +1,4 @@
-// src/components/shell/Sidebar.jsx — NEW FILE
+// src/components/shell/Sidebar.jsx — MODIFIED (logo follows the current business)
 //
 // AIM
 // The left navigation on tablets and desktops. Full width (labels) from 1024px, an icon-only
@@ -22,7 +22,7 @@ export default function Sidebar({ nav = [], business }) {
   return (
     <aside className="shell-sidebar" aria-label="Main navigation">
       <div className="shell-sidebar__brand">
-        <BrandLogo />
+        <BrandLogo contextual />
       </div>
 
       <nav className="shell-sidebar__nav">

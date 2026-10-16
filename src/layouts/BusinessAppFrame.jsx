@@ -1,4 +1,4 @@
-// src/layouts/BusinessAppFrame.jsx — MODIFIED FILE (Phase 3: live notification bell)
+// src/layouts/BusinessAppFrame.jsx — MODIFIED FILE (Phase 3 live bell; shows the business logo)
 //
 // AIM
 // The signed-in frame for one business (/app/:slug/*): the AppShell with the menu supplied by
@@ -23,6 +23,7 @@ import { ROLE_LABEL } from "../lib/permissions.js";
 import { useSession } from "../store/sessionStore.js";
 import { useBusinessStore } from "../store/businessStore.js";
 import useBrand from "../hooks/useBrand.js";
+import useBusinessBrand from "../hooks/useBusinessBrand.js";
 import { typeLabel } from "../config/counties.js";
 
 export function ModuleScreen() {
@@ -55,6 +56,7 @@ export default function BusinessAppFrame() {
   const brand = useBrand();
   const profile = useSession((s) => s.profile);
   const user = useSession((s) => s.user);
+  useBusinessBrand(business); // sidebar and top bar show this business logo (or its first letter)
 
   const nav = navFor(business.business_type, role).map((i) => ({
     to: i.path ? `/app/${business.slug}/${i.path}` : `/app/${business.slug}`,

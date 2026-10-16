@@ -1,4 +1,4 @@
-// src/pages/admin/HeroImagesCard.jsx — NEW FILE
+// src/pages/admin/HeroImagesCard.jsx — MODIFIED (landscape 16:9 only, soft notice otherwise)
 //
 // AIM
 // The "Home page hero" card inside Admin Settings. The super admin uploads background photos
@@ -40,8 +40,9 @@ export default function HeroImagesCard() {
     if (!file) return;
     setBusy("upload");
     const nextOrder = list.length ? Math.max(...list.map((i) => i.sort_order || 0)) + 1 : 0;
-    const { error: err } = await adminUploadHeroImage(file, label, nextOrder);
+    const { error: err, notice } = await adminUploadHeroImage(file, label, nextOrder);
     setBusy("");
+    if (notice) return toast.info(notice);
     if (err) return toast.error(err);
     setLabel("");
     toast.success("Image uploaded.");
@@ -113,7 +114,7 @@ export default function HeroImagesCard() {
               <span>{busy === "upload" ? "Uploading..." : "Choose a photo to upload"}</span>
               <input type="file" accept={ACCEPT} disabled={busy === "upload"} onChange={onPick} aria-label="Upload a hero photo" />
             </label>
-            <p className="adm-hint">JPG, PNG or WebP, up to {HERO_MAX_MB} MB. A wide landscape photo works best.</p>
+            <p className="adm-hint">JPG, PNG or WebP, up to {HERO_MAX_MB} MB. Landscape 16:9 only, for example 1920 x 1080.</p>
           </div>
 
           {loading ? (

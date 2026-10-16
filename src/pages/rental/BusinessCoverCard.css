@@ -1,4 +1,4 @@
-/* src/pages/rental/BusinessCoverCard.css — NEW FILE */
+/* src/pages/rental/BusinessCoverCard.css — MODIFIED (adds the logo preview, used by BusinessLogoCard) */
 .bcov { display: grid; gap: var(--space-3); }
 .bcov__preview { height: 140px; border-radius: var(--radius-lg); border: 1px solid var(--color-border); background: var(--color-primary-soft) center / cover no-repeat; display: grid; place-items: center; color: var(--color-on-primary-soft); font-size: var(--text-3xl); font-weight: var(--weight-bold); }
 .bcov__actions { display: flex; flex-wrap: wrap; gap: var(--space-2); align-items: center; }
@@ -6,3 +6,6 @@
 .bcov__file:hover { background: var(--color-surface-2); }
 .bcov__file:focus-within { outline: 2px solid var(--color-focus); }
 .bcov__file input { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; }
+.bcov__logo { width: 96px; height: 96px; border-radius: var(--radius-lg); border: 1px solid var(--color-border); background: var(--color-surface); display: grid; place-items: center; overflow: hidden; }
+.bcov__logo img { width: 100%; height: 100%; object-fit: contain; display: block; }
+.bcov__logo--letter { background: var(--color-primary); border-color: transparent; color: var(--color-on-scrim); font-size: var(--text-3xl); font-weight: var(--weight-bold); }

@@ -1,4 +1,4 @@
-// src/pages/rental/RequestRoomPage.jsx — NEW FILE
+// src/pages/rental/RequestRoomPage.jsx — MODIFIED (header logo becomes the business logo)
 //
 // AIM
 // /b/:slug/request[?room=id] — a signed-in person asks for a room in a rental business. They pick
@@ -11,6 +11,7 @@ import { useState } from "react";
 import { Link, useParams, useSearchParams } from "react-router-dom";
 import { Alert, Badge, Button, Card, EmptyState, Input, Skeleton, TextArea } from "../../components/ui";
 import useAsync from "../../hooks/useAsync.js";
+import useBusinessBrand from "../../hooks/useBusinessBrand.js";
 import { getBusinessBySlug } from "../../lib/api/directory.js";
 import { listAvailableRooms, submitRequest } from "../../lib/api/rental.js";
 import { money, todayISO } from "./shared.jsx";
@@ -40,6 +41,7 @@ export default function RequestRoomPage() {
     const r = await listAvailableRooms(b.data.id);
     return { data: { business: b.data, rooms: r.data || [] }, error: r.error };
   }, [slug]);
+  useBusinessBrand(data?.business);
   const [roomId, setRoomId] = useState(params.get("room") || "");
   const [message, setMessage] = useState("");
   const [moveIn, setMoveIn] = useState("");

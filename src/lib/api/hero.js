@@ -1,13 +1,16 @@
-// src/lib/api/hero.js — NEW FILE
+// src/lib/api/hero.js — MODIFIED (only landscape 16:9 photos; others are turned down softly)
 //
 // AIM
 // The home page hero background. Public: which image is showing right now. Super admin: upload
 // images into the "hero/" folder of the public "site-media" bucket, switch them on or off,
 // reorder, delete, and set how often the image changes (12 hours, 1 day, 5 days, 1 week).
 // The database picks the current image (function current_hero_image) so every visitor sees the
-// same one. Every function returns { data, error } and never throws.
+// same one. Every function returns { data, error } and never throws. A photo that is not landscape
+// 16:9 is not an error: the upload returns { data: null, error: null, notice: "..." } and the
+// screen shows the notice softly.
 
 import { supabase } from "../../config/supabase.js";
+import { checkWide169 } from "../imageCheck.js";
 
 const BUCKET = "site-media";
 const FOLDER = "hero";
@@ -47,6 +50,8 @@ export async function adminUploadHeroImage(file, label, nextOrder) {
   if (!supabase) return NOT_CONNECTED;
   if (!TYPES[file.type]) return { data: null, error: "Use a JPG, PNG or WebP photo." };
   if (file.size > HERO_MAX_MB * 1024 * 1024) return { data: null, error: `The photo must be under ${HERO_MAX_MB} MB.` };
+  const shape = await checkWide169(file);
+  if (!shape.ok) return { data: null, error: null, notice: shape.message };
   const path = `${FOLDER}/${crypto.randomUUID()}.${TYPES[file.type]}`;
   const up = await supabase.storage.from(BUCKET).upload(path, file, { contentType: file.type, upsert: false });
   if (up.error) return { data: null, error: up.error.message };

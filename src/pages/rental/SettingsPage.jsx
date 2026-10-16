@@ -1,11 +1,11 @@
-// src/pages/rental/SettingsPage.jsx — MODIFIED (adds the cover photo card)
+// src/pages/rental/SettingsPage.jsx — MODIFIED (adds the logo and cover photo cards)
 //
 // AIM
 // /app/:slug/settings (owner only). Billing rules (day rent is due, grace days, late fee) and the
 // business's own M-Pesa paybill or till so residents' STK prompts pay into it. The M-Pesa
 // passkey is write-only: it is saved but never shown again. The business profile is edited on
-// its own page (shared with sign-up). The cover photo is uploaded here (BusinessCoverCard). The
-// platform commission is set by the platform, not here.
+// its own page (shared with sign-up). The logo and cover photo are uploaded here
+// (BusinessLogoCard, BusinessCoverCard). The platform commission is set by the platform, not here.
 
 import "./Rental.css";
 import { useEffect, useState } from "react";
@@ -16,6 +16,7 @@ import { useBusinessContext } from "../../router/BusinessContext.jsx";
 import { getMpesaStatus, getSettings, saveMpesa, saveSettings } from "../../lib/api/rental.js";
 import { Link } from "react-router-dom";
 import { PageHead } from "./shared.jsx";
+import BusinessLogoCard from "./BusinessLogoCard.jsx";
 import BusinessCoverCard from "./BusinessCoverCard.jsx";
 
 const DEFAULTS = { billing_due_day: 5, grace_period_days: 3, late_fee_amount: 500, late_fee_percent: 0 };
@@ -109,6 +110,8 @@ export default function SettingsPage() {
             <CardHeader title="Business profile" subtitle="Name, description, phone and place shown to renters" />
             <CardBody><Button as={Link} to={`/start/details?business=${business.slug}`} variant="outline">Edit business details</Button></CardBody>
           </Card>
+
+          <BusinessLogoCard business={business} />
 
           <BusinessCoverCard business={business} />
         </div>

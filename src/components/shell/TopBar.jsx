@@ -1,4 +1,4 @@
-// src/components/shell/TopBar.jsx — MODIFIED (Phase 3: bellTo="live" shows the live notification dropdown)
+// src/components/shell/TopBar.jsx — MODIFIED (Phase 3 live bell; logo follows the current business)
 //
 // AIM
 // The bar across the top of every signed-in page.
@@ -34,7 +34,7 @@ export default function TopBar({
   return (
     <header className="shell-topbar">
       <div className="shell-topbar__left">
-        <BrandLogo showName={false} className="shell-topbar__mark" />
+        <BrandLogo contextual showName={false} className="shell-topbar__mark" />
         {title && <h1 className="shell-topbar__title">{title}</h1>}
       </div>
 
