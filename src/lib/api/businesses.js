@@ -1,4 +1,4 @@
-// src/lib/api/businesses.js — NEW FILE
+// src/lib/api/businesses.js — NEW FILE (Phase 5 step 3: adminStats counts subscription payments only)
 //
 // AIM
 // Everything the browser does with businesses (onboarding, owner edits, super-admin review).
@@ -92,8 +92,16 @@ export async function adminStats() {
     count((q) => q.eq("status", "suspended")),
     supabase.from("profiles").select("id", { count: "exact", head: true }).then((r) => r.count || 0),
   ]);
-  const { data: sums } = await supabase.from("payment_intents").select("amount_kes").eq("status", "success");
-  const revenue = (sums || []).reduce((a, r) => a + (r.amount_kes || 0), 0);
+  // Subscription money only: rent and shop payments belong to the businesses, not to the platform.
+  // admin_revenue_summary (migration p5_07) adds it up in the database; if that migration is not applied
+  // yet, fall back to adding up the rows here (the API returns at most 1000 rows, so this is a stop-gap).
+  let revenue;
+  const rev = await supabase.rpc("admin_revenue_summary");
+  if (!rev.error && rev.data) revenue = Number(rev.data.all_time || 0);
+  else {
+    const { data: sums } = await supabase.from("payment_intents").select("amount_kes").eq("status", "success").eq("purpose", "subscription");
+    revenue = (sums || []).reduce((a, r) => a + (r.amount_kes || 0), 0);
+  }
   return { data: { pending, active, rejected, suspended, users, revenue }, error: null };
 }
 

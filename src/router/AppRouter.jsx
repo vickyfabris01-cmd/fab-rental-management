@@ -1,10 +1,10 @@
-// src/router/AppRouter.jsx — MODIFIED FILE (Phase 3: help centre, my tickets, notification centre)
+// src/router/AppRouter.jsx — MODIFIED FILE (Phase 3: help centre, my tickets, notification centre; Phase 5 step 3: maintenance gate and /maintenance)
 //
 // AIM
 // Every route of the site. Unbuilt screens are NOT missing: they open the ComingSoon page
 // (inside /app/:slug and /admin they are driven by the module registry / admin menu).
 //
-//   public      /  /explore  /b/:slug (shop: /browse /p/:id /cart)  /pricing  /about  /contact  /terms  /privacy  /help
+//   public      /  /explore  /b/:slug (shop: /browse /p/:id /cart)  /pricing  /about  /contact  /terms  /privacy  /help  /maintenance
 //               /invoice/:token (one shared invoice)  /invite/:token (manager invite)
 //   auth        /login  /signup  /confirm  /forgot-password  /reset-password  /auth/callback
 //   signed in   /b/:slug/checkout  /orders  /orders/:id  /wishlist  /account  /account/requests  /businesses  /b/:slug/request  /start  /start/details  /start/subscribe  /start/status
@@ -23,6 +23,7 @@ import Spinner from "../components/ui/Spinner.jsx";
 import { ROUTE_META } from "./routes";
 import { RequireAuth, RequireMember, RequireSuperAdmin } from "./guards.jsx";
 import PublicLayout from "../layouts/PublicLayout.jsx";
+import MaintenanceGate from "./MaintenanceGate.jsx";
 import useBrand from "../hooks/useBrand.js";
 import { useSession } from "../store/sessionStore.js";
 import { useBusinessStore } from "../store/businessStore.js";
@@ -46,6 +47,7 @@ const WishlistPage = page(() => import("../pages/storefront/WishlistPage.jsx"));
 const BusinessPage = page(() => import("../pages/public/BusinessPage.jsx"));
 const PricingPage = page(() => import("../pages/public/PricingPage.jsx"));
 const NotFoundPage = page(() => import("../pages/public/NotFoundPage.jsx"));
+const MaintenanceRoute = page(() => import("../pages/shared/MaintenancePage.jsx").then((m) => ({ default: m.MaintenanceRoute })));
 const staticPage = (name) => page(() => import("../pages/public/StaticPages.jsx").then((m) => ({ default: m[name] })));
 const AboutPage = staticPage("AboutPage");
 const ContactPage = staticPage("ContactPage");
@@ -128,6 +130,7 @@ export default function AppRouter() {
     <BrowserRouter>
       <Boot />
       <Suspense fallback={<PageLoader />}>
+        <MaintenanceGate>
         <Routes>
           {/* Public site */}
           <Route element={<PublicLayout />}>
@@ -203,9 +206,11 @@ export default function AppRouter() {
             </Route>
           )}
 
+          <Route path="/maintenance" element={<MaintenanceRoute />} />
           <Route path="/not-found" element={<NotFoundPage />} />
           <Route path="*" element={<NotFoundPage />} />
         </Routes>
+        </MaintenanceGate>
       </Suspense>
     </BrowserRouter>
   );

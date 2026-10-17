@@ -1,4 +1,4 @@
-// src/pages/admin/AdminSettings.jsx — MODIFIED (step 2: the "Business types" switch is removed; only a single business can be locked)
+// src/pages/admin/AdminSettings.jsx — MODIFIED (step 2: the "Business types" switch is removed; only a single business can be locked. Phase 5 step 3: adds the Maintenance mode and Default commission cards)
 //
 // AIM
 // Platform settings, one card per topic, each saved on its own:
@@ -7,6 +7,8 @@
 //   Approval        manual (default) or automatic approval after payment
 //   Prices          subscription plans: add, edit, switch off
 //   M-Pesa          sandbox or live and the shortcode (secret keys live in Edge Function secrets)
+//   Maintenance     switch the site to the maintenance page (PlatformControls.jsx)
+//   Commission      default commission percent, stored only (PlatformControls.jsx)
 // Every save is written to the audit log by the database.
 
 import "./Admin.css";
@@ -15,6 +17,7 @@ import { Alert, Badge, Button, Card, CardBody, CardHeader, EmptyState, Input, Se
 import { Modal } from "../../components/modals/Modal.jsx";
 import SimpleTable from "../../components/data/SimpleTable.jsx";
 import HeroImagesCard from "./HeroImagesCard.jsx";
+import { CommissionCard, MaintenanceCard } from "./PlatformControls.jsx";
 import useAsync from "../../hooks/useAsync.js";
 import { useToast } from "../../hooks/useNotifications.js";
 import { adminGetSettings, adminListPlans, adminSavePlan, adminSaveSetting } from "../../lib/api/businesses.js";
@@ -141,6 +144,9 @@ export default function AdminSettings() {
           </div>
         </CardBody>
       </Card>
+
+      <MaintenanceCard />
+      <CommissionCard />
 
       <Modal isOpen={!!plan} onClose={() => setPlan(null)} title={plan?.id ? "Edit plan" : "Add plan"}
         footer={<><Button variant="ghost" onClick={() => setPlan(null)}>Cancel</Button><Button loading={busy === "plan"} onClick={savePlan}>Save plan</Button></>}>

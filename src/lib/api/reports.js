@@ -1,8 +1,8 @@
-// src/lib/api/reports.js — NEW FILE
+// src/lib/api/reports.js — MODIFIED (Phase 5 step 3: getShopReport added at the bottom)
 //
 // AIM
 // The numbers for the Reports screen, read from the report_* views (supabase migration p4_05).
-// getRentalReport and getFarmReport each return { data, error } with the last 12 months merged
+// getRentalReport, getFarmReport and getShopReport each return { data, error } with the last 12 months merged
 // into one list so the screen can chart and export it. Never throws.
 
 import { supabase } from "../../config/supabase.js";
@@ -58,6 +58,33 @@ export async function getFarmReport(businessId) {
       costs: costs.data.map((c) => ({ category: c.category, cost: Number(c.cost), entries: +c.entries })),
       yields: yields.data.map((y) => ({ crop: y.crop, field: y.field, area_ha: y.area_ha == null ? null : Number(y.area_ha), harvested_kg: Number(y.harvested_kg),
         kg_per_ha: y.kg_per_ha == null ? null : Number(y.kg_per_ha), cost: Number(y.cost), income: Number(y.income) })),
+    },
+    error: null,
+  };
+}
+
+export async function getShopReport(businessId) {
+  if (!supabase) return NOT_CONNECTED;
+  const months = lastMonths(12);
+  const from = `${months[0]}-01`;
+  const q = (v) => supabase.from(v).select("*").eq("business_id", businessId);
+  const [monthly, status, top] = await Promise.all([
+    q("report_shop_monthly").gte("month", from), q("report_shop_status"),
+    q("report_shop_top_products").order("revenue", { ascending: false }).limit(20),
+  ]);
+  const error = first([monthly, status, top]);
+  if (error) return { data: null, error };
+
+  const rows = Object.fromEntries(months.map((m) => [m, { month: m, orders: 0, sales: 0, received: 0, cancelled: 0 }]));
+  for (const r of monthly.data) {
+    const t = rows[key(r.month)];
+    if (t) { t.orders = Number(r.orders); t.sales = Number(r.sales); t.received = Number(r.received); t.cancelled = Number(r.cancelled); }
+  }
+  return {
+    data: {
+      monthly: months.map((m) => rows[m]),
+      status: status.data.map((s) => ({ status: s.status, orders: Number(s.orders), total: Number(s.total) })),
+      top: top.data.map((t, i) => ({ _k: `${t.product_id || t.name}-${i}`, name: t.name, units: Number(t.units), revenue: Number(t.revenue), orders: Number(t.orders) })),
     },
     error: null,
   };
