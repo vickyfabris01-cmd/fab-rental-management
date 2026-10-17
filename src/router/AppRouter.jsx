@@ -4,10 +4,10 @@
 // Every route of the site. Unbuilt screens are NOT missing: they open the ComingSoon page
 // (inside /app/:slug and /admin they are driven by the module registry / admin menu).
 //
-//   public      /  /explore  /b/:slug  /pricing  /about  /contact  /terms  /privacy  /help
+//   public      /  /explore  /b/:slug (shop: /browse /p/:id /cart)  /pricing  /about  /contact  /terms  /privacy  /help
 //               /invoice/:token (one shared invoice)  /invite/:token (manager invite)
 //   auth        /login  /signup  /confirm  /forgot-password  /reset-password  /auth/callback
-//   signed in   /account  /account/requests  /businesses  /b/:slug/request  /start  /start/details  /start/subscribe  /start/status
+//   signed in   /b/:slug/checkout  /orders  /orders/:id  /wishlist  /account  /account/requests  /businesses  /b/:slug/request  /start  /start/details  /start/subscribe  /start/status
 //   business    /app/:slug/*   (members only; the menu comes from modules/registry.js)
 //   admin       /admin/*       (super admin only)
 //   developer   /preview/*     (development builds only)
@@ -36,6 +36,13 @@ const LegacyApp = LEGACY ? lazy(() => import(/* @vite-ignore */ LEGACY_PATH)) : 
 const page = (loader) => lazy(loader);
 const HomePage = page(() => import("../pages/public/HomePage.jsx"));
 const ExplorePage = page(() => import("../pages/public/ExplorePage.jsx"));
+const ShopBrowsePage = page(() => import("../pages/storefront/BrowsePage.jsx"));
+const ShopProductPage = page(() => import("../pages/storefront/ProductPage.jsx"));
+const ShopCartPage = page(() => import("../pages/storefront/CartPage.jsx"));
+const ShopCheckoutPage = page(() => import("../pages/storefront/CheckoutPage.jsx"));
+const MyOrdersPage = page(() => import("../pages/storefront/OrdersPage.jsx"));
+const OrderDetailPage = page(() => import("../pages/storefront/OrdersPage.jsx").then((m) => ({ default: m.OrderDetail })));
+const WishlistPage = page(() => import("../pages/storefront/WishlistPage.jsx"));
 const BusinessPage = page(() => import("../pages/public/BusinessPage.jsx"));
 const PricingPage = page(() => import("../pages/public/PricingPage.jsx"));
 const NotFoundPage = page(() => import("../pages/public/NotFoundPage.jsx"));
@@ -127,7 +134,14 @@ export default function AppRouter() {
             <Route path="/" element={<Guarded><HomePage /></Guarded>} />
             <Route path="/explore" element={<Guarded><ExplorePage /></Guarded>} />
             <Route path="/b/:slug" element={<Guarded><BusinessPage /></Guarded>} />
+            <Route path="/b/:slug/browse" element={<Guarded><ShopBrowsePage /></Guarded>} />
+            <Route path="/b/:slug/p/:productId" element={<Guarded><ShopProductPage /></Guarded>} />
+            <Route path="/b/:slug/cart" element={<Guarded><ShopCartPage /></Guarded>} />
             <Route element={<RequireAuth />}>
+              <Route path="/b/:slug/checkout" element={<Guarded><ShopCheckoutPage /></Guarded>} />
+              <Route path="/orders" element={<Guarded><MyOrdersPage /></Guarded>} />
+              <Route path="/orders/:id" element={<Guarded><OrderDetailPage /></Guarded>} />
+              <Route path="/wishlist" element={<Guarded><WishlistPage /></Guarded>} />
               <Route path="/b/:slug/request" element={<Guarded><RequestRoomPage /></Guarded>} />
             </Route>
             <Route path="/pricing" element={<Guarded><PricingPage /></Guarded>} />

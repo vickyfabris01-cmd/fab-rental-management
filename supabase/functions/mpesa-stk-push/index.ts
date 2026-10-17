@@ -1,6 +1,7 @@
 // mpesa-stk-push — starts an M-Pesa STK prompt (Daraja, sandbox or live).
 // Body: { purpose: "subscription", businessId, planId, phone: "2547…" }
 //    or { purpose: "rent", cycleId, amount, phone: "2547…" }   (Phase 2: a resident or the business staff)
+//    or { purpose: "order", orderId, phone: "2547…" }          (Phase 5: the customer pays a shop order; the amount is the order total)
 // Subscription amounts always come from the database (the plan price). A rent amount is checked
 // against the invoice balance. Rent is paid into the BUSINESS's own paybill/till
 // (tenant_settings.mpesa_shortcode + tenant_secrets.mpesa_passkey, saved by the owner).
@@ -31,9 +32,9 @@ Deno.serve(async (req) => {
 
   let body: Record<string, string>;
   try { body = await req.json(); } catch { return json({ error: "Invalid request" }, 400); }
-  const { purpose = "subscription", businessId, planId, cycleId } = body;
+  const { purpose = "subscription", businessId, planId, cycleId, orderId } = body;
   const phone = String(body.phone ?? "");
-  if (!["subscription", "rent"].includes(purpose)) return json({ error: "Unsupported payment type." }, 400);
+  if (!["subscription", "rent", "order"].includes(purpose)) return json({ error: "Unsupported payment type." }, 400);
   if (!/^254[17]\d{8}$/.test(phone)) return json({ error: "Enter a valid Kenyan phone number." }, 400);
 
   const key = Deno.env.get("MPESA_CONSUMER_KEY");
@@ -44,7 +45,7 @@ Deno.serve(async (req) => {
   let shortcode = Deno.env.get("MPESA_SHORTCODE") || setting?.value?.shortcode || "174379";
 
   let bizId: string; let bizName: string; let amount: number; let desc: string;
-  let planRef: string | null = null; let cycleRef: string | null = null; let tenancyRef: string | null = null;
+  let planRef: string | null = null; let cycleRef: string | null = null; let tenancyRef: string | null = null; let orderRef: string | null = null;
 
   if (purpose === "subscription") {
     // Only the business owner can pay for it, and only while it is waiting for payment.
@@ -57,6 +58,25 @@ Deno.serve(async (req) => {
       .eq("id", planId).maybeSingle();
     if (!plan || !plan.is_active || plan.business_type !== biz.business_type) return json({ error: "This plan is not available." }, 400);
     bizId = biz.id; bizName = biz.name; amount = plan.price_kes; planRef = plan.id; desc = `Subscription ${plan.name}`;
+  } else if (purpose === "order") {
+    // Only the customer who placed the order, and only while it is unpaid. The amount is the order total.
+    const { data: ord } = await admin.from("orders").select("id, business_id, customer_id, status, payment_status, payment_method, total, order_number")
+      .eq("id", orderId ?? "").maybeSingle();
+    if (!ord || ord.customer_id !== user.id) return json({ error: "Order not found." }, 404);
+    if (ord.payment_method !== "mpesa") return json({ error: "This order is paid on delivery." }, 400);
+    if (ord.status !== "pending_payment" || ord.payment_status !== "unpaid") return json({ error: "This order needs no payment." }, 400);
+    const { data: biz } = await admin.from("businesses").select("id, name, status").eq("id", ord.business_id).maybeSingle();
+    if (!biz || biz.status !== "active") return json({ error: "This shop is not open." }, 400);
+    amount = Math.ceil(Number(ord.total));
+    if (!(amount >= 1)) return json({ error: "Nothing to pay." }, 400);
+    // The shop's own paybill/till when it has saved one. Without one, only the sandbox may use the platform's.
+    const { data: ts } = await admin.from("tenant_settings").select("mpesa_shortcode").eq("tenant_id", biz.id).maybeSingle();
+    const { data: sec } = await admin.from("tenant_secrets").select("mpesa_passkey").eq("tenant_id", biz.id).maybeSingle();
+    if (ts?.mpesa_shortcode && sec?.mpesa_passkey) { shortcode = ts.mpesa_shortcode; passkey = sec.mpesa_passkey; }
+    else if (env === "live") {
+      return json({ error: "This shop has not set up M-Pesa prompts yet. Please contact the shop.", code: "BUSINESS_NOT_CONFIGURED" }, 400);
+    }
+    bizId = biz.id; bizName = biz.name; orderRef = ord.id; desc = `Order ${ord.order_number}`;
   } else {
     const { data: cycle } = await admin.from("billing_cycles")
       .select("id, tenant_id, tenancy_id, client_id, status, amount_due, late_fee, amount_paid, invoice_number").eq("id", cycleId ?? "").maybeSingle();
@@ -86,7 +106,7 @@ Deno.serve(async (req) => {
 
   const { data: intent, error: insErr } = await admin.from("payment_intents").insert({
     user_id: user.id, business_id: bizId, plan_id: planRef, purpose, method: "mpesa_stk",
-    amount_kes: amount, phone, status: "pending", billing_cycle_id: cycleRef, tenancy_id: tenancyRef,
+    amount_kes: amount, phone, status: "pending", billing_cycle_id: cycleRef, tenancy_id: tenancyRef, order_id: orderRef,
   }).select("id").single();
   if (insErr) return json({ error: "Could not start the payment." }, 500);
 

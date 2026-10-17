@@ -16,12 +16,15 @@ import { looksLikePhone, toE164 } from "../lib/phone.js";
 
 const PROFILE_FIELDS = "id, role, tenant_id, full_name, avatar_url, phone, email, is_active, created_at";
 
+export const LOCKED_MESSAGE = "This account has been switched off. Please contact support.";
+
 function friendly(error) {
   if (!error) return null;
   const m = String(error.message || error);
   if (/invalid login credentials/i.test(m)) return "The email, phone number or password is not correct.";
   if (/email not confirmed/i.test(m)) return "Please confirm your email first. Check your inbox.";
   if (/already registered|already been registered/i.test(m)) return "An account with this email already exists. Try signing in.";
+  if (/banned|switched off/i.test(m)) return LOCKED_MESSAGE;
   if (/rate limit|too many/i.test(m)) return "Too many attempts. Please wait a moment and try again.";
   if (/network|failed to fetch/i.test(m)) return "Could not reach the server. Check your internet and try again.";
   return m;
@@ -34,6 +37,7 @@ export const useSession = create((set, get) => ({
   user: null,
   profile: null,
   loading: true,
+  locked: false,   // true when a switched-off account tried to sign in or was signed out
   recovery: false, // true after the person opened a password-reset link
 
   get isSuperAdmin() {
@@ -49,6 +53,11 @@ export const useSession = create((set, get) => ({
     const { data } = await supabase.auth.getSession();
     await get()._apply(data.session);
 
+    // Re-check when the person comes back to the tab, so switching an account off takes effect without a sign-out.
+    document.addEventListener("visibilitychange", () => {
+      if (document.visibilityState === "visible" && get().user) get().refreshProfile();
+    });
+
     supabase.auth.onAuthStateChange((event, session) => {
       if (event === "PASSWORD_RECOVERY") set({ recovery: true });
       // Do not await inside this callback (a Supabase rule); schedule the profile load instead.
@@ -60,7 +69,12 @@ export const useSession = create((set, get) => ({
     if (!session?.user) return set({ session: null, user: null, profile: null, loading: false });
     set({ session, user: session.user });
     const profile = await get().fetchProfile(session.user.id);
-    set({ profile, loading: false });
+    // A switched-off account is signed out straight away (the database also refuses it).
+    if (profile && profile.is_active === false) {
+      await supabase.auth.signOut();
+      return set({ session: null, user: null, profile: null, loading: false, locked: true });
+    }
+    set({ profile, loading: false, locked: false });
   },
 
   async fetchProfile(id) {
@@ -73,6 +87,11 @@ export const useSession = create((set, get) => ({
     const id = get().user?.id;
     if (!id) return null;
     const profile = await get().fetchProfile(id);
+    if (profile && profile.is_active === false) {
+      await supabase.auth.signOut();
+      set({ session: null, user: null, profile: null, locked: true });
+      return null;
+    }
     set({ profile });
     return profile;
   },
@@ -101,10 +120,12 @@ export const useSession = create((set, get) => ({
       });
       // Load the profile before returning, so the caller can route by role straight away.
       if (!setErr && set.session) await get()._apply(set.session);
+      if (get().locked) return { error: LOCKED_MESSAGE };
       return { error: friendly(setErr) };
     }
     const { data, error } = await supabase.auth.signInWithPassword({ email: id, password });
     if (!error && data.session) await get()._apply(data.session);
+    if (!error && get().locked) return { error: LOCKED_MESSAGE };
     return { error: friendly(error) };
   },
 

@@ -107,7 +107,7 @@ export async function adminListUsers({ search = "" } = {}) {
 }
 
 export async function adminSetUserActive(id, active) {
-  return wrap(await supabase.from("profiles").update({ is_active: active }).eq("id", id));
+  return wrap(await supabase.rpc("admin_set_user_active", { p_user: id, p_active: active }));
 }
 
 // ── Platform settings ────────────────────────────────────────────────────

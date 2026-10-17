@@ -1,11 +1,10 @@
-// src/pages/admin/AdminSettings.jsx — MODIFIED (adds the Home page hero card; Phase 4: the Agriculture switch label)
+// src/pages/admin/AdminSettings.jsx — MODIFIED (step 2: the "Business types" switch is removed; only a single business can be locked)
 //
 // AIM
 // Platform settings, one card per topic, each saved on its own:
 //   Brand           product name, tagline, support email, website (shown across the whole site)
 //   Home page hero  background photos for the home page and how often they change (HeroImagesCard)
 //   Approval        manual (default) or automatic approval after payment
-//   Business types  which types can be chosen in onboarding (rental is always on)
 //   Prices          subscription plans: add, edit, switch off
 //   M-Pesa          sandbox or live and the shortcode (secret keys live in Edge Function secrets)
 // Every save is written to the audit log by the database.
@@ -34,7 +33,6 @@ export default function AdminSettings() {
   const [brand, setBrand] = useState({ name: "", tagline: "", support_email: "", website: "" });
   const [brandErr, setBrandErr] = useState({});
   const [mode, setMode] = useState("manual");
-  const [modules, setModules] = useState({ rental: true, agriculture: false, shop: false });
   const [mpesa, setMpesa] = useState({ env: "sandbox", shortcode: "" });
   const [busy, setBusy] = useState("");
   const [plan, setPlan] = useState(null);
@@ -44,7 +42,6 @@ export default function AdminSettings() {
     if (!s) return;
     setBrand({ name: "", tagline: "", support_email: "", website: "", ...(s.brand || {}) });
     setMode(s.approval?.mode || "manual");
-    setModules({ rental: true, agriculture: false, shop: false, ...(s.modules || {}) });
     setMpesa({ env: "sandbox", shortcode: "", ...(s.mpesa || {}) });
   }, [s]);
 
@@ -53,7 +50,7 @@ export default function AdminSettings() {
     const { error: e } = await adminSaveSetting(key, value);
     setBusy("");
     if (e) return toast.error(e);
-    if (key === "brand" || key === "modules") usePlatformStore.getState().apply(key, value);
+    if (key === "brand") usePlatformStore.getState().apply(key, value);
     toast.success(`${label} saved.`);
     reload();
   }
@@ -115,19 +112,6 @@ export default function AdminSettings() {
             <Toggle label="Approve businesses automatically" checked={mode === "auto"} onChange={(v) => setMode(v ? "auto" : "manual")} />
             <p className="adm-hint">{mode === "auto" ? "Businesses go live as soon as the payment succeeds." : "Each business waits in the review list until you approve it (recommended)."}</p>
             <div><Button loading={busy === "approval"} onClick={() => save("approval", { mode }, "Approval mode")}>Save approval mode</Button></div>
-          </div>
-        </CardBody>
-      </Card>
-
-      <Card>
-        <CardHeader title="Business types" subtitle="Types you switch on can be chosen in onboarding." />
-        <CardBody>
-          <div className="adm-sec">
-            <Toggle label="Rental" checked disabled onChange={() => {}} />
-            <Toggle label="Agriculture" checked={!!modules.agriculture} onChange={(v) => setModules({ ...modules, agriculture: v })} />
-            <Toggle label="Shop (module arrives in Phase 5)" checked={!!modules.shop} onChange={(v) => setModules({ ...modules, shop: v })} />
-            <p className="adm-hint">Switching a type on before its module is built lets owners register, but the app screens show "Coming soon".</p>
-            <div><Button loading={busy === "modules"} onClick={() => save("modules", { ...modules, rental: true }, "Business types")}>Save business types</Button></div>
           </div>
         </CardBody>
       </Card>

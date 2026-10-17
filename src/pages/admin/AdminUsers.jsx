@@ -26,7 +26,7 @@ export default function AdminUsers() {
   async function toggle(u) {
     const { error: e } = await adminSetUserActive(u.id, !u.is_active);
     if (e) return toast.error(e);
-    toast.success(u.is_active ? "Account switched off." : "Account switched on.");
+    toast.success(u.is_active ? "Account switched off. The person is signed out and cannot sign in." : "Account switched on.");
     reload();
   }
 

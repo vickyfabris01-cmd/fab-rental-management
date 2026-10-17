@@ -1,4 +1,4 @@
-// src/config/counties.js — MODIFIED FILE (Phase 5: shop is open in onboarding; the Admin > Settings switch still decides)
+// src/config/counties.js — MODIFIED FILE (step 2: every type is open; only a single business can be suspended)
 // The 47 counties of Kenya, used by filters and forms.
 export const COUNTIES = [
   "Baringo","Bomet","Bungoma","Busia","Elgeyo-Marakwet","Embu","Garissa","Homa Bay","Isiolo","Kajiado",

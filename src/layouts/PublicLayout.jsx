@@ -42,6 +42,8 @@ export function SiteHeader() {
   };
   const menuLinks = [
     ...(hasBusiness ? [{ to: "/businesses", label: "My businesses", icon: "building" }] : []),
+    { to: "/orders", label: "My orders", icon: "file" },
+    { to: "/wishlist", label: "Wishlist", icon: "check" },
     { to: "/account/requests", label: "My requests", icon: "file" },
     { to: "/notifications", label: "Notifications", icon: "bell" },
     { to: "/help/tickets", label: "My tickets", icon: "help" },
@@ -97,6 +99,8 @@ export function SiteHeader() {
           {user ? (
             <>
               {hasBusiness && <li><Link to="/businesses" onClick={() => setOpen(false)}>My businesses</Link></li>}
+              <li><Link to="/orders" onClick={() => setOpen(false)}>My orders</Link></li>
+              <li><Link to="/wishlist" onClick={() => setOpen(false)}>Wishlist</Link></li>
               <li><Link to="/account/requests" onClick={() => setOpen(false)}>My requests</Link></li>
               <li><Link to="/notifications" onClick={() => setOpen(false)}>Notifications</Link></li>
               <li><Link to="/help/tickets" onClick={() => setOpen(false)}>My tickets</Link></li>

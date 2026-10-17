@@ -18,6 +18,7 @@ import { getBusinessBySlug } from "../../lib/api/directory.js";
 import { listAvailableRooms } from "../../lib/api/rental.js";
 import { RoomCard } from "../rental/RequestRoomPage.jsx";
 import { toE164 } from "../../lib/phone.js";
+import ShopHome from "../storefront/ShopHome.jsx";
 
 export default function BusinessPage() {
   const { slug } = useParams();
@@ -45,6 +46,8 @@ export default function BusinessPage() {
       </div>
     );
   }
+
+  if (b.business_type === "shop") return <ShopHome />; // the storefront draws its own page
 
   const wa = toE164(b.whatsapp || b.phone);
   const place = [b.address, b.county].filter(Boolean).join(", ");

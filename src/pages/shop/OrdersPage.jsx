@@ -13,7 +13,7 @@ import { Alert, Badge, Button, Card, EmptyState, Input } from "../../components/
 import { ConfirmDialog, Modal } from "../../components/modals/Modal.jsx";
 import useAsync from "../../hooks/useAsync.js";
 import { useToast } from "../../hooks/useNotifications.js";
-import { ORDER_GROUPS, getOrder, listOrders, setOrderStatus } from "../../lib/api/shop.js";
+import { ORDER_GROUPS, getOrder, listOrders, markOrderPaid, setOrderStatus } from "../../lib/api/shop.js";
 import { formatDateTime } from "../../lib/format.js";
 import { Loading, LoadError, OrderBadge, PageHead, Tabs, cap, money, useShop } from "./shared.jsx";
 
@@ -51,6 +51,16 @@ function Detail({ id, onClose, onChanged }) {
     setNote(""); reload(); onChanged();
   }
 
+  async function confirmPaid() {
+    const receipt = window.prompt("M-Pesa code from your statement (optional)", "");
+    if (receipt === null) return;
+    setBusy("paid"); setErr("");
+    const r = await markOrderPaid(id, receipt);
+    setBusy("");
+    if (r.error) { setErr(r.error); return; }
+    toast.success("Payment confirmed"); reload(); onChanged();
+  }
+
   const steps = o ? nextSteps(o) : [];
   return (
     <Modal isOpen onClose={onClose} title={o ? `Order ${o.order_number}` : "Order"} size="md" footer={<Button variant="secondary" onClick={onClose}>Close</Button>}>
@@ -83,6 +93,14 @@ function Detail({ id, onClose, onChanged }) {
               {o.events.map((e) => <li key={e.id}><span className="shop-list__title">{(ORDER_LABEL[e.status] || cap(e.status))}</span><span className="shop-hint">{formatDateTime(e.created_at)}{e.note ? ` · ${e.note}` : ""}</span></li>)}
             </ul>
           </div>
+
+          {o.status === "pending_payment" && o.payment_method === "mpesa" && (
+            <Alert type="info" message="Waiting for the customer's M-Pesa payment. If you already received it on your till or paybill, confirm it here.">
+            </Alert>
+          )}
+          {o.status === "pending_payment" && o.payment_method === "mpesa" && (
+            <div><Button variant="outline" loading={busy === "paid"} onClick={confirmPaid}>Confirm M-Pesa payment</Button></div>
+          )}
 
           {steps.length > 0 && (
             <>

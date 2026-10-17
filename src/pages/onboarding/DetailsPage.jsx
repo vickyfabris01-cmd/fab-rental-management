@@ -18,14 +18,12 @@ import { toE164 } from "../../lib/phone.js";
 import { cleanKenyanPhone } from "../../components/ui/PhoneInput.jsx";
 import { useBusinessStore } from "../../store/businessStore.js";
 import { useSession } from "../../store/sessionStore.js";
-import useBrand from "../../hooks/useBrand.js";
 import { useToast } from "../../hooks/useNotifications.js";
 
 export default function DetailsPage() {
   const [params] = useSearchParams();
   const navigate = useNavigate();
   const toast = useToast();
-  const { modules } = useBrand();
   const user = useSession((s) => s.user);
   const profile = useSession((s) => s.profile);
   const slug = params.get("business");
@@ -87,10 +85,10 @@ export default function DetailsPage() {
     navigate(`/start/subscribe?business=${data.slug}`);
   }
 
-  if (!editing && (!modules[type] || !["rental", "agriculture", "shop"].includes(type))) {
+  if (!editing && (!["rental", "agriculture", "shop"].includes(type))) {
     return (
       <div className="pg pg--narrow">
-        <Alert type="warning" title="This type is not open yet" message="Please choose another business type." />
+        <Alert type="warning" title="Choose a business type" message="Please pick a business type to continue." />
         <p><Link to="/start">Back to business types</Link></p>
       </div>
     );

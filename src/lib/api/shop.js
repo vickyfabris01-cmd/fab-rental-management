@@ -121,6 +121,9 @@ export const getOrder = guard(async (id) => {
 export const setOrderStatus = guard(async (id, status, note) =>
   wrap(await supabase.rpc("set_order_status", { p_order: id, p_status: status, p_note: text(note) })));
 
+export const markOrderPaid = guard(async (id, receipt) =>
+  wrap(await supabase.rpc("seller_mark_order_paid", { p_order: id, p_receipt: text(receipt) })));
+
 // ---- customers -------------------------------------------------------------------------
 export const listShopCustomers = guard(async (bid) =>
   wrap(await supabase.from("shop_customers").select("*").eq("business_id", bid).order("last_order_at", { ascending: false }).limit(200)));
@@ -142,6 +145,11 @@ export const saveShopSettings = guard(async (bid, s) => {
   };
   return wrap(await supabase.from("shop_settings").upsert(row, { onConflict: "business_id" }).select().single());
 });
+
+// ---- M-Pesa (where customers' payments go) ----------------------------------------------
+export const getShopMpesa = guard(async (bid) => wrap(await supabase.rpc("mpesa_status", { p_business: bid })));
+export const saveShopMpesa = guard(async (bid, shortcode, passkey) =>
+  wrap(await supabase.rpc("save_mpesa_details", { p_business: bid, p_shortcode: shortcode, p_passkey: text(passkey) })));
 
 // ---- dashboard -------------------------------------------------------------------------
 export const getShopOverview = guard(async (bid) => {

@@ -9,13 +9,11 @@ import { useNavigate } from "react-router-dom";
 import { Badge, Button, Card, Icon } from "../../components/ui";
 import Stepper from "./Stepper.jsx";
 import { BUSINESS_TYPES } from "../../config/counties.js";
-import useBrand from "../../hooks/useBrand.js";
 
 const ICONS = { rental: "building", agriculture: "home", shop: "card" };
 
 export default function StartPage() {
   const navigate = useNavigate();
-  const { modules } = useBrand();
   return (
     <div className="pg pg--narrow">
       <Stepper step={1} />
@@ -23,7 +21,7 @@ export default function StartPage() {
       <p className="pg__lead">Choose a type. You can start another business later.</p>
       <div className="onb__types">
         {BUSINESS_TYPES.map((t) => {
-          const open = t.open && modules[t.value];
+          const open = t.open;
           return (
             <Card key={t.value} className={`onb__type${open ? "" : " is-disabled"}`}>
               <span className="onb__type-icon" aria-hidden="true"><Icon name={ICONS[t.value]} size={24} /></span>

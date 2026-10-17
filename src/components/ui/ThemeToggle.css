@@ -1,4 +1,4 @@
-/* src/components/ui/ThemeToggle.css — NEW FILE
+/* src/components/ui/ThemeToggle.css — MODIFIED FILE (segmented options now stack icon over label)
    Styles for ThemeToggle.jsx. Tokens only: no hex values. */
 
 /* ── Icon button ─────────────────────────────────────────────────────────── */
@@ -28,7 +28,8 @@
 
 /* ── Segmented control (Light / Dark / System) ───────────────────────────── */
 .ui-theme-seg {
-  display: inline-flex;
+  display: flex;
+  width: 100%;
   max-width: 100%;
   padding: var(--space-1);
   gap: var(--space-1);
@@ -37,18 +38,22 @@
   border-radius: var(--radius-lg);
 }
 
+/* Each option stacks the icon on top and the word underneath, and the three share the row
+   equally, so the control always fits its container (the avatar menu is narrow). */
 .ui-theme-seg__option {
   display: inline-flex;
+  flex: 1 1 0;
+  min-width: 0;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: var(--space-2);
-  min-height: var(--control-h-sm);
-  padding-inline: var(--space-3);
+  gap: var(--space-1);
+  padding: var(--space-2) var(--space-1);
   border: 0;
   border-radius: var(--radius-md);
   background: transparent;
   color: var(--color-text-muted);
-  font-size: var(--text-sm);
+  font-size: var(--text-xs);
   line-height: 1.25;
   font-weight: var(--weight-medium);
   cursor: pointer;

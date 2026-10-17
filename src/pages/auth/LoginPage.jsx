@@ -13,7 +13,7 @@ import { Alert, Button, Input, PasswordInput } from "../../components/ui";
 import GoogleButton from "../../components/auth/GoogleButton.jsx";
 import AfterSignIn from "../../components/auth/AfterSignIn.jsx";
 import AuthLayout from "../../layouts/AuthLayout.jsx";
-import { useSession } from "../../store/sessionStore.js";
+import { LOCKED_MESSAGE, useSession } from "../../store/sessionStore.js";
 import { looksLikePhone } from "../../lib/phone.js";
 import { landingFor, safeNext } from "../../lib/landing.js";
 import { required } from "../../lib/validate.js";
@@ -25,6 +25,7 @@ export { safeNext };
 export default function LoginPage() {
   const [params] = useSearchParams();
   const navigate = useNavigate();
+  const locked = useSession((s) => s.locked);
   const user = useSession((s) => s.user);
   const profile = useSession((s) => s.profile);
   const [identifier, setIdentifier] = useState("");
@@ -61,7 +62,7 @@ export default function LoginPage() {
       subtitle="Sign in with your email or phone number."
       footer={<span>New here? <Link to={`/signup${next ? `?next=${encodeURIComponent(next)}` : ""}`}>Create an account</Link></span>}
     >
-      {formError && <Alert type="error" message={formError} />}
+      {(formError || locked) && <Alert type="error" message={formError || LOCKED_MESSAGE} />}
       <form className="auth__form" onSubmit={submit} noValidate>
         <Input label="Email or phone number" autoComplete="username" inputMode={looksLikePhone(identifier) ? "tel" : "email"}
           placeholder="Email or 0712 345 678" value={identifier} onChange={(e) => setIdentifier(e.target.value)} error={errors.identifier} />

@@ -15,8 +15,41 @@ import BusinessLogoCard from "../../components/business/BusinessLogoCard.jsx";
 import BusinessCoverCard from "../../components/business/BusinessCoverCard.jsx";
 import useAsync from "../../hooks/useAsync.js";
 import { useToast } from "../../hooks/useNotifications.js";
-import { getShopSettings, saveShopSettings } from "../../lib/api/shop.js";
+import { getShopMpesa, getShopSettings, saveShopMpesa, saveShopSettings } from "../../lib/api/shop.js";
 import { Loading, LoadError, PageHead, useShop } from "./shared.jsx";
+
+function MpesaCard({ bid }) {
+  const toast = useToast();
+  const { data, reload } = useAsync(() => getShopMpesa(bid), [bid]);
+  const [code, setCode] = useState("");
+  const [key, setKey] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState("");
+  useEffect(() => { if (data) setCode(data.shortcode || ""); }, [data]);
+  async function save(e) {
+    e.preventDefault();
+    setBusy(true); setErr("");
+    const r = await saveShopMpesa(bid, code, key);
+    setBusy(false);
+    if (r.error) { setErr(r.error); return; }
+    setKey(""); toast.success("M-Pesa details saved"); reload();
+  }
+  return (
+    <Card>
+      <CardHeader title="M-Pesa payments" subtitle="Where customers' M-Pesa payments are sent" />
+      <CardBody>
+        <form className="shop-form" onSubmit={save} noValidate>
+          {err && <Alert type="error" message={err} />}
+          <Input label="Paybill or till number" inputMode="numeric" value={code} onChange={(e) => setCode(e.target.value)} helper="5 to 7 digits" />
+          <Input label="Lipa na M-Pesa passkey" type="password" autoComplete="off" value={key} onChange={(e) => setKey(e.target.value)}
+            helper={data?.has_passkey ? "A passkey is saved. Leave empty to keep it." : "From your Safaricom Daraja app"} />
+          <p className="shop-hint">Without these, customers cannot get an M-Pesa prompt on a live system. You can still confirm a payment by hand from the order.</p>
+          <div><Button type="submit" loading={busy}>Save M-Pesa details</Button></div>
+        </form>
+      </CardBody>
+    </Card>
+  );
+}
 
 export default function ShopSettingsPage() {
   const { business, bid } = useShop();
@@ -75,6 +108,8 @@ export default function ShopSettingsPage() {
           <CardBody><Button as={Link} to={`/start/details?business=${business.slug}`} variant="outline">Edit business details</Button></CardBody>
         </Card>
       </div>
+
+      <MpesaCard bid={bid} />
 
       <div className="shop-grid shop-grid--2">
         <BusinessLogoCard business={business} />

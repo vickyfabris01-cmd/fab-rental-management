@@ -1,4 +1,4 @@
-// src/pages/public/HomePage.jsx — MODIFIED (hero background image with plain-green fallback)
+// src/pages/public/HomePage.jsx — MODIFIED (hero photo is ready before the page draws; skeleton until then)
 //
 // AIM
 // The front door, written for someone who just wants to FIND a business: search by name,
@@ -9,18 +9,21 @@
 // list comes from the database (skeleton, then cards, or a friendly message).
 //
 // Hero background: the super admin uploads photos in Settings. The photo showing now comes from
-// current_hero_image(). If there is none, or it cannot load, the original plain green hero stays.
+// current_hero_image(). It is fetched and downloaded by lib/heroPreload.js, which main.jsx starts
+// before React renders and which remembers the result for the whole session. Until it is ready the
+// page shows a grey skeleton of itself, then the real page draws in one go. If there is no photo,
+// or it cannot load, or it takes too long, the original plain green hero is used.
 
 import "./HomePage.css";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Badge, Button, Card, EmptyState, Icon } from "../../components/ui";
+import { Badge, Button, Card, EmptyState, Icon, Skeleton } from "../../components/ui";
 import BusinessCard, { BusinessCardSkeleton } from "../../components/business/BusinessCard.jsx";
 import { BUSINESS_TYPES, COUNTIES } from "../../config/counties.js";
 import useAsync from "../../hooks/useAsync.js";
 import useBrand from "../../hooks/useBrand.js";
 import { listBusinesses } from "../../lib/api/directory.js";
-import { getHeroImage } from "../../lib/api/hero.js";
+import { useHeroPreload } from "../../lib/heroPreload.js";
 import { useSession } from "../../store/sessionStore.js";
 import { useBusinessStore } from "../../store/businessStore.js";
 
@@ -32,6 +35,40 @@ const OWNER_STEPS = [
   "Get approved, go live and start managing.",
 ];
 
+// Grey wireframe of the whole page, same layout as the real one, shown until the hero is ready.
+function HomeSkeleton() {
+  return (
+    <div role="status" aria-live="polite" aria-label="Loading">
+      <section className="home-hero" aria-hidden="true">
+        <div className="home-hero__inner">
+          <Skeleton height={44} width="min(520px, 90%)" />
+          <Skeleton height={18} width="min(460px, 80%)" />
+          <div className="home-search">
+            <Skeleton height={44} />
+            <Skeleton height={44} />
+            <Skeleton height={48} width={120} />
+          </div>
+          <div className="home-chips">
+            {[0, 1, 2, 3, 4].map((i) => <Skeleton key={i} height={44} width={96} style={{ borderRadius: "var(--radius-full)" }} />)}
+          </div>
+        </div>
+      </section>
+
+      <section className="pg" aria-hidden="true">
+        <div className="home-list__head"><Skeleton height={28} width={200} /></div>
+        <div className="pg-grid pg-grid--3">{[0, 1, 2].map((i) => <BusinessCardSkeleton key={i} />)}</div>
+      </section>
+
+      <section className="pg" aria-hidden="true">
+        <Skeleton height={28} width={180} style={{ marginBottom: "var(--space-3)" }} />
+        <div className="pg-grid pg-grid--3">
+          {[0, 1, 2].map((i) => <Skeleton key={i} height={110} style={{ borderRadius: "var(--radius-lg)" }} />)}
+        </div>
+      </section>
+    </div>
+  );
+}
+
 export default function HomePage() {
   const brand = useBrand();
   const navigate = useNavigate();
@@ -41,22 +78,9 @@ export default function HomePage() {
   const [term, setTerm] = useState("");
   const [county, setCounty] = useState("");
   const { data, error, loading } = useAsync(() => listBusinesses({ limit: 6 }), []);
-  const { data: heroData } = useAsync(() => getHeroImage(), []);
-  const [heroUrl, setHeroUrl] = useState("");
+  const hero = useHeroPreload(); // { ready, url }; url is "" when the plain green hero is used
   const first = (profile?.full_name || "").split(" ")[0];
   const ownsBusiness = Boolean(user) && memberships.length > 0;
-
-  // Show the photo only after it has loaded; on any failure the plain hero stays.
-  useEffect(() => {
-    const url = heroData?.url;
-    if (!url) { setHeroUrl(""); return undefined; }
-    let cancelled = false;
-    const img = new Image();
-    img.onload = () => { if (!cancelled) setHeroUrl(url); };
-    img.onerror = () => { if (!cancelled) setHeroUrl(""); };
-    img.src = url;
-    return () => { cancelled = true; };
-  }, [heroData]);
 
   function search(e) {
     e.preventDefault();
@@ -67,11 +91,14 @@ export default function HomePage() {
     navigate(`/explore${s ? `?${s}` : ""}`);
   }
 
+  // The business list keeps loading in the background while the skeleton shows.
+  if (!hero.ready) return <HomeSkeleton />;
+
   return (
     <>
       <section
-        className={`home-hero${heroUrl ? " home-hero--image" : ""}`}
-        style={heroUrl ? { backgroundImage: `url("${heroUrl}")` } : undefined}
+        className={`home-hero${hero.url ? " home-hero--image" : ""}`}
+        style={hero.url ? { backgroundImage: `url("${hero.url}")` } : undefined}
       >
         <div className="home-hero__inner">
           <h1 className="home-hero__title">
